@@ -70,7 +70,7 @@ dependencies:
   package_info_plus: ^5.0.1
   
   # Notifications
-  flutter_local_notifications: ^16.2.0
+  flutter_local_notifications: ^17.0.0
   
   # Forms & Input
   flutter_form_builder: ^10.0.1
