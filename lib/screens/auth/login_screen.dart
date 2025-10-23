@@ -46,6 +46,20 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+  Future<void> _handleGoogleSignIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    
+    final success = await authProvider.signInWithGoogle();
+
+    if (success && mounted) {
+      Get.offAllNamed(AppRoutes.dashboard);
+    } else if (mounted && authProvider.errorMessage != null) {
+      _showErrorSnackBar(
+        authProvider.errorMessage ?? 'Google sign-in failed',
+      );
+    }
+  }
+
   void _showErrorSnackBar(String message) {
     Get.snackbar(
       'Error',
@@ -180,6 +194,63 @@ class _LoginScreenState extends State<LoginScreen> {
                         text: 'Login',
                         onPressed: _handleLogin,
                         isLoading: authProvider.isLoading,
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Divider with OR text
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Google Sign-In button
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      return OutlinedButton.icon(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : _handleGoogleSignIn,
+                        icon: Image.asset(
+                          'assets/images/google_logo.png',
+                          height: 24,
+                          errorBuilder: (context, error, stackTrace) {
+                            return const Icon(
+                              Icons.g_mobiledata,
+                              size: 32,
+                              color: FamingaBrandColors.primaryOrange,
+                            );
+                          },
+                        ),
+                        label: Text(
+                          'Sign in with Google',
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(
+                            color: FamingaBrandColors.textPrimary.withOpacity(
+                              0.3,
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       );
                     },
                   ),

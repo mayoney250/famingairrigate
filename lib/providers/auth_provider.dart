@@ -112,6 +112,29 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future<bool> signInWithGoogle() async {
+    try {
+      _isLoading = true;
+      _errorMessage = null;
+      notifyListeners();
+
+      final userCredential = await _authService.signInWithGoogle();
+
+      if (userCredential != null) {
+        await loadUserData(userCredential.user!.uid);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      log('Google sign-in error: $e');
+      _errorMessage = e.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> signOut() async {
     try {
       _isLoading = true;
