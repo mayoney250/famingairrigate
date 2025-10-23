@@ -48,36 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
-    if (kIsWeb) {
-      // Show info dialog for web users
-      Get.dialog(
-        AlertDialog(
-          title: Row(
-            children: [
-              const Icon(
-                Icons.info_outline,
-                color: FamingaBrandColors.primaryOrange,
-              ),
-              const SizedBox(width: 8),
-              const Text('Google Sign-In'),
-            ],
-          ),
-          content: const Text(
-            'Google Sign-In on web requires additional OAuth configuration. '
-            'For now, please use email/password authentication.\n\n'
-            'Google Sign-In is fully supported on Android and iOS apps.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Get.back(),
-              child: const Text('OK'),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.signInWithGoogle();

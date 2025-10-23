@@ -182,15 +182,6 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Check if running on web
-      if (kIsWeb) {
-        log('Google Sign-In on web requires additional configuration');
-        throw Exception(
-          'Google Sign-In on web requires OAuth client ID configuration. '
-          'Please use email/password authentication for now.',
-        );
-      }
-      
       // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
