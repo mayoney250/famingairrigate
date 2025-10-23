@@ -1,241 +1,202 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:uuid/uuid.dart';
-import '../models/irrigation_model.dart';
-import '../config/constants.dart';
-import 'firestore_service.dart';
+import '../models/irrigation_schedule_model.dart';
 
 class IrrigationService {
-  final FirestoreService _firestoreService = FirestoreService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final Uuid _uuid = const Uuid();
 
-  // Create irrigation system
-  Future<IrrigationModel> createIrrigationSystem({
+  // Get next scheduled irrigation for a user
+  Future<IrrigationSchedule?> getNextSchedule(String userId) async {
+    try {
+      final now = DateTime.now();
+      
+      final querySnapshot = await _firestore
+          .collection('irrigation_schedules')
+          .where('userId', isEqualTo: userId)
+          .where('status', isEqualTo: 'scheduled')
+          .where('startTime', isGreaterThan: now.toIso8601String())
+          .orderBy('startTime', descending: false)
+          .limit(1)
+          .get();
+
+      if (querySnapshot.docs.isEmpty) {
+        return null;
+      }
+
+      return IrrigationSchedule.fromMap(querySnapshot.docs.first.data());
+    } catch (e) {
+      log('Error getting next schedule: $e');
+      return null;
+    }
+  }
+
+  // Get all schedules for a user
+  Stream<List<IrrigationSchedule>> getUserSchedules(String userId) {
+    return _firestore
+        .collection('irrigation_schedules')
+        .where('userId', isEqualTo: userId)
+        .orderBy('startTime', descending: false)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => IrrigationSchedule.fromMap(doc.data()))
+          .toList();
+    });
+  }
+
+  // Start irrigation manually
+  Future<bool> startIrrigationManually({
     required String userId,
+    required String farmId,
     required String fieldId,
-    required String systemName,
-    required String irrigationType,
-    required String waterSource,
-    double? flowRate,
-    String? flowRateUnit,
-    bool isAutomated = false,
-    required DateTime installedDate,
-    double? costPerCubicMeter,
-    String? currency,
-    Map<String, dynamic>? schedule,
-    List<String>? connectedSensors,
-    String? notes,
+    required String fieldName,
+    required int durationMinutes,
   }) async {
     try {
-      final id = _uuid.v4();
+      final scheduleId = _firestore.collection('irrigation_schedules').doc().id;
       final now = DateTime.now();
 
-      final irrigation = IrrigationModel(
-        id: id,
+      final schedule = IrrigationSchedule(
+        scheduleId: scheduleId,
         userId: userId,
+        farmId: farmId,
         fieldId: fieldId,
-        systemName: systemName,
-        irrigationType: irrigationType,
-        waterSource: waterSource,
-        flowRate: flowRate,
-        flowRateUnit: flowRateUnit ?? 'L/h',
-        isAutomated: isAutomated,
+        fieldName: fieldName,
+        startTime: now,
+        durationMinutes: durationMinutes,
         isActive: true,
-        installedDate: installedDate,
-        totalWaterUsed: 0.0,
-        costPerCubicMeter: costPerCubicMeter,
-        currency: currency ?? AppConstants.rwfCurrency,
-        schedule: schedule,
-        connectedSensors: connectedSensors,
-        notes: notes,
+        status: 'running',
+        notes: 'Started manually',
         createdAt: now,
         updatedAt: now,
       );
 
-      await _firestoreService.createDocument(
-        collection: AppConstants.irrigationCollection,
-        docId: id,
-        data: irrigation.toMap(),
-      );
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
+          .set(schedule.toMap());
 
-      log('Irrigation system created: $id');
-      return irrigation;
+      log('Irrigation started manually: $scheduleId');
+      return true;
     } catch (e) {
-      log('Create irrigation system error: $e');
-      rethrow;
+      log('Error starting irrigation manually: $e');
+      return false;
     }
   }
 
-  // Get irrigation systems by user
-  Future<List<IrrigationModel>> getUserIrrigationSystems(
-    String userId,
-  ) async {
-    try {
-      final snapshot = await _firestoreService.getUserDocuments(
-        collection: AppConstants.irrigationCollection,
-        userId: userId,
-      );
-
-      return snapshot.docs
-          .map((doc) => IrrigationModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      log('Get user irrigation systems error: $e');
-      rethrow;
-    }
-  }
-
-  // Get irrigation systems by field
-  Future<List<IrrigationModel>> getFieldIrrigationSystems(
-    String fieldId,
-  ) async {
-    try {
-      final snapshot = await _firestore
-          .collection(AppConstants.irrigationCollection)
-          .where('fieldId', isEqualTo: fieldId)
-          .get();
-
-      return snapshot.docs
-          .map((doc) => IrrigationModel.fromFirestore(doc))
-          .toList();
-    } catch (e) {
-      log('Get field irrigation systems error: $e');
-      rethrow;
-    }
-  }
-
-  // Stream irrigation systems
-  Stream<List<IrrigationModel>> streamUserIrrigationSystems(
-    String userId,
-  ) {
-    return _firestoreService
-        .streamUserDocuments(
-          collection: AppConstants.irrigationCollection,
-          userId: userId,
-        )
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => IrrigationModel.fromFirestore(doc)).toList());
-  }
-
-  // Update irrigation system
-  Future<void> updateIrrigationSystem({
-    required String id,
-    Map<String, dynamic>? data,
-  }) async {
-    try {
-      await _firestoreService.updateDocument(
-        collection: AppConstants.irrigationCollection,
-        docId: id,
-        data: data ?? {},
-      );
-      log('Irrigation system updated: $id');
-    } catch (e) {
-      log('Update irrigation system error: $e');
-      rethrow;
-    }
-  }
-
-  // Delete irrigation system
-  Future<void> deleteIrrigationSystem(String id) async {
-    try {
-      await _firestoreService.deleteDocument(
-        collection: AppConstants.irrigationCollection,
-        docId: id,
-      );
-      log('Irrigation system deleted: $id');
-    } catch (e) {
-      log('Delete irrigation system error: $e');
-      rethrow;
-    }
-  }
-
-  // Update water usage
-  Future<void> updateWaterUsage({
-    required String id,
-    required double waterUsed,
-  }) async {
+  // Create new schedule
+  Future<bool> createSchedule(IrrigationSchedule schedule) async {
     try {
       await _firestore
-          .collection(AppConstants.irrigationCollection)
-          .doc(id)
+          .collection('irrigation_schedules')
+          .doc(schedule.scheduleId)
+          .set(schedule.toMap());
+
+      log('Schedule created: ${schedule.scheduleId}');
+      return true;
+    } catch (e) {
+      log('Error creating schedule: $e');
+      return false;
+    }
+  }
+
+  // Update schedule status
+  Future<bool> updateScheduleStatus(String scheduleId, String status) async {
+    try {
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
           .update({
-        'totalWaterUsed': FieldValue.increment(waterUsed),
-        'updatedAt': FieldValue.serverTimestamp(),
+        'status': status,
+        'updatedAt': DateTime.now().toIso8601String(),
       });
-      log('Water usage updated for: $id');
+
+      log('Schedule status updated: $scheduleId -> $status');
+      return true;
     } catch (e) {
-      log('Update water usage error: $e');
-      rethrow;
+      log('Error updating schedule status: $e');
+      return false;
     }
   }
 
-  // Toggle irrigation system status
-  Future<void> toggleSystemStatus(String id, bool isActive) async {
+  // Complete irrigation and log water usage
+  Future<bool> completeIrrigation(
+    String scheduleId,
+    double waterUsed,
+  ) async {
     try {
-      await _firestoreService.updateDocument(
-        collection: AppConstants.irrigationCollection,
-        docId: id,
-        data: {'isActive': isActive},
-      );
-      log('Irrigation system status toggled: $id');
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'completed',
+        'completedAt': DateTime.now().toIso8601String(),
+        'waterUsed': waterUsed,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
+      log('Irrigation completed: $scheduleId, water used: $waterUsed L');
+      return true;
     } catch (e) {
-      log('Toggle system status error: $e');
-      rethrow;
+      log('Error completing irrigation: $e');
+      return false;
     }
   }
 
-  // Calculate water cost
-  double calculateWaterCost({
-    required double waterUsed,
-    required double costPerCubicMeter,
-  }) {
-    return waterUsed * costPerCubicMeter;
-  }
-
-  // Calculate water savings
-  double calculateWaterSavings({
-    required double actualUsage,
-    required double traditionalUsage,
-  }) {
-    if (traditionalUsage == 0) return 0.0;
-    return ((traditionalUsage - actualUsage) / traditionalUsage) * 100;
-  }
-
-  // Get irrigation efficiency
-  Future<double?> getIrrigationEfficiency(String id) async {
+  // Get water usage for period
+  Future<double> getWaterUsage(String userId, DateTime startDate, DateTime endDate) async {
     try {
-      final doc = await _firestore
-          .collection(AppConstants.irrigationCollection)
-          .doc(id)
+      final querySnapshot = await _firestore
+          .collection('irrigation_schedules')
+          .where('userId', isEqualTo: userId)
+          .where('status', isEqualTo: 'completed')
+          .where('completedAt', isGreaterThanOrEqualTo: startDate.toIso8601String())
+          .where('completedAt', isLessThanOrEqualTo: endDate.toIso8601String())
           .get();
 
-      if (doc.exists) {
-        return doc.data()?['efficiency']?.toDouble();
+      double totalWater = 0;
+      for (var doc in querySnapshot.docs) {
+        final waterUsed = doc.data()['waterUsed'];
+        if (waterUsed != null) {
+          totalWater += (waterUsed as num).toDouble();
+        }
       }
-      return null;
+
+      return totalWater;
     } catch (e) {
-      log('Get irrigation efficiency error: $e');
-      rethrow;
+      log('Error getting water usage: $e');
+      return 0;
     }
   }
 
-  // Update irrigation schedule
-  Future<void> updateSchedule({
-    required String id,
-    required Map<String, dynamic> schedule,
-  }) async {
+  // Calculate cost savings (assuming KSh 2 per liter efficiency gain)
+  Future<double> calculateSavings(String userId, DateTime startDate, DateTime endDate) async {
     try {
-      await _firestoreService.updateDocument(
-        collection: AppConstants.irrigationCollection,
-        docId: id,
-        data: {'schedule': schedule},
-      );
-      log('Irrigation schedule updated: $id');
+      final waterUsed = await getWaterUsage(userId, startDate, endDate);
+      // Assume 30% water savings with smart irrigation
+      final waterSaved = waterUsed * 0.3;
+      // KSh 2 per liter saved
+      final savings = waterSaved * 2;
+      return savings;
     } catch (e) {
-      log('Update schedule error: $e');
-      rethrow;
+      log('Error calculating savings: $e');
+      return 0;
+    }
+  }
+
+  // Delete schedule
+  Future<bool> deleteSchedule(String scheduleId) async {
+    try {
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
+          .delete();
+
+      log('Schedule deleted: $scheduleId');
+      return true;
+    } catch (e) {
+      log('Error deleting schedule: $e');
+      return false;
     }
   }
 }
-

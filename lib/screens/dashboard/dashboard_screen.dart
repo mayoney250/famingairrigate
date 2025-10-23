@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../routes/app_routes.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -14,6 +16,20 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load dashboard data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      
+      if (authProvider.currentUser != null) {
+        dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -80,69 +96,99 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 16),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // System Status Card
-            _buildSystemStatusCard(),
-            const SizedBox(height: 20),
-
-            // Quick Actions
-            Text(
-              'Quick Actions',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: FamingaBrandColors.textPrimary,
-                    fontWeight: FontWeight.bold,
+      body: Consumer<DashboardProvider>(
+        builder: (context, dashboardProvider, _) {
+          if (dashboardProvider.isLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: FamingaBrandColors.primaryOrange,
                   ),
-            ),
-            const SizedBox(height: 12),
-            _buildQuickActions(),
-            const SizedBox(height: 20),
-
-            // Soil Moisture and Weather Row
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _buildSoilMoistureCard()),
-                const SizedBox(width: 12),
-                Expanded(child: _buildWeatherCard()),
-              ],
-            ),
-            const SizedBox(height: 20),
-
-            // Next Schedule Cycle
-            Text(
-              'Next Schedule Cycle',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: FamingaBrandColors.textPrimary,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(height: 16),
+                  Text(
+                    'Loading dashboard...',
+                    style: TextStyle(color: FamingaBrandColors.textSecondary),
                   ),
-            ),
-            const SizedBox(height: 12),
-            _buildNextScheduleCard(),
-            const SizedBox(height: 20),
+                ],
+              ),
+            );
+          }
 
-            // Weekly Performance
-            Text(
-              'Weekly Performance',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: FamingaBrandColors.textPrimary,
-                    fontWeight: FontWeight.bold,
+          return RefreshIndicator(
+            onRefresh: () async {
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              if (authProvider.currentUser != null) {
+                await dashboardProvider.refresh(authProvider.currentUser!.userId);
+              }
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // System Status Card
+                  _buildSystemStatusCard(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // Quick Actions
+                  Text(
+                    'Quick Actions',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: FamingaBrandColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
+                  const SizedBox(height: 12),
+                  _buildQuickActions(),
+                  const SizedBox(height: 20),
+
+                  // Soil Moisture and Weather Row
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _buildSoilMoistureCard(dashboardProvider)),
+                      const SizedBox(width: 12),
+                      Expanded(child: _buildWeatherCard(dashboardProvider)),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Next Schedule Cycle
+                  Text(
+                    'Next Schedule Cycle',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: FamingaBrandColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildNextScheduleCard(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // Weekly Performance
+                  Text(
+                    'Weekly Performance',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: FamingaBrandColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWeeklyPerformance(dashboardProvider),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
-            const SizedBox(height: 12),
-            _buildWeeklyPerformance(),
-            const SizedBox(height: 24),
-          ],
-        ),
+          );
+        },
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
-  Widget _buildSystemStatusCard() {
+  Widget _buildSystemStatusCard(DashboardProvider dashboardProvider) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -194,9 +240,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                const Text(
-                  'Optimal',
-                  style: TextStyle(
+                Text(
+                  dashboardProvider.systemStatus,
+                  style: const TextStyle(
                     color: FamingaBrandColors.white,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -204,7 +250,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Everything is fully loaded. Good weather is forecast.',
+                  dashboardProvider.systemStatusMessage,
                   style: TextStyle(
                     color: FamingaBrandColors.white.withOpacity(0.9),
                     fontSize: 13,

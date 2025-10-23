@@ -26,7 +26,7 @@ android {
         applicationId = "com.faminga.faminga_irrigation"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = 23  // Android 6.0 (Marshmallow) - Required for proper desugaring support
+        minSdkVersion flutter.minSdkVersion  // Android 6.0 (Marshmallow) - Required for proper desugaring support
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName

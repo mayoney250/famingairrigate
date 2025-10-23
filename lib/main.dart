@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'config/firebase_config.dart';
 import 'config/theme_config.dart';
 import 'providers/auth_provider.dart';
+import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
 import 'routes/app_routes.dart';
 
@@ -24,6 +25,7 @@ class FamingaIrrigationApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(
