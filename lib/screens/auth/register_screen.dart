@@ -61,23 +61,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   void _showSuccessDialog() {
-    Get.dialog(
-      AlertDialog(
-        title: const Text('Success!'),
-        content: const Text(
-          'Account created successfully. Please check your email to verify your account.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Get.back();
-              Get.offAllNamed(AppRoutes.login);
-            },
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+    Get.offAllNamed(AppRoutes.emailVerification);
   }
 
   void _showErrorSnackBar(String message) {

@@ -1,4 +1,5 @@
 import 'package:get/get.dart';
+import '../screens/auth/email_verification_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
@@ -15,6 +16,7 @@ class AppRoutes {
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
+  static const String emailVerification = '/email-verification';
   static const String dashboard = '/dashboard';
   static const String irrigationList = '/irrigation-list';
   static const String irrigationDetail = '/irrigation-detail';
@@ -44,6 +46,11 @@ class AppRoutes {
     GetPage(
       name: forgotPassword,
       page: () => const ForgotPasswordScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: emailVerification,
+      page: () => const EmailVerificationScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

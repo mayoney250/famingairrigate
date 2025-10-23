@@ -1,13 +1,20 @@
 import 'dart:developer';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  
+  // Lazy initialization of GoogleSignIn to avoid web issues
+  GoogleSignIn? _googleSignIn;
+  GoogleSignIn get googleSignIn {
+    _googleSignIn ??= GoogleSignIn();
+    return _googleSignIn!;
+  }
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -175,8 +182,17 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
+      // Check if running on web
+      if (kIsWeb) {
+        log('Google Sign-In on web requires additional configuration');
+        throw Exception(
+          'Google Sign-In on web requires OAuth client ID configuration. '
+          'Please use email/password authentication for now.',
+        );
+      }
+      
       // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
       
       if (googleUser == null) {
         log('Google sign-in cancelled by user');

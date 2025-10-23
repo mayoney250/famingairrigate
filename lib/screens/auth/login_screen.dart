@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -199,62 +200,59 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Divider with OR text
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                  // Google Sign-In (only on mobile platforms for now)
+                  if (!kIsWeb) ...[
+                    // Divider with OR text
+                    Row(
+                      children: [
+                        const Expanded(child: Divider()),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          child: Text(
+                            'OR',
+                            style: Theme.of(context).textTheme.bodyMedium,
+                          ),
                         ),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Google Sign-In button
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, _) {
-                      return OutlinedButton.icon(
-                        onPressed: authProvider.isLoading
-                            ? null
-                            : _handleGoogleSignIn,
-                        icon: Image.asset(
-                          'assets/images/google_logo.png',
-                          height: 24,
-                          errorBuilder: (context, error, stackTrace) {
-                            return const Icon(
-                              Icons.g_mobiledata,
-                              size: 32,
-                              color: FamingaBrandColors.primaryOrange,
-                            );
-                          },
-                        ),
-                        label: Text(
-                          'Sign in with Google',
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(
-                            color: FamingaBrandColors.textPrimary.withOpacity(
-                              0.3,
+                        const Expanded(child: Divider()),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Google Sign-In button
+                    Consumer<AuthProvider>(
+                      builder: (context, authProvider, _) {
+                        return OutlinedButton.icon(
+                          onPressed: authProvider.isLoading
+                              ? null
+                              : _handleGoogleSignIn,
+                          icon: const Icon(
+                            Icons.g_mobiledata,
+                            size: 32,
+                            color: FamingaBrandColors.primaryOrange,
+                          ),
+                          label: Text(
+                            'Sign in with Google',
+                            style:
+                                Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: BorderSide(
+                              color: FamingaBrandColors.textPrimary.withOpacity(
+                                0.3,
+                              ),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 24),
+                  ],
                   
                   // Register link
                   Row(
