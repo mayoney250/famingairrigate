@@ -48,6 +48,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _handleGoogleSignIn() async {
+    if (kIsWeb) {
+      // Show info dialog for web users
+      Get.dialog(
+        AlertDialog(
+          title: Row(
+            children: [
+              const Icon(
+                Icons.info_outline,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              const SizedBox(width: 8),
+              const Text('Google Sign-In'),
+            ],
+          ),
+          content: const Text(
+            'Google Sign-In on web requires additional OAuth configuration. '
+            'For now, please use email/password authentication.\n\n'
+            'Google Sign-In is fully supported on Android and iOS apps.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Get.back(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     
     final success = await authProvider.signInWithGoogle();
@@ -200,59 +230,56 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 24),
                   
-                  // Google Sign-In (only on mobile platforms for now)
-                  if (!kIsWeb) ...[
-                    // Divider with OR text
-                    Row(
-                      children: [
-                        const Expanded(child: Divider()),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          child: Text(
-                            'OR',
-                            style: Theme.of(context).textTheme.bodyMedium,
+                  // Divider with OR text
+                  Row(
+                    children: [
+                      const Expanded(child: Divider()),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          'OR',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                      const Expanded(child: Divider()),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  // Google Sign-In button
+                  Consumer<AuthProvider>(
+                    builder: (context, authProvider, _) {
+                      return OutlinedButton.icon(
+                        onPressed: authProvider.isLoading
+                            ? null
+                            : _handleGoogleSignIn,
+                        icon: const Icon(
+                          Icons.g_mobiledata,
+                          size: 32,
+                          color: FamingaBrandColors.primaryOrange,
+                        ),
+                        label: Text(
+                          'Sign in with Google',
+                          style:
+                              Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                        ),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          side: BorderSide(
+                            color: FamingaBrandColors.textPrimary.withOpacity(
+                              0.3,
+                            ),
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        const Expanded(child: Divider()),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    
-                    // Google Sign-In button
-                    Consumer<AuthProvider>(
-                      builder: (context, authProvider, _) {
-                        return OutlinedButton.icon(
-                          onPressed: authProvider.isLoading
-                              ? null
-                              : _handleGoogleSignIn,
-                          icon: const Icon(
-                            Icons.g_mobiledata,
-                            size: 32,
-                            color: FamingaBrandColors.primaryOrange,
-                          ),
-                          label: Text(
-                            'Sign in with Google',
-                            style:
-                                Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                          ),
-                          style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            side: BorderSide(
-                              color: FamingaBrandColors.textPrimary.withOpacity(
-                                0.3,
-                              ),
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
-                  ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
                   
                   // Register link
                   Row(
