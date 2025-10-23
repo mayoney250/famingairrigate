@@ -4,7 +4,11 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/fields/fields_screen.dart';
 import '../screens/irrigation/irrigation_list_screen.dart';
+import '../screens/profile/profile_screen.dart';
+import '../screens/sensors/sensors_screen.dart';
+import '../screens/settings/settings_screen.dart';
 import '../screens/splash_screen.dart';
 
 class AppRoutes {
@@ -61,6 +65,26 @@ class AppRoutes {
     GetPage(
       name: irrigationList,
       page: () => const IrrigationListScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: fields,
+      page: () => const FieldsScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: sensors,
+      page: () => const SensorsScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: profile,
+      page: () => const ProfileScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: settings,
+      page: () => const SettingsScreen(),
       transition: Transition.rightToLeft,
     ),
   ];
