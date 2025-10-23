@@ -1,0 +1,13 @@
+# Language Flag Icons
+
+Place language flag icons in this directory for multilingual support.
+
+Required flags:
+- en.png - English flag
+- rw.png - Rwanda flag (Kinyarwanda)
+- fr.png - French flag
+- sw.png - Swahili flag (Tanzania/Kenya)
+
+Recommended size: 48x48 pixels or 64x64 pixels
+Format: PNG with transparency
+

@@ -73,20 +73,36 @@ flutter pub get
 ```
 
 3. Set up Firebase:
-   - Create a new Firebase project at [Firebase Console](https://console.firebase.google.com)
-   - Add Android and iOS apps to your Firebase project
-   - Download `google-services.json` (Android) and `GoogleService-Info.plist` (iOS)
-   - Place them in the appropriate directories:
-     - Android: `android/app/`
-     - iOS: `ios/Runner/`
 
-4. Configure environment variables:
-   - Set up Firebase configuration in `lib/config/firebase_config.dart`
-   - Update with your Firebase credentials
+**✅ Firebase is already configured for project: `ngairrigate`**
+
+**Quick Setup (5 minutes):**
+- See [FIREBASE_QUICK_START.md](./FIREBASE_QUICK_START.md) for step-by-step guide
+- Download `google-services.json` for Android from [Firebase Console](https://console.firebase.google.com/project/ngairrigate)
+- Download `GoogleService-Info.plist` for iOS from Firebase Console
+- Place them in the appropriate directories:
+  - Android: `android/app/google-services.json`
+  - iOS: `ios/Runner/GoogleService-Info.plist`
+
+**Complete Guide:**
+- See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md) for detailed configuration
+- Includes security rules, API setup, and troubleshooting
+
+4. Configure Third-Party APIs (Optional):
+   - OpenAI for disease detection
+   - Google Gemini for AI assistant
+   - Flutterwave for payments
+   - See [ENV_VARIABLES.md](./ENV_VARIABLES.md) for complete list
 
 5. Run the app:
 ```bash
 flutter run
+```
+
+You should see:
+```
+✅ Firebase initialized successfully
+✅ Firestore configured with offline persistence
 ```
 
 ### Building for Production
