@@ -43,6 +43,9 @@ class FamingaBrandColors {
   /// Text primary
   static const Color textPrimary = darkGreen;
   
+  /// Text secondary (for less emphasized text)
+  static const Color textSecondary = Color(0xFF757575);
+  
   /// Text inverse (on dark backgrounds)
   static const Color textInverse = white;
   

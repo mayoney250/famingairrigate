@@ -127,7 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       },
                     ),
                     _buildMenuItem(
-                      Icons.notifications_outline,
+                      Icons.notifications_outlined,
                       'Notifications',
                       'Manage notification preferences',
                       () {
