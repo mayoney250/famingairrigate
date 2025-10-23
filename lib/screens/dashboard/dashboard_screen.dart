@@ -15,34 +15,69 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
 
-  final List<Map<String, dynamic>> _quickActions = [
-    {
-      'title': 'Irrigation',
-      'icon': Icons.water_drop,
-      'route': AppRoutes.irrigationList,
-    },
-    {'title': 'Fields', 'icon': Icons.landscape, 'route': AppRoutes.fields},
-    {'title': 'Sensors', 'icon': Icons.sensors, 'route': AppRoutes.sensors},
-    {
-      'title': 'Settings',
-      'icon': Icons.settings,
-      'route': AppRoutes.settings,
-    },
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        backgroundColor: FamingaBrandColors.backgroundLight,
+        elevation: 0,
+        title: Row(
+          children: [
+            Text(
+              'FamingaView',
+              style: TextStyle(
+                color: FamingaBrandColors.textPrimary,
+                fontWeight: FontWeight.bold,
+                fontSize: 20,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: FamingaBrandColors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: FamingaBrandColors.borderColor),
+              ),
+              child: Row(
+                children: [
+                  Text(
+                    'Farm1',
+                    style: TextStyle(
+                      color: FamingaBrandColors.textPrimary,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    color: FamingaBrandColors.textPrimary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              // TODO: Navigate to notifications
+          Consumer<AuthProvider>(
+            builder: (context, authProvider, _) {
+              final user = authProvider.currentUser;
+              return CircleAvatar(
+                backgroundColor: FamingaBrandColors.primaryOrange,
+                radius: 18,
+                child: Text(
+                  user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+                  style: const TextStyle(
+                    color: FamingaBrandColors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              );
             },
           ),
+          const SizedBox(width: 16),
         ],
       ),
       body: SingleChildScrollView(
@@ -50,44 +85,56 @@ class _DashboardScreenState extends State<DashboardScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Welcome card
-            _buildWelcomeCard(),
-            const SizedBox(height: 24),
+            // System Status Card
+            _buildSystemStatusCard(),
+            const SizedBox(height: 20),
 
-            // Quick actions
+            // Quick Actions
             Text(
               'Quick Actions',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: FamingaBrandColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
             _buildQuickActions(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Stats cards
+            // Soil Moisture and Weather Row
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _buildSoilMoistureCard()),
+                const SizedBox(width: 12),
+                Expanded(child: _buildWeatherCard()),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Next Schedule Cycle
             Text(
-              'Overview',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              'Next Schedule Cycle',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: FamingaBrandColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
-            _buildStatsCards(),
-            const SizedBox(height: 24),
+            const SizedBox(height: 12),
+            _buildNextScheduleCard(),
+            const SizedBox(height: 20),
 
-            // Recent activities
+            // Weekly Performance
             Text(
-              'Recent Activities',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              'Weekly Performance',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     color: FamingaBrandColors.textPrimary,
                     fontWeight: FontWeight.bold,
                   ),
             ),
-            const SizedBox(height: 16),
-            _buildRecentActivities(),
+            const SizedBox(height: 12),
+            _buildWeeklyPerformance(),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -95,178 +142,564 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWelcomeCard() {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, _) {
-        final user = authProvider.currentUser;
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
+  Widget _buildSystemStatusCard() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FamingaBrandColors.darkGreen,
+            FamingaBrandColors.darkGreen.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: FamingaBrandColors.darkGreen.withOpacity(0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CircleAvatar(
-                  radius: 30,
-                  backgroundColor: FamingaBrandColors.primaryOrange,
-                  child: Text(
-                    user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: FamingaBrandColors.white,
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: FamingaBrandColors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.check_circle,
+                        color: FamingaBrandColors.white,
+                        size: 20,
+                      ),
                     ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'System Status',
+                      style: TextStyle(
+                        color: FamingaBrandColors.white,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Optimal',
+                  style: TextStyle(
+                    color: FamingaBrandColors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Welcome back!',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      Text(
-                        user?.fullName ?? 'User',
-                        style:
-                            Theme.of(context).textTheme.headlineSmall?.copyWith(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+                Text(
+                  'Everything is fully loaded. Good weather is forecast.',
+                  style: TextStyle(
+                    color: FamingaBrandColors.white.withOpacity(0.9),
+                    fontSize: 13,
                   ),
                 ),
               ],
             ),
           ),
-        );
-      },
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: FamingaBrandColors.white.withOpacity(0.2),
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.check_circle_outline,
+              color: FamingaBrandColors.white,
+              size: 32,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildQuickActions() {
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.5,
-      ),
-      itemCount: _quickActions.length,
-      itemBuilder: (context, index) {
-        final action = _quickActions[index];
-        return InkWell(
-          onTap: () {
-            Get.toNamed(action['route']);
-          },
-          child: Card(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  action['icon'],
-                  size: 40,
-                  color: FamingaBrandColors.iconColor,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  action['title'],
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                ),
-              ],
-            ),
+    return Row(
+      children: [
+        Expanded(
+          child: _buildQuickActionButton(
+            Icons.play_circle_outline,
+            'Manual Start',
+            FamingaBrandColors.primaryOrange,
+            () {
+              Get.snackbar(
+                'Manual Start',
+                'Start irrigation manually',
+                snackPosition: SnackPosition.BOTTOM,
+              );
+            },
           ),
-        );
-      },
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildQuickActionButton(
+            Icons.info_outline,
+            'Farm Info',
+            FamingaBrandColors.primaryOrange,
+            () {
+              Get.toNamed(AppRoutes.fields);
+            },
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: _buildQuickActionButton(
+            Icons.calendar_today,
+            'Scheduled',
+            FamingaBrandColors.primaryOrange,
+            () {
+              Get.toNamed(AppRoutes.irrigationList);
+            },
+          ),
+        ),
+      ],
     );
   }
 
-  Widget _buildStatsCards() {
-    final stats = [
-      {'title': 'Active Systems', 'value': '3', 'icon': Icons.water_drop},
-      {'title': 'Total Fields', 'value': '5', 'icon': Icons.landscape},
-      {'title': 'Water Saved', 'value': '65%', 'icon': Icons.savings},
-      {'title': 'Active Sensors', 'value': '12', 'icon': Icons.sensors},
-    ];
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-        childAspectRatio: 1.5,
+  Widget _buildQuickActionButton(
+    IconData icon,
+    String label,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: FamingaBrandColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: FamingaBrandColors.borderColor),
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(icon, color: color, size: 24),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: FamingaBrandColors.textPrimary,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
-      itemCount: stats.length,
-      itemBuilder: (context, index) {
-        final stat = stats[index];
-        return Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
+    );
+  }
+
+  Widget _buildSoilMoistureCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Soil Moisture',
+            style: TextStyle(
+              color: FamingaBrandColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 100,
+                height: 100,
+                child: CircularProgressIndicator(
+                  value: 0.75,
+                  strokeWidth: 10,
+                  backgroundColor: FamingaBrandColors.borderColor,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    FamingaBrandColors.darkGreen,
+                  ),
+                ),
+              ),
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '75%',
+                    style: TextStyle(
+                      color: FamingaBrandColors.darkGreen,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Calculate Average',
+            style: TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 11,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Farm moisture is at optimal levels',
+            style: TextStyle(
+              color: FamingaBrandColors.textPrimary,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeatherCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          Text(
+            'Local Weather',
+            style: TextStyle(
+              color: FamingaBrandColors.textPrimary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Icon(
+            Icons.wb_sunny,
+            color: FamingaBrandColors.primaryOrange,
+            size: 48,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '26°C',
+            style: TextStyle(
+              color: FamingaBrandColors.textPrimary,
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Sunny',
+            style: TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildWeatherDetail('Feels Like', '28°C'),
+              _buildWeatherDetail('Humidity', '65%'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeatherDetail(String label, String value) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            color: FamingaBrandColors.textSecondary,
+            fontSize: 10,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: FamingaBrandColors.textPrimary,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNextScheduleCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '25 Oct, 05:00 AM',
+                    style: TextStyle(
+                      color: FamingaBrandColors.textPrimary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Duration',
+                    style: TextStyle(
+                      color: FamingaBrandColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    '60 Minutes',
+                    style: TextStyle(
+                      color: FamingaBrandColors.primaryOrange,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Icon(
+                Icons.location_on,
+                size: 16,
+                color: FamingaBrandColors.textSecondary,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'North Field',
+                style: TextStyle(
+                  color: FamingaBrandColors.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                Get.snackbar(
+                  'Starting Cycle',
+                  'Irrigation cycle starting manually...',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FamingaBrandColors.darkGreen,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.play_arrow, color: FamingaBrandColors.white),
+                  SizedBox(width: 8),
+                  Text(
+                    'START CYCLE MANUALLY',
+                    style: TextStyle(
+                      color: FamingaBrandColors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyPerformance() {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: FamingaBrandColors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: FamingaBrandColors.borderColor),
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Icon(
-                  stat['icon'] as IconData,
-                  color: FamingaBrandColors.primaryOrange,
-                  size: 32,
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
-                    Text(
-                      stat['value'] as String,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: FamingaBrandColors.textPrimary,
-                          ),
+                    Icon(
+                      Icons.water_drop,
+                      color: FamingaBrandColors.primaryOrange,
+                      size: 20,
                     ),
+                    const SizedBox(width: 8),
                     Text(
-                      stat['title'] as String,
-                      style: Theme.of(context).textTheme.bodySmall,
+                      'Water Usage',
+                      style: TextStyle(
+                        color: FamingaBrandColors.textSecondary,
+                        fontSize: 12,
+                      ),
                     ),
                   ],
                 ),
+                const SizedBox(height: 12),
+                Text(
+                  '850',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Liters this week',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.show_chart,
+                      color: FamingaBrandColors.primaryOrange,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-        );
-      },
-    );
-  }
-
-  Widget _buildRecentActivities() {
-    return Card(
-      child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        itemCount: 5,
-        separatorBuilder: (context, index) => const Divider(height: 1),
-        itemBuilder: (context, index) {
-          return ListTile(
-            leading: const CircleAvatar(
-              backgroundColor: FamingaBrandColors.cream,
-              child: Icon(
-                Icons.water_drop,
-                color: FamingaBrandColors.primaryOrange,
-              ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: FamingaBrandColors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: FamingaBrandColors.borderColor),
             ),
-            title: const Text('Irrigation completed'),
-            subtitle: Text(
-              'Field A - ${DateTime.now().subtract(Duration(hours: index)).toString().split('.')[0]}',
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.savings,
+                      color: FamingaBrandColors.darkGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'KSh Saved',
+                      style: TextStyle(
+                        color: FamingaBrandColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '1,200',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textPrimary,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'This week',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: FamingaBrandColors.darkGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Center(
+                    child: Icon(
+                      Icons.trending_up,
+                      color: FamingaBrandColors.darkGreen,
+                    ),
+                  ),
+                ),
+              ],
             ),
-            trailing: const Icon(
-              Icons.chevron_right,
-              color: FamingaBrandColors.disabled,
-            ),
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -274,26 +707,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) {
-        setState(() {
-          _selectedIndex = index;
-        });
+        if (index == _selectedIndex) return;
+
+        setState(() => _selectedIndex = index);
 
         switch (index) {
+          case 0:
+            // Already on Dashboard
+            break;
           case 1:
-            Get.toNamed(AppRoutes.irrigationList);
+            Get.offAllNamed(AppRoutes.irrigationList);
             break;
           case 2:
-            Get.toNamed(AppRoutes.fields);
+            Get.offAllNamed(AppRoutes.fields);
             break;
           case 3:
-            Get.toNamed(AppRoutes.sensors);
+            Get.offAllNamed(AppRoutes.sensors);
             break;
           case 4:
-            Get.toNamed(AppRoutes.profile);
+            Get.offAllNamed(AppRoutes.profile);
             break;
         }
       },
       type: BottomNavigationBarType.fixed,
+      selectedItemColor: FamingaBrandColors.primaryOrange,
+      unselectedItemColor: FamingaBrandColors.textSecondary,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),
@@ -319,4 +757,3 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 }
-
