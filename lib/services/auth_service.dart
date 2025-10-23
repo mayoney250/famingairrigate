@@ -182,27 +182,57 @@ class AuthService {
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
     try {
-      // Trigger the authentication flow
-      final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+      UserCredential userCredential;
+      String? displayName;
+      String? email;
+      String? photoUrl;
       
-      if (googleUser == null) {
-        log('Google sign-in cancelled by user');
-        return null;
+      if (kIsWeb) {
+        // Web: Use Firebase Auth popup directly (no google_sign_in package needed)
+        final GoogleAuthProvider googleProvider = GoogleAuthProvider();
+        
+        // Add scopes
+        googleProvider.addScope('email');
+        googleProvider.addScope('profile');
+        
+        // Sign in with popup
+        userCredential = await _auth.signInWithPopup(googleProvider);
+        
+        // Get user info from Firebase user
+        displayName = userCredential.user?.displayName;
+        email = userCredential.user?.email;
+        photoUrl = userCredential.user?.photoURL;
+        
+        log('Google sign-in successful (web): ${userCredential.user!.uid}');
+      } else {
+        // Mobile: Use google_sign_in package
+        final GoogleSignInAccount? googleUser = await googleSignIn.signIn();
+        
+        if (googleUser == null) {
+          log('Google sign-in cancelled by user');
+          return null;
+        }
+
+        // Obtain the auth details from the request
+        final GoogleSignInAuthentication googleAuth =
+            await googleUser.authentication;
+
+        // Create a new credential
+        final credential = GoogleAuthProvider.credential(
+          accessToken: googleAuth.accessToken,
+          idToken: googleAuth.idToken,
+        );
+
+        // Sign in to Firebase with the Google credential
+        userCredential = await _auth.signInWithCredential(credential);
+        
+        // Get user info from Google account
+        displayName = googleUser.displayName;
+        email = googleUser.email;
+        photoUrl = googleUser.photoUrl;
+        
+        log('Google sign-in successful (mobile): ${userCredential.user!.uid}');
       }
-
-      // Obtain the auth details from the request
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      // Create a new credential
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      // Sign in to Firebase with the Google credential
-      final UserCredential userCredential =
-          await _auth.signInWithCredential(credential);
 
       // Check if user exists in Firestore
       final userDoc = await _firestore
@@ -212,15 +242,15 @@ class AuthService {
 
       if (!userDoc.exists) {
         // Create user document for new Google sign-in user
-        final displayNameParts = googleUser.displayName?.split(' ') ?? [];
+        final displayNameParts = displayName?.split(' ') ?? [];
         final user = UserModel(
           userId: userCredential.user!.uid,
-          email: googleUser.email,
+          email: email ?? '',
           firstName: displayNameParts.isNotEmpty ? displayNameParts[0] : '',
           lastName: displayNameParts.length > 1
               ? displayNameParts.sublist(1).join(' ')
               : '',
-          avatar: googleUser.photoUrl,
+          avatar: photoUrl,
           createdAt: DateTime.now(),
           isActive: true,
           isOnline: true,
