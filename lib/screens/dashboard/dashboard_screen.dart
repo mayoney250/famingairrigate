@@ -360,7 +360,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildSoilMoistureCard() {
+  Widget _buildSoilMoistureCard(DashboardProvider dashboardProvider) {
+    final moisture = dashboardProvider.soilMoisture;
+    final moisturePercent = (moisture / 100).clamp(0.0, 1.0);
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -386,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 100,
                 height: 100,
                 child: CircularProgressIndicator(
-                  value: 0.75,
+                  value: moisturePercent,
                   strokeWidth: 10,
                   backgroundColor: FamingaBrandColors.borderColor,
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -398,7 +401,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '75%',
+                    '${moisture.round()}%',
                     style: TextStyle(
                       color: FamingaBrandColors.darkGreen,
                       fontSize: 28,
@@ -419,7 +422,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Farm moisture is at optimal levels',
+            dashboardProvider.soilMoistureStatus,
             style: TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 11,
@@ -431,7 +434,61 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWeatherCard() {
+  Widget _buildWeatherCard(DashboardProvider dashboardProvider) {
+    final weather = dashboardProvider.weatherData;
+    
+    if (weather == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: FamingaBrandColors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: FamingaBrandColors.borderColor),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(
+                color: FamingaBrandColors.primaryOrange,
+                strokeWidth: 2,
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Loading weather...',
+                style: TextStyle(
+                  color: FamingaBrandColors.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 20),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Get weather icon based on condition
+    IconData weatherIcon;
+    switch (weather.condition.toLowerCase()) {
+      case 'sunny':
+      case 'clear':
+        weatherIcon = Icons.wb_sunny;
+        break;
+      case 'cloudy':
+        weatherIcon = Icons.cloud;
+        break;
+      case 'rainy':
+        weatherIcon = Icons.water_drop;
+        break;
+      case 'stormy':
+        weatherIcon = Icons.thunderstorm;
+        break;
+      default:
+        weatherIcon = Icons.wb_cloudy;
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -451,13 +508,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 16),
           Icon(
-            Icons.wb_sunny,
+            weatherIcon,
             color: FamingaBrandColors.primaryOrange,
             size: 48,
           ),
           const SizedBox(height: 8),
           Text(
-            '26°C',
+            weather.temperatureString,
             style: TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 32,
@@ -466,7 +523,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Sunny',
+            weather.description.capitalize ?? weather.description,
             style: TextStyle(
               color: FamingaBrandColors.textSecondary,
               fontSize: 12,
@@ -476,8 +533,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _buildWeatherDetail('Feels Like', '28°C'),
-              _buildWeatherDetail('Humidity', '65%'),
+              _buildWeatherDetail('Feels Like', weather.feelsLikeString),
+              _buildWeatherDetail('Humidity', weather.humidityString),
             ],
           ),
         ],
@@ -508,7 +565,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildNextScheduleCard() {
+  Widget _buildNextScheduleCard(DashboardProvider dashboardProvider) {
+    final schedule = dashboardProvider.nextSchedule;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -518,73 +578,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '25 Oct, 05:00 AM',
-                    style: TextStyle(
-                      color: FamingaBrandColors.textPrimary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+          if (schedule != null) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      DateFormat('dd MMM, hh:mm a').format(schedule.startTime),
+                      style: TextStyle(
+                        color: FamingaBrandColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Duration',
-                    style: TextStyle(
-                      color: FamingaBrandColors.textSecondary,
-                      fontSize: 11,
+                    const SizedBox(height: 4),
+                    Text(
+                      'Duration',
+                      style: TextStyle(
+                        color: FamingaBrandColors.textSecondary,
+                        fontSize: 11,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '60 Minutes',
-                    style: TextStyle(
-                      color: FamingaBrandColors.primaryOrange,
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(
-                Icons.location_on,
-                size: 16,
-                color: FamingaBrandColors.textSecondary,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                'North Field',
-                style: TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 12,
+                  ],
                 ),
-              ),
-            ],
-          ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      schedule.formattedDuration,
+                      style: TextStyle(
+                        color: FamingaBrandColors.primaryOrange,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.location_on,
+                  size: 16,
+                  color: FamingaBrandColors.textSecondary,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  schedule.fieldName,
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ] else ...[
+            Column(
+              children: [
+                Icon(
+                  Icons.schedule,
+                  size: 48,
+                  color: FamingaBrandColors.textSecondary,
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'No Scheduled Irrigation',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Start irrigation manually or create a schedule',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 11,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
-              onPressed: () {
-                Get.snackbar(
-                  'Starting Cycle',
-                  'Irrigation cycle starting manually...',
-                  snackPosition: SnackPosition.BOTTOM,
-                );
+              onPressed: () async {
+                // Show field selection dialog
+                _showManualStartDialog(dashboardProvider, authProvider);
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: FamingaBrandColors.darkGreen,
@@ -615,7 +702,100 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWeeklyPerformance() {
+  void _showManualStartDialog(
+    DashboardProvider dashboardProvider,
+    AuthProvider authProvider,
+  ) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Start Irrigation'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Start irrigation cycle manually for:'),
+            const SizedBox(height: 16),
+            Text(
+              'North Field',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Duration: 60 minutes',
+              style: TextStyle(
+                color: FamingaBrandColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              
+              // Show loading
+              Get.dialog(
+                Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: FamingaBrandColors.white,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const CircularProgressIndicator(
+                      color: FamingaBrandColors.primaryOrange,
+                    ),
+                  ),
+                ),
+                barrierDismissible: false,
+              );
+
+              // Start irrigation
+              final success = await dashboardProvider.startManualIrrigation(
+                userId: authProvider.currentUser!.userId,
+                fieldId: 'field1',
+                fieldName: 'North Field',
+                durationMinutes: 60,
+              );
+
+              Get.back(); // Close loading
+
+              if (success) {
+                Get.snackbar(
+                  'Success',
+                  'Irrigation cycle started successfully!',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusSuccess,
+                  colorText: FamingaBrandColors.white,
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Failed to start irrigation cycle',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FamingaBrandColors.darkGreen,
+            ),
+            child: const Text('Start Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWeeklyPerformance(DashboardProvider dashboardProvider) {
     return Row(
       children: [
         Expanded(
@@ -648,7 +828,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '850',
+                  '${dashboardProvider.weeklyWaterUsage.round()}',
                   style: TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 28,
@@ -712,7 +892,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '1,200',
+                  '${dashboardProvider.weeklySavings.round().toStringAsFixed(0)}',
                   style: TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 28,
