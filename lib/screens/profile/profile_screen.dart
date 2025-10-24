@@ -8,7 +8,6 @@ import 'dart:io';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
-import '../../services/firestore_service.dart';
 import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -84,7 +83,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     radius: 50,
                                     backgroundColor: FamingaBrandColors.primaryOrange,
                                     child: Text(
-                                      user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+                                      (user?.firstName ?? 'U').substring(0, 1).toUpperCase(),
                                       style: const TextStyle(
                                         fontSize: 40,
                                         fontWeight: FontWeight.bold,
@@ -97,7 +96,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   radius: 50,
                                   backgroundColor: FamingaBrandColors.primaryOrange,
                                   child: Text(
-                                    user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+                                    (user?.firstName ?? 'U').substring(0, 1).toUpperCase(),
                                     style: const TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
@@ -514,7 +513,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () {
                 Get.back();
                 _pickImage(ImageSource.gallery);
-              ),
+              },
             ),
             ListTile(
               leading: const Icon(
