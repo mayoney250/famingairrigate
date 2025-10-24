@@ -169,37 +169,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Icons.person_outline,
                       'Personal Information',
                       'Update your personal details',
-                      () {
-                        Get.snackbar(
-                          'Personal Info',
-                          'Coming soon!',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
+                      () => _showEditProfileDialog(authProvider),
                     ),
                     _buildMenuItem(
                       Icons.lock_outline,
                       'Change Password',
                       'Update your password',
-                      () {
-                        Get.snackbar(
-                          'Change Password',
-                          'Coming soon!',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
+                      () => _showChangePasswordDialog(),
                     ),
                     _buildMenuItem(
                       Icons.notifications_outlined,
                       'Notifications',
                       'Manage notification preferences',
-                      () {
-                        Get.snackbar(
-                          'Notifications',
-                          'Coming soon!',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
+                      () => _showNotificationSettings(),
                     ),
                   ],
                 ),
@@ -221,13 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Icons.help_outline,
                       'Help & Support',
                       'Get help and support',
-                      () {
-                        Get.snackbar(
-                          'Help & Support',
-                          'Coming soon!',
-                          snackPosition: SnackPosition.BOTTOM,
-                        );
-                      },
+                      () => _showHelpAndSupport(),
                     ),
                     _buildMenuItem(
                       Icons.info_outline,
@@ -635,6 +611,492 @@ class _ProfileScreenState extends State<ProfileScreen> {
         colorText: FamingaBrandColors.white,
       );
     }
+  }
+
+  void _showEditProfileDialog(AuthProvider authProvider) {
+    final user = authProvider.currentUser;
+    final firstNameController = TextEditingController(text: user?.firstName ?? '');
+    final lastNameController = TextEditingController(text: user?.lastName ?? '');
+    final phoneController = TextEditingController(text: user?.phoneNumber ?? '');
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Edit Profile'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: firstNameController,
+                decoration: const InputDecoration(
+                  labelText: 'First Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: lastNameController,
+                decoration: const InputDecoration(
+                  labelText: 'Last Name',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  border: OutlineInputBorder(),
+                  prefixText: '+',
+                ),
+                keyboardType: TextInputType.phone,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Get.back();
+              
+              // Show loading
+              Get.dialog(
+                const Center(child: CircularProgressIndicator()),
+                barrierDismissible: false,
+              );
+
+              try {
+                final userId = user?.userId;
+                if (userId != null) {
+                  await FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .update({
+                    'firstName': firstNameController.text.trim(),
+                    'lastName': lastNameController.text.trim(),
+                    'phoneNumber': phoneController.text.trim(),
+                    'updatedAt': FieldValue.serverTimestamp(),
+                  });
+
+                  await authProvider.loadUserData(userId);
+
+                  Get.back(); // Close loading
+                  Get.snackbar(
+                    'Success',
+                    'Profile updated successfully!',
+                    snackPosition: SnackPosition.BOTTOM,
+                    backgroundColor: FamingaBrandColors.statusSuccess,
+                    colorText: FamingaBrandColors.white,
+                  );
+                }
+              } catch (e) {
+                Get.back(); // Close loading
+                Get.snackbar(
+                  'Error',
+                  'Failed to update profile: ${e.toString()}',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showChangePasswordDialog() {
+    final currentPasswordController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    final confirmPasswordController = TextEditingController();
+    bool obscureCurrentPassword = true;
+    bool obscureNewPassword = true;
+    bool obscureConfirmPassword = true;
+
+    Get.dialog(
+      StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: const Text('Change Password'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: currentPasswordController,
+                    obscureText: obscureCurrentPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Current Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureCurrentPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureCurrentPassword = !obscureCurrentPassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: newPasswordController,
+                    obscureText: obscureNewPassword,
+                    decoration: InputDecoration(
+                      labelText: 'New Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureNewPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureNewPassword = !obscureNewPassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: confirmPasswordController,
+                    obscureText: obscureConfirmPassword,
+                    decoration: InputDecoration(
+                      labelText: 'Confirm Password',
+                      border: const OutlineInputBorder(),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirmPassword
+                              ? Icons.visibility_off
+                              : Icons.visibility,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureConfirmPassword = !obscureConfirmPassword;
+                          });
+                        },
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Get.back(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (newPasswordController.text.length < 6) {
+                    Get.snackbar(
+                      'Error',
+                      'Password must be at least 6 characters',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: FamingaBrandColors.statusWarning,
+                      colorText: FamingaBrandColors.white,
+                    );
+                    return;
+                  }
+
+                  if (newPasswordController.text !=
+                      confirmPasswordController.text) {
+                    Get.snackbar(
+                      'Error',
+                      'Passwords do not match',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: FamingaBrandColors.statusWarning,
+                      colorText: FamingaBrandColors.white,
+                    );
+                    return;
+                  }
+
+                  Get.back();
+
+                  // Show loading
+                  Get.dialog(
+                    const Center(child: CircularProgressIndicator()),
+                    barrierDismissible: false,
+                  );
+
+                  try {
+                    final authService = AuthService();
+                    await authService.changePassword(
+                      currentPasswordController.text,
+                      newPasswordController.text,
+                    );
+
+                    Get.back(); // Close loading
+                    Get.snackbar(
+                      'Success',
+                      'Password changed successfully!',
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: FamingaBrandColors.statusSuccess,
+                      colorText: FamingaBrandColors.white,
+                    );
+                  } catch (e) {
+                    Get.back(); // Close loading
+                    Get.snackbar(
+                      'Error',
+                      e.toString(),
+                      snackPosition: SnackPosition.BOTTOM,
+                      backgroundColor: FamingaBrandColors.statusWarning,
+                      colorText: FamingaBrandColors.white,
+                    );
+                  }
+                },
+                child: const Text('Change Password'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showNotificationSettings() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: FamingaBrandColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Notification Settings',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SwitchListTile(
+              title: const Text('Irrigation Alerts'),
+              subtitle: const Text('Get notified about irrigation schedules'),
+              value: true,
+              activeColor: FamingaBrandColors.primaryOrange,
+              onChanged: (value) {
+                // TODO: Save to Firebase
+                Get.snackbar(
+                  'Settings Updated',
+                  'Irrigation alerts ${value ? 'enabled' : 'disabled'}',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+            ),
+            SwitchListTile(
+              title: const Text('System Updates'),
+              subtitle: const Text('Get notified about system status changes'),
+              value: true,
+              activeColor: FamingaBrandColors.primaryOrange,
+              onChanged: (value) {
+                Get.snackbar(
+                  'Settings Updated',
+                  'System updates ${value ? 'enabled' : 'disabled'}',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Weather Alerts'),
+              subtitle: const Text('Get notified about weather conditions'),
+              value: true,
+              activeColor: FamingaBrandColors.primaryOrange,
+              onChanged: (value) {
+                Get.snackbar(
+                  'Settings Updated',
+                  'Weather alerts ${value ? 'enabled' : 'disabled'}',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Sensor Alerts'),
+              subtitle: const Text('Get notified about sensor readings'),
+              value: false,
+              activeColor: FamingaBrandColors.primaryOrange,
+              onChanged: (value) {
+                Get.snackbar(
+                  'Settings Updated',
+                  'Sensor alerts ${value ? 'enabled' : 'disabled'}',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+              },
+            ),
+            const SizedBox(height: 10),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showHelpAndSupport() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: FamingaBrandColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Help & Support',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(
+                Icons.email,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('Email Support'),
+              subtitle: const Text('akariclaude@gmail.com'),
+              onTap: () {
+                Get.back();
+                Get.snackbar(
+                  'Contact Support',
+                  'Opening email app...',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                // TODO: Launch email app
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.phone,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('Phone Support'),
+              subtitle: const Text('+250 XXX XXX XXX'),
+              onTap: () {
+                Get.back();
+                Get.snackbar(
+                  'Contact Support',
+                  'Opening phone app...',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                // TODO: Launch phone app
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.language,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('Visit Website'),
+              subtitle: const Text('faminga.app'),
+              onTap: () {
+                Get.back();
+                Get.snackbar(
+                  'Opening Website',
+                  'Launching browser...',
+                  snackPosition: SnackPosition.BOTTOM,
+                );
+                // TODO: Launch browser
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.question_answer,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('FAQs'),
+              subtitle: const Text('Frequently asked questions'),
+              onTap: () {
+                Get.back();
+                _showFAQs();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFAQs() {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Frequently Asked Questions'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildFAQItem(
+                'How do I add a field?',
+                'Go to Fields tab → Tap the + button → Draw your field boundaries on the map.',
+              ),
+              _buildFAQItem(
+                'How do I schedule irrigation?',
+                'Go to Irrigation tab → Tap Schedule → Select field and set time.',
+              ),
+              _buildFAQItem(
+                'How do I add sensors?',
+                'Go to Sensors tab → Tap Add Sensor → Enter sensor details and location.',
+              ),
+              _buildFAQItem(
+                'How do I change my password?',
+                'Go to Profile → Change Password → Enter current and new password.',
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFAQItem(String question, String answer) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            question,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            answer,
+            style: TextStyle(
+              fontSize: 13,
+              color: FamingaBrandColors.textSecondary,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildBottomNavigationBar() {

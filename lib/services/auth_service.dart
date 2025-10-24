@@ -348,5 +348,37 @@ class AuthService {
       rethrow;
     }
   }
+
+  /// Change user password
+  Future<void> changePassword(
+    String currentPassword,
+    String newPassword,
+  ) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) {
+        throw 'No user logged in';
+      }
+
+      // Re-authenticate user with current password
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      await user.reauthenticateWithCredential(credential);
+
+      // Change password
+      await user.updatePassword(newPassword);
+
+      log('Password changed successfully');
+    } on FirebaseAuthException catch (e) {
+      log('Error changing password: ${e.code}');
+      throw _handleAuthException(e);
+    } catch (e) {
+      log('Unexpected error changing password: $e');
+      rethrow;
+    }
+  }
 }
 
