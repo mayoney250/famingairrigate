@@ -37,10 +37,19 @@ class FirebaseConfig {
       // Enable Firestore offline persistence
       await _configureFirestore();
     } catch (e) {
-      if (kDebugMode) {
-        print('❌ Firebase initialization error: $e');
+      // Handle duplicate app error gracefully (can happen on Android with google-services.json)
+      if (e.toString().contains('duplicate-app')) {
+        if (kDebugMode) {
+          print('✅ Firebase already initialized (auto-initialized by platform), continuing...');
+        }
+        // Continue with Firestore configuration
+        await _configureFirestore();
+      } else {
+        if (kDebugMode) {
+          print('❌ Firebase initialization error: $e');
+        }
+        rethrow;
       }
-      rethrow;
     }
   }
 
