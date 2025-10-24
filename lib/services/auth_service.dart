@@ -114,6 +114,18 @@ class AuthService {
         });
       }
 
+      // Sign out from Google if user signed in with Google
+      if (!kIsWeb) {
+        try {
+          await googleSignIn.signOut();
+          log('Google sign out successful');
+        } catch (e) {
+          log('Google sign out error (non-critical): $e');
+          // Don't throw, as this is non-critical
+        }
+      }
+
+      // Sign out from Firebase
       await _auth.signOut();
       log('User signed out successfully');
     } catch (e) {

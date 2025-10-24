@@ -311,8 +311,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () async {
               Get.back(); // Close dialog
-              await authProvider.signOut();
-              Get.offAllNamed(AppRoutes.login);
+              
+              // Show loading
+              Get.dialog(
+                const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                barrierDismissible: false,
+              );
+
+              try {
+                await authProvider.signOut();
+                
+                Get.back(); // Close loading
+                
+                // Navigate to login
+                Get.offAllNamed(AppRoutes.login);
+                
+                Get.snackbar(
+                  'Success',
+                  'You have been logged out successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusSuccess,
+                  colorText: FamingaBrandColors.white,
+                );
+              } catch (e) {
+                Get.back(); // Close loading
+                Get.snackbar(
+                  'Error',
+                  'Failed to logout: ${e.toString()}',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
             },
             child: Text(
               'Logout',
