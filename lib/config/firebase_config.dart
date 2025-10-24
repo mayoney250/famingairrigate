@@ -19,16 +19,23 @@ class FirebaseConfig {
   /// Initialize Firebase for the current platform
   static Future<void> initialize() async {
     try {
-      await Firebase.initializeApp(
-        options: _getFirebaseOptions(),
-      );
+      // Check if Firebase is already initialized (e.g., after hot restart)
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp(
+          options: _getFirebaseOptions(),
+        );
+        
+        if (kDebugMode) {
+          print('✅ Firebase initialized successfully');
+        }
+      } else {
+        if (kDebugMode) {
+          print('✅ Firebase already initialized, skipping...');
+        }
+      }
       
       // Enable Firestore offline persistence
       await _configureFirestore();
-      
-      if (kDebugMode) {
-        print('✅ Firebase initialized successfully');
-      }
     } catch (e) {
       if (kDebugMode) {
         print('❌ Firebase initialization error: $e');
