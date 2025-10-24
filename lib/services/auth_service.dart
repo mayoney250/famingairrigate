@@ -1,6 +1,8 @@
 import 'dart:developer';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user_model.dart';
@@ -318,6 +320,32 @@ class AuthService {
         return 'This operation is not allowed.';
       default:
         return 'An authentication error occurred: ${e.message}';
+    }
+  }
+
+  /// Upload profile picture to Firebase Storage
+  Future<String> uploadProfilePicture(String userId, File imageFile) async {
+    try {
+      // Create a reference to the profile pictures directory
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child('$userId.jpg');
+
+      // Upload the file
+      final uploadTask = storageRef.putFile(imageFile);
+
+      // Wait for upload to complete
+      final snapshot = await uploadTask;
+
+      // Get the download URL
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      log('Profile picture uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      log('Error uploading profile picture: $e');
+      rethrow;
     }
   }
 }

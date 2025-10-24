@@ -1,9 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
+import '../../services/firestore_service.dart';
+import '../../services/auth_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -57,17 +63,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 50,
-                        backgroundColor: FamingaBrandColors.primaryOrange,
-                        child: Text(
-                          user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
-                          style: const TextStyle(
-                            fontSize: 40,
-                            fontWeight: FontWeight.bold,
-                            color: FamingaBrandColors.white,
+                      // Avatar with edit button
+                      Stack(
+                        children: [
+                          user?.avatar != null && user!.avatar!.isNotEmpty
+                              ? CachedNetworkImage(
+                                  imageUrl: user.avatar!,
+                                  imageBuilder: (context, imageProvider) => CircleAvatar(
+                                    radius: 50,
+                                    backgroundImage: imageProvider,
+                                  ),
+                                  placeholder: (context, url) => const CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: FamingaBrandColors.primaryOrange,
+                                    child: CircularProgressIndicator(
+                                      color: FamingaBrandColors.white,
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => CircleAvatar(
+                                    radius: 50,
+                                    backgroundColor: FamingaBrandColors.primaryOrange,
+                                    child: Text(
+                                      user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+                                      style: const TextStyle(
+                                        fontSize: 40,
+                                        fontWeight: FontWeight.bold,
+                                        color: FamingaBrandColors.white,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              : CircleAvatar(
+                                  radius: 50,
+                                  backgroundColor: FamingaBrandColors.primaryOrange,
+                                  child: Text(
+                                    user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+                                    style: const TextStyle(
+                                      fontSize: 40,
+                                      fontWeight: FontWeight.bold,
+                                      color: FamingaBrandColors.white,
+                                    ),
+                                  ),
+                                ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: GestureDetector(
+                              onTap: () => _showImagePicker(),
+                              child: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: FamingaBrandColors.primaryOrange,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: FamingaBrandColors.white,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  size: 20,
+                                  color: FamingaBrandColors.white,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Text(
@@ -92,6 +153,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               ),
                         ),
                       ],
+                      const SizedBox(height: 20),
+                      // User stats
+                      _buildUserStats(user?.userId ?? ''),
                     ],
                   ),
                 ),
@@ -321,6 +385,257 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildUserStats(String userId) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('fields')
+          .where('userId', isEqualTo: userId)
+          .snapshots(),
+      builder: (context, fieldsSnapshot) {
+        final fieldsCount = fieldsSnapshot.hasData ? fieldsSnapshot.data!.docs.length : 0;
+
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('irrigation')
+              .where('userId', isEqualTo: userId)
+              .snapshots(),
+          builder: (context, irrigationSnapshot) {
+            final irrigationCount = irrigationSnapshot.hasData ? irrigationSnapshot.data!.docs.length : 0;
+
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('sensors')
+                  .where('userId', isEqualTo: userId)
+                  .snapshots(),
+              builder: (context, sensorsSnapshot) {
+                final sensorsCount = sensorsSnapshot.hasData ? sensorsSnapshot.data!.docs.length : 0;
+
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildStatItem(
+                      Icons.landscape,
+                      fieldsCount.toString(),
+                      'Fields',
+                    ),
+                    _buildStatItem(
+                      Icons.water_drop,
+                      irrigationCount.toString(),
+                      'Systems',
+                    ),
+                    _buildStatItem(
+                      Icons.sensors,
+                      sensorsCount.toString(),
+                      'Sensors',
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildStatItem(IconData icon, String value, String label) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: FamingaBrandColors.cream,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(
+            icon,
+            color: FamingaBrandColors.primaryOrange,
+            size: 24,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: FamingaBrandColors.darkGreen,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            color: FamingaBrandColors.textSecondary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showImagePicker() {
+    Get.bottomSheet(
+      Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: FamingaBrandColors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Change Profile Picture',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 20),
+            ListTile(
+              leading: const Icon(
+                Icons.camera_alt,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('Take Photo'),
+              onTap: () {
+                Get.back();
+                _pickImage(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library,
+                color: FamingaBrandColors.primaryOrange,
+              ),
+              title: const Text('Choose from Gallery'),
+              onTap: () {
+                Get.back();
+                _pickImage(ImageSource.gallery);
+              ),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.delete,
+                color: FamingaBrandColors.statusWarning,
+              ),
+              title: const Text('Remove Photo'),
+              onTap: () {
+                Get.back();
+                _removeProfilePicture();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      final XFile? image = await picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        // Show loading
+        Get.dialog(
+          const Center(
+            child: CircularProgressIndicator(),
+          ),
+          barrierDismissible: false,
+        );
+
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final userId = authProvider.currentUser?.userId;
+
+        if (userId != null) {
+          // Upload to Firebase Storage
+          final AuthService authService = AuthService();
+          final imageUrl = await authService.uploadProfilePicture(
+            userId,
+            File(image.path),
+          );
+
+          // Update Firestore
+          await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
+              .update({'avatar': imageUrl});
+
+          // Reload user data
+          await authProvider.loadUserData(userId);
+
+          Get.back(); // Close loading
+          Get.snackbar(
+            'Success',
+            'Profile picture updated successfully!',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: FamingaBrandColors.statusSuccess,
+            colorText: FamingaBrandColors.white,
+          );
+        }
+      }
+    } catch (e) {
+      Get.back(); // Close loading if open
+      Get.snackbar(
+        'Error',
+        'Failed to update profile picture: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: FamingaBrandColors.statusWarning,
+        colorText: FamingaBrandColors.white,
+      );
+    }
+  }
+
+  Future<void> _removeProfilePicture() async {
+    try {
+      // Show loading
+      Get.dialog(
+        const Center(
+          child: CircularProgressIndicator(),
+        ),
+        barrierDismissible: false,
+      );
+
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.currentUser?.userId;
+
+      if (userId != null) {
+        // Update Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({'avatar': null});
+
+        // Reload user data
+        await authProvider.loadUserData(userId);
+
+        Get.back(); // Close loading
+        Get.snackbar(
+          'Success',
+          'Profile picture removed!',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: FamingaBrandColors.statusSuccess,
+          colorText: FamingaBrandColors.white,
+        );
+      }
+    } catch (e) {
+      Get.back(); // Close loading if open
+      Get.snackbar(
+        'Error',
+        'Failed to remove profile picture: ${e.toString()}',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: FamingaBrandColors.statusWarning,
+        colorText: FamingaBrandColors.white,
+      );
+    }
   }
 
   Widget _buildBottomNavigationBar() {
