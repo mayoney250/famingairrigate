@@ -31,6 +31,9 @@ class AuthService {
     required String firstName,
     required String lastName,
     String? phoneNumber,
+    required String province,
+    required String district,
+    String? address,
   }) async {
     try {
       final UserCredential userCredential =
@@ -46,6 +49,9 @@ class AuthService {
         firstName: firstName,
         lastName: lastName,
         phoneNumber: phoneNumber,
+        province: province,
+        district: district,
+        address: address,
         createdAt: DateTime.now(),
         isActive: true,
         isOnline: false,

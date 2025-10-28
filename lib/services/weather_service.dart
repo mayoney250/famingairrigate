@@ -1,105 +1,150 @@
-import 'dart:convert';
 import 'dart:developer';
-import 'package:http/http.dart' as http;
-import '../models/weather_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../models/weather_data_model.dart';
 
 class WeatherService {
-  // OpenWeatherMap API key (You need to get your own from openweathermap.org)
-  // For now, using a placeholder
-  static const String _apiKey = 'YOUR_OPENWEATHERMAP_API_KEY';
-  static const String _baseUrl = 'https://api.openweathermap.org/data/2.5';
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final String _collection = 'weatherData';
 
-  // Get weather by city name
-  Future<WeatherData?> getWeatherByCity(String cityName) async {
+  // Create or update weather data
+  Future<String> saveWeatherData(WeatherDataModel weather) async {
     try {
-      final url = Uri.parse(
-        '$_baseUrl/weather?q=$cityName&appid=$_apiKey&units=metric',
-      );
-
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return WeatherData.fromOpenWeatherMap(data);
+      // Check if weather data exists for user today
+      final existing = await getTodayWeather(weather.userId);
+      
+      if (existing != null) {
+        // Update existing
+        await _firestore.collection(_collection).doc(existing.id).update({
+          'temperature': weather.temperature,
+          'humidity': weather.humidity,
+          'condition': weather.condition,
+          'description': weather.description,
+          'lastUpdated': Timestamp.fromDate(DateTime.now()),
+        });
+        log('Weather data updated: ${existing.id}');
+        return existing.id;
       } else {
-        log('Weather API error: ${response.statusCode}');
-        return _getMockWeather();
+        // Create new
+        final docRef = await _firestore.collection(_collection).add(weather.toMap());
+        log('Weather data created: ${docRef.id}');
+        return docRef.id;
       }
     } catch (e) {
-      log('Error fetching weather: $e');
-      return _getMockWeather();
+      log('Error saving weather data: $e');
+      rethrow;
     }
   }
 
-  // Get weather by coordinates
-  Future<WeatherData?> getWeatherByCoordinates(
-    double latitude,
-    double longitude,
+  // Get today's weather
+  Future<WeatherDataModel?> getTodayWeather(String userId) async {
+    try {
+      final today = DateTime.now();
+      final startOfDay = DateTime(today.year, today.month, today.day);
+      final endOfDay = startOfDay.add(const Duration(days: 1));
+
+      // Simplified query - just get by userId
+      final snapshot = await _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        return null;
+      }
+
+      // Filter for today's weather in memory
+      final todayWeather = snapshot.docs
+          .map((doc) => WeatherDataModel.fromFirestore(doc))
+          .where((weather) {
+            final timestamp = weather.timestamp;
+            return timestamp.isAfter(startOfDay) && 
+                   timestamp.isBefore(endOfDay);
+          })
+          .toList();
+
+      if (todayWeather.isNotEmpty) {
+        // Sort by timestamp and return most recent
+        todayWeather.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        return todayWeather.first;
+      }
+      
+      return null;
+    } catch (e) {
+      log('Error fetching today weather: $e');
+      return null; // Return null instead of rethrowing
+    }
+  }
+
+  // Stream of current weather
+  Stream<WeatherDataModel?> streamCurrentWeather(String userId) {
+    final today = DateTime.now();
+    final startOfDay = DateTime(today.year, today.month, today.day);
+
+    return _firestore
+        .collection(_collection)
+        .where('userId', isEqualTo: userId)
+        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .limit(1)
+        .snapshots()
+        .map((snapshot) {
+      if (snapshot.docs.isNotEmpty) {
+        return WeatherDataModel.fromFirestore(snapshot.docs.first);
+      }
+      return null;
+    });
+  }
+
+  // Get weather history
+  Future<List<WeatherDataModel>> getWeatherHistory(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
   ) async {
     try {
-      final url = Uri.parse(
-        '$_baseUrl/weather?lat=$latitude&lon=$longitude&appid=$_apiKey&units=metric',
-      );
+      final snapshot = await _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy('timestamp', descending: true)
+          .get();
 
-      final response = await http.get(url);
-
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return WeatherData.fromOpenWeatherMap(data);
-      } else {
-        log('Weather API error: ${response.statusCode}');
-        return _getMockWeather();
-      }
+      return snapshot.docs
+          .map((doc) => WeatherDataModel.fromFirestore(doc))
+          .toList();
     } catch (e) {
-      log('Error fetching weather: $e');
-      return _getMockWeather();
+      log('Error fetching weather history: $e');
+      rethrow;
     }
   }
 
-  // Get mock weather data (fallback)
-  WeatherData _getMockWeather() {
-    return WeatherData(
-      temperature: 26.0,
-      feelsLike: 28.0,
-      humidity: 65,
-      condition: 'sunny',
-      description: 'Clear sky',
-      windSpeed: 3.5,
-      pressure: 1013,
-      timestamp: DateTime.now(),
-      location: 'Kigali',
-    );
+  // Get last 7 days weather
+  Future<List<WeatherDataModel>> getLast7DaysWeather(String userId) async {
+    final now = DateTime.now();
+    final lastWeek = now.subtract(const Duration(days: 7));
+    return getWeatherHistory(userId, lastWeek, now);
   }
 
-  // Get weather for default location (Kigali, Rwanda)
-  Future<WeatherData?> getDefaultWeather() async {
-    return await getWeatherByCity('Kigali');
-  }
+  // Delete old weather data (keep last 30 days)
+  Future<void> deleteOldWeatherData(String userId, int daysToKeep) async {
+    try {
+      final cutoffDate = DateTime.now().subtract(Duration(days: daysToKeep));
+      final snapshot = await _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isLessThan: Timestamp.fromDate(cutoffDate))
+          .get();
 
-  // Check if weather is good for irrigation
-  bool isGoodForIrrigation(WeatherData weather) {
-    // Don't irrigate if it's raining or about to rain
-    if (weather.condition == 'rainy' || weather.condition == 'stormy') {
-      return false;
-    }
-    // Don't irrigate if temperature is too high (evaporation)
-    if (weather.temperature > 35) {
-      return false;
-    }
-    return true;
-  }
+      final batch = _firestore.batch();
+      for (final doc in snapshot.docs) {
+        batch.delete(doc.reference);
+      }
 
-  // Get irrigation recommendation based on weather
-  String getIrrigationRecommendation(WeatherData weather) {
-    if (weather.condition == 'rainy') {
-      return 'Rain expected. Skip irrigation today.';
-    } else if (weather.temperature > 30) {
-      return 'Hot weather. Irrigate early morning or evening.';
-    } else if (weather.humidity > 80) {
-      return 'High humidity. Reduce irrigation duration.';
-    } else {
-      return 'Good weather conditions for irrigation.';
+      await batch.commit();
+      log('Old weather data deleted: ${snapshot.docs.length} records');
+    } catch (e) {
+      log('Error deleting old weather data: $e');
+      rethrow;
     }
   }
 }
-

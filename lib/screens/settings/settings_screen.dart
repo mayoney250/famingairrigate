@@ -247,7 +247,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: FamingaBrandColors.textSecondary,
@@ -286,7 +286,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       subtitle: Text(subtitle),
       value: value,
       onChanged: enabled ? onChanged : null,
-      activeColor: FamingaBrandColors.primaryOrange,
+      activeThumbColor: FamingaBrandColors.primaryOrange,
     );
   }
 
@@ -304,7 +304,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
       subtitle: Text(subtitle),
       trailing: onTap != null
-          ? Icon(Icons.chevron_right, color: FamingaBrandColors.textSecondary)
+          ? const Icon(Icons.chevron_right, color: FamingaBrandColors.textSecondary)
           : null,
       onTap: onTap,
     );
@@ -359,7 +359,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 snackPosition: SnackPosition.BOTTOM,
               );
             },
-            child: Text(
+            child: const Text(
               'Clear',
               style: TextStyle(color: FamingaBrandColors.statusWarning),
             ),

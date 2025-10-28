@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -6,6 +7,7 @@ import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../routes/app_routes.dart';
+// Removed temporary DB test screen import
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -40,7 +42,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         title: Row(
           children: [
-            Text(
+            const Text(
               'FamingaView',
               style: TextStyle(
                 color: FamingaBrandColors.textPrimary,
@@ -49,30 +51,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: FamingaBrandColors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: FamingaBrandColors.borderColor),
-              ),
-              child: Row(
-                children: [
-                  Text(
-                    'Farm1',
-                    style: TextStyle(
-                      color: FamingaBrandColors.textPrimary,
-                      fontSize: 14,
+            Consumer<DashboardProvider>(
+              builder: (context, dash, _) {
+                final fieldOptions = dash.fields;
+                final selected = dash.selectedFarmId;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: FamingaBrandColors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: FamingaBrandColors.borderColor),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<String>(
+                      value: fieldOptions.any((f) => f['id'] == selected)
+                          ? selected
+                          : (fieldOptions.isNotEmpty ? fieldOptions.first['id']! : selected),
+                      icon: const Icon(Icons.arrow_drop_down, size: 20, color: FamingaBrandColors.textPrimary),
+                      style: const TextStyle(
+                        color: FamingaBrandColors.textPrimary,
+                        fontSize: 14,
+                      ),
+                      items: (fieldOptions.isEmpty
+                              ? <Map<String,String>>[{ 'id': selected, 'name': selected }]
+                              : fieldOptions)
+                          .map((f) => DropdownMenuItem<String>(
+                                value: f['id'],
+                                child: Text(f['name'] ?? f['id']!),
+                              ))
+                          .toList(),
+                      onChanged: (val) {
+                        if (val == null) return;
+                        dash.selectFarm(val);
+                      },
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.arrow_drop_down,
-                    color: FamingaBrandColors.textPrimary,
-                    size: 20,
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ],
         ),
@@ -99,14 +114,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, _) {
           if (dashboardProvider.isLoading) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(
+                  CircularProgressIndicator(
                     color: FamingaBrandColors.primaryOrange,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Loading dashboard...',
                     style: TextStyle(color: FamingaBrandColors.textSecondary),
@@ -184,6 +199,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
+      floatingActionButton: null,
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -347,7 +363,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -373,7 +389,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          Text(
+          const Text(
             'Soil Moisture',
             style: TextStyle(
               color: FamingaBrandColors.textPrimary,
@@ -392,7 +408,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   value: moisturePercent,
                   strokeWidth: 10,
                   backgroundColor: FamingaBrandColors.borderColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(
+                  valueColor: const AlwaysStoppedAnimation<Color>(
                     FamingaBrandColors.darkGreen,
                   ),
                 ),
@@ -402,7 +418,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     '${moisture.round()}%',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: FamingaBrandColors.darkGreen,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -413,7 +429,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
+          const Text(
             'Calculate Average',
             style: TextStyle(
               color: FamingaBrandColors.textSecondary,
@@ -423,7 +439,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             dashboardProvider.soilMoistureStatus,
-            style: TextStyle(
+            style: const TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 11,
             ),
@@ -445,16 +461,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: FamingaBrandColors.borderColor),
         ),
-        child: Center(
+        child: const Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 20),
-              const CircularProgressIndicator(
+              SizedBox(height: 20),
+              CircularProgressIndicator(
                 color: FamingaBrandColors.primaryOrange,
                 strokeWidth: 2,
               ),
-              const SizedBox(height: 12),
+              SizedBox(height: 12),
               Text(
                 'Loading weather...',
                 style: TextStyle(
@@ -462,7 +478,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontSize: 11,
                 ),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: 20),
             ],
           ),
         ),
@@ -498,7 +514,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Column(
         children: [
-          Text(
+          const Text(
             'Local Weather',
             style: TextStyle(
               color: FamingaBrandColors.textPrimary,
@@ -515,7 +531,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 8),
           Text(
             weather.temperatureString,
-            style: TextStyle(
+            style: const TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 32,
               fontWeight: FontWeight.bold,
@@ -524,7 +540,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 4),
           Text(
             weather.description.capitalize ?? weather.description,
-            style: TextStyle(
+            style: const TextStyle(
               color: FamingaBrandColors.textSecondary,
               fontSize: 12,
             ),
@@ -547,7 +563,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             color: FamingaBrandColors.textSecondary,
             fontSize: 10,
           ),
@@ -555,7 +571,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         const SizedBox(height: 4),
         Text(
           value,
-          style: TextStyle(
+          style: const TextStyle(
             color: FamingaBrandColors.textPrimary,
             fontSize: 12,
             fontWeight: FontWeight.w600,
@@ -566,6 +582,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildNextScheduleCard(DashboardProvider dashboardProvider) {
+    final upcoming = dashboardProvider.upcomingSchedules;
     final schedule = dashboardProvider.nextSchedule;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
@@ -587,14 +604,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       DateFormat('dd MMM, hh:mm a').format(schedule.startTime),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: FamingaBrandColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
-                    Text(
+                    const Text(
                       'Duration',
                       style: TextStyle(
                         color: FamingaBrandColors.textSecondary,
@@ -608,7 +625,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       schedule.formattedDuration,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: FamingaBrandColors.primaryOrange,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -621,15 +638,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.location_on,
                   size: 16,
                   color: FamingaBrandColors.textSecondary,
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  schedule.fieldName,
-                  style: TextStyle(
+                  schedule.zoneName,
+                  style: const TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 12,
                   ),
@@ -637,14 +654,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ] else ...[
-            Column(
+            const Column(
               children: [
                 Icon(
                   Icons.schedule,
                   size: 48,
                   color: FamingaBrandColors.textSecondary,
                 ),
-                const SizedBox(height: 12),
+                SizedBox(height: 12),
                 Text(
                   'No Scheduled Irrigation',
                   style: TextStyle(
@@ -653,7 +670,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   'Start irrigation manually or create a schedule',
                   style: TextStyle(
@@ -665,12 +682,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ],
+          // Show a compact list of ALL upcoming scheduled cycles if more than 1
+          if (upcoming.length > 1)
+            Column(
+              children: [
+                const Divider(),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    child: Text(
+                      "Upcoming irrigations:",
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: FamingaBrandColors.textSecondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+                ...upcoming.skip(1).map((sched) => ListTile(
+                  dense: true,
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(Icons.calendar_today, color: FamingaBrandColors.primaryOrange, size: 18),
+                  title: Text(sched.name, style: const TextStyle(fontSize: 14)),
+                  subtitle: Text(
+                    DateFormat('E, MMM dd, yyyy – hh:mm a').format(sched.startTime),
+                    style: const TextStyle(fontSize: 12, color: FamingaBrandColors.textSecondary),
+                  ),
+                  trailing: Text(sched.formattedDuration),
+                )),
+              ],
+            ),
           const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async {
-                // Show field selection dialog
                 _showManualStartDialog(dashboardProvider, authProvider);
               },
               style: ElevatedButton.styleFrom(
@@ -680,9 +728,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   borderRadius: BorderRadius.circular(10),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
+                children: [
                   Icon(Icons.play_arrow, color: FamingaBrandColors.white),
                   SizedBox(width: 8),
                   Text(
@@ -709,12 +757,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
     Get.dialog(
       AlertDialog(
         title: const Text('Start Irrigation'),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Start irrigation cycle manually for:'),
-            const SizedBox(height: 16),
+            Text('Start irrigation cycle manually for:'),
+            SizedBox(height: 16),
             Text(
               'North Field',
               style: TextStyle(
@@ -722,7 +770,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 color: FamingaBrandColors.primaryOrange,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: 8),
             Text(
               'Duration: 60 minutes',
               style: TextStyle(
@@ -809,14 +857,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.water_drop,
                       color: FamingaBrandColors.primaryOrange,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       'Water Usage',
                       style: TextStyle(
@@ -829,14 +877,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 Text(
                   '${dashboardProvider.weeklyWaterUsage.round()}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                const Text(
                   'Liters this week',
                   style: TextStyle(
                     color: FamingaBrandColors.textSecondary,
@@ -850,7 +898,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Center(
+                  child: const Center(
                     child: Icon(
                       Icons.show_chart,
                       color: FamingaBrandColors.primaryOrange,
@@ -873,14 +921,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.savings,
                       color: FamingaBrandColors.darkGreen,
                       size: 20,
                     ),
-                    const SizedBox(width: 8),
+                    SizedBox(width: 8),
                     Text(
                       'KSh Saved',
                       style: TextStyle(
@@ -892,15 +940,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '${dashboardProvider.weeklySavings.round().toStringAsFixed(0)}',
-                  style: TextStyle(
+                  dashboardProvider.weeklySavings.round().toStringAsFixed(0),
+                  style: const TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text(
+                const Text(
                   'This week',
                   style: TextStyle(
                     color: FamingaBrandColors.textSecondary,
@@ -914,7 +962,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     color: FamingaBrandColors.darkGreen.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Center(
+                  child: const Center(
                     child: Icon(
                       Icons.trending_up,
                       color: FamingaBrandColors.darkGreen,

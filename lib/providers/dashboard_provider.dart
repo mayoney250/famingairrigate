@@ -1,37 +1,43 @@
 import 'dart:developer';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/irrigation_schedule_model.dart';
 import '../models/weather_model.dart';
 import '../services/irrigation_service.dart';
 import '../services/sensor_service.dart';
 import '../services/weather_service.dart';
+import '../services/error_service.dart';
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
   final SensorService _sensorService = SensorService();
   final WeatherService _weatherService = WeatherService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // State variables
   bool _isLoading = true;
   String? _errorMessage;
   
   // Dashboard data
-  IrrigationSchedule? _nextSchedule;
+  List<IrrigationScheduleModel> _upcoming = <IrrigationScheduleModel>[];
   WeatherData? _weatherData;
   double _soilMoisture = 75.0;
   double _weeklyWaterUsage = 0.0;
   double _weeklySavings = 0.0;
-  String _selectedFarmId = 'farm1'; // Default farm
+  String _selectedFarmId = 'farm1'; // Will be replaced by first field id
+  List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name}]
 
   // Getters
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
-  IrrigationSchedule? get nextSchedule => _nextSchedule;
+  IrrigationScheduleModel? get nextSchedule => _upcoming.isNotEmpty ? _upcoming.first : null;
+  List<IrrigationScheduleModel> get upcomingSchedules => _upcoming;
   WeatherData? get weatherData => _weatherData;
   double get soilMoisture => _soilMoisture;
   double get weeklyWaterUsage => _weeklyWaterUsage;
   double get weeklySavings => _weeklySavings;
   String get selectedFarmId => _selectedFarmId;
+  List<Map<String, String>> get fields => _fields;
 
   // Get soil moisture status message
   String get soilMoistureStatus {
@@ -56,7 +62,7 @@ class DashboardProvider with ChangeNotifier {
     }
 
     if (systemStatus == 'Optimal') {
-      return 'Everything is fully loaded. ${_weatherService.getIrrigationRecommendation(_weatherData!)}';
+      return 'Everything is fully loaded. Current conditions are ideal for your crops.';
     } else if (systemStatus == 'Attention Required') {
       return 'Soil moisture is low. Consider irrigating soon.';
     } else {
@@ -71,52 +77,116 @@ class DashboardProvider with ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      // Load data in parallel
-      await Future.wait([
-        _loadNextSchedule(userId),
-        _loadWeatherData(),
-        _loadSoilMoisture(),
-        _loadWeeklyStats(userId),
+      // Load data in parallel, but don't let one failure stop the others
+      final results = await Future.wait([
+        _loadUpcoming(userId).catchError((e) {
+          log('Error in _loadUpcoming: $e');
+          return null;
+        }),
+        _loadFields(userId).catchError((e) {
+          log('Error in _loadFields: $e');
+          return null;
+        }),
+        _loadWeatherData().catchError((e) {
+          log('Error in _loadWeatherData: $e');
+          return null;
+        }),
+        _loadSoilMoisture().catchError((e) {
+          log('Error in _loadSoilMoisture: $e');
+          return null;
+        }),
+        _loadWeeklyStats(userId).catchError((e) {
+          log('Error in _loadWeeklyStats: $e');
+          return null;
+        }),
       ]);
 
       _isLoading = false;
       notifyListeners();
     } catch (e) {
-      _errorMessage = 'Failed to load dashboard data: $e';
+      _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
       log('Error loading dashboard data: $e');
       notifyListeners();
     }
   }
 
-  // Load next scheduled irrigation
-  Future<void> _loadNextSchedule(String userId) async {
+  // Load upcoming scheduled irrigations
+  Future<void> _loadUpcoming(String userId) async {
     try {
-      _nextSchedule = await _irrigationService.getNextSchedule(userId);
+      _irrigationService.getUpcomingScheduled(userId).listen((list) {
+        _upcoming = list;
+        notifyListeners();
+      });
     } catch (e) {
-      log('Error loading next schedule: $e');
+      log('Error loading upcoming schedules: $e');
+    }
+  }
+
+  // Load fields for the current user
+  Future<void> _loadFields(String userId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('fields')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      _fields = snapshot.docs.map((d) {
+        final data = d.data();
+        final label = (data['label'] ?? data['name'] ?? data['fieldName'] ?? d.id).toString();
+        return {'id': d.id, 'name': label};
+      }).toList();
+
+      if (_fields.isNotEmpty) {
+        final stillExists = _fields.any((f) => f['id'] == _selectedFarmId);
+        if (!stillExists) {
+          _selectedFarmId = _fields.first['id']!;
+        }
+      }
+    } catch (e) {
+      log('Error loading fields: $e');
     }
   }
 
   // Load weather data
   Future<void> _loadWeatherData() async {
     try {
-      _weatherData = await _weatherService.getDefaultWeather();
+      // Try to get today's weather from Firebase
+      final weather = await _weatherService.getTodayWeather('user_id'); // Replace with actual userId
+      if (weather != null) {
+        // Convert WeatherDataModel to WeatherData
+        _weatherData = WeatherData(
+          temperature: weather.temperature,
+          feelsLike: weather.temperature,
+          humidity: weather.humidity.toInt(),
+          condition: weather.condition.toLowerCase(),
+          description: weather.description,
+          windSpeed: 3.5, // Default
+          pressure: 1013, // Default
+          timestamp: weather.timestamp,
+          location: weather.location,
+        );
+      } else {
+        _weatherData = _getDefaultWeatherData();
+      }
     } catch (e) {
       log('Error loading weather data: $e');
-      // Use mock data if API fails
-      _weatherData = WeatherData(
-        temperature: 26.0,
-        feelsLike: 28.0,
-        humidity: 65,
-        condition: 'sunny',
-        description: 'Clear sky',
-        windSpeed: 3.5,
-        pressure: 1013,
-        timestamp: DateTime.now(),
-        location: 'Kigali',
-      );
+      _weatherData = _getDefaultWeatherData();
     }
+  }
+
+  WeatherData _getDefaultWeatherData() {
+    return WeatherData(
+      temperature: 26.0,
+      feelsLike: 28.0,
+      humidity: 65,
+      condition: 'sunny',
+      description: 'Clear sky',
+      windSpeed: 3.5,
+      pressure: 1013,
+      timestamp: DateTime.now(),
+      location: 'Kigali',
+    );
   }
 
   // Load soil moisture

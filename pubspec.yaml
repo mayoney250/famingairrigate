@@ -81,7 +81,6 @@ dependencies:
   
   # PDF & Documents
   pdf: ^3.10.7
-  open_file: ^3.3.2
   
   # Other
   uuid: ^4.2.2

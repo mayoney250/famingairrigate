@@ -1,140 +1,170 @@
-class IrrigationSchedule {
-  final String scheduleId;
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class IrrigationScheduleModel {
+  final String id;
   final String userId;
-  final String farmId;
-  final String fieldId;
-  final String fieldName;
+  final String name;
+  final String zoneId;
+  final String zoneName;
   final DateTime startTime;
   final int durationMinutes;
+  final List<int> repeatDays; // 1=Monday, 7=Sunday
   final bool isActive;
-  final String status; // scheduled, running, completed, cancelled
-  final DateTime? completedAt;
-  final double? waterUsed; // in liters
-  final String? notes;
+  final String status; // 'scheduled', 'running', 'completed', 'stopped'
   final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? lastRun;
+  final DateTime? nextRun;
+  final DateTime? stoppedAt;
+  final String? stoppedBy; // 'manual' or 'automatic'
 
-  IrrigationSchedule({
-    required this.scheduleId,
+  IrrigationScheduleModel({
+    required this.id,
     required this.userId,
-    required this.farmId,
-    required this.fieldId,
-    required this.fieldName,
+    required this.name,
+    required this.zoneId,
+    required this.zoneName,
     required this.startTime,
     required this.durationMinutes,
-    required this.isActive,
-    required this.status,
-    this.completedAt,
-    this.waterUsed,
-    this.notes,
+    required this.repeatDays,
+    this.isActive = true,
+    this.status = 'scheduled',
     required this.createdAt,
-    required this.updatedAt,
+    this.lastRun,
+    this.nextRun,
+    this.stoppedAt,
+    this.stoppedBy,
   });
 
-  // Convert to Map for Firestore
   Map<String, dynamic> toMap() {
     return {
-      'scheduleId': scheduleId,
+      'id': id,
       'userId': userId,
-      'farmId': farmId,
-      'fieldId': fieldId,
-      'fieldName': fieldName,
-      'startTime': startTime.toIso8601String(),
+      'name': name,
+      'zoneId': zoneId,
+      'zoneName': zoneName,
+      'startTime': Timestamp.fromDate(startTime),
       'durationMinutes': durationMinutes,
+      'repeatDays': repeatDays,
       'isActive': isActive,
       'status': status,
-      'completedAt': completedAt?.toIso8601String(),
-      'waterUsed': waterUsed,
-      'notes': notes,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'lastRun': lastRun != null ? Timestamp.fromDate(lastRun!) : null,
+      'nextRun': nextRun != null ? Timestamp.fromDate(nextRun!) : null,
+      'stoppedAt': stoppedAt != null ? Timestamp.fromDate(stoppedAt!) : null,
+      'stoppedBy': stoppedBy,
     };
   }
 
-  // Create from Firestore document
-  factory IrrigationSchedule.fromMap(Map<String, dynamic> map) {
-    return IrrigationSchedule(
-      scheduleId: map['scheduleId'] ?? '',
-      userId: map['userId'] ?? '',
-      farmId: map['farmId'] ?? '',
-      fieldId: map['fieldId'] ?? '',
-      fieldName: map['fieldName'] ?? '',
-      startTime: DateTime.parse(map['startTime']),
-      durationMinutes: map['durationMinutes'] ?? 0,
-      isActive: map['isActive'] ?? false,
-      status: map['status'] ?? 'scheduled',
-      completedAt: map['completedAt'] != null
-          ? DateTime.parse(map['completedAt'])
-          : null,
-      waterUsed: map['waterUsed']?.toDouble(),
-      notes: map['notes'],
-      createdAt: DateTime.parse(map['createdAt']),
-      updatedAt: DateTime.parse(map['updatedAt']),
-    );
-  }
-
-  // Check if schedule is upcoming
-  bool get isUpcoming {
-    return status == 'scheduled' && startTime.isAfter(DateTime.now());
-  }
-
-  // Check if schedule is running
-  bool get isRunning {
-    return status == 'running';
-  }
-
-  // Get time until start
-  Duration get timeUntilStart {
-    return startTime.difference(DateTime.now());
-  }
-
-  // Format duration
-  String get formattedDuration {
-    if (durationMinutes < 60) {
-      return '$durationMinutes minutes';
-    } else {
-      final hours = durationMinutes ~/ 60;
-      final minutes = durationMinutes % 60;
-      if (minutes == 0) {
-        return '$hours ${hours == 1 ? 'hour' : 'hours'}';
+  factory IrrigationScheduleModel.fromMap(Map<String, dynamic> map) {
+    try {
+      DateTime _parseDate(dynamic value) {
+        if (value == null) return DateTime.now();
+        if (value is Timestamp) return value.toDate();
+        if (value is DateTime) return value;
+        if (value is String) {
+          // Try ISO8601 or other formats
+          return DateTime.tryParse(value) ?? DateTime.now();
+        }
+        return DateTime.now();
       }
-      return '$hours ${hours == 1 ? 'hour' : 'hours'} $minutes minutes';
+
+      int _parseInt(dynamic value, {int fallback = 0}) {
+        if (value == null) return fallback;
+        if (value is int) return value;
+        if (value is double) return value.toInt();
+        if (value is String) {
+          return int.tryParse(value) ?? fallback;
+        }
+        return fallback;
+      }
+
+      List<int> _parseIntList(dynamic value) {
+        if (value == null) return <int>[];
+        if (value is List) {
+          return value.map((e) => _parseInt(e, fallback: 0)).where((e) => e > 0).toList();
+        }
+        return <int>[];
+      }
+
+      return IrrigationScheduleModel(
+        id: map['id'] ?? '',
+        userId: map['userId'] ?? '',
+        name: map['name'] ?? '',
+        zoneId: map['zoneId'] ?? '',
+        zoneName: map['zoneName'] ?? '',
+        startTime: _parseDate(map['startTime']),
+        durationMinutes: _parseInt(map['durationMinutes'], fallback: 30),
+        repeatDays: _parseIntList(map['repeatDays']),
+        isActive: map['isActive'] is bool ? map['isActive'] as bool : (map['isActive'].toString() == 'true'),
+        status: map['status'] ?? 'scheduled',
+        createdAt: _parseDate(map['createdAt']),
+        lastRun: map['lastRun'] != null ? _parseDate(map['lastRun']) : null,
+        nextRun: map['nextRun'] != null ? _parseDate(map['nextRun']) : null,
+        stoppedAt: map['stoppedAt'] != null ? _parseDate(map['stoppedAt']) : null,
+        stoppedBy: map['stoppedBy'],
+      );
+    } catch (e) {
+      // If there's an error, create a minimal valid model
+      print('Error parsing IrrigationScheduleModel: $e');
+      print('Map data: $map');
+      rethrow;
     }
   }
 
-  // Copy with method
-  IrrigationSchedule copyWith({
-    String? scheduleId,
+  factory IrrigationScheduleModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    data['id'] = doc.id; // Use Firestore document ID
+    return IrrigationScheduleModel.fromMap(data);
+  }
+
+  IrrigationScheduleModel copyWith({
+    String? id,
     String? userId,
-    String? farmId,
-    String? fieldId,
-    String? fieldName,
+    String? name,
+    String? zoneId,
+    String? zoneName,
     DateTime? startTime,
     int? durationMinutes,
+    List<int>? repeatDays,
     bool? isActive,
     String? status,
-    DateTime? completedAt,
-    double? waterUsed,
-    String? notes,
     DateTime? createdAt,
-    DateTime? updatedAt,
+    DateTime? lastRun,
+    DateTime? nextRun,
+    DateTime? stoppedAt,
+    String? stoppedBy,
   }) {
-    return IrrigationSchedule(
-      scheduleId: scheduleId ?? this.scheduleId,
+    return IrrigationScheduleModel(
+      id: id ?? this.id,
       userId: userId ?? this.userId,
-      farmId: farmId ?? this.farmId,
-      fieldId: fieldId ?? this.fieldId,
-      fieldName: fieldName ?? this.fieldName,
+      name: name ?? this.name,
+      zoneId: zoneId ?? this.zoneId,
+      zoneName: zoneName ?? this.zoneName,
       startTime: startTime ?? this.startTime,
       durationMinutes: durationMinutes ?? this.durationMinutes,
+      repeatDays: repeatDays ?? this.repeatDays,
       isActive: isActive ?? this.isActive,
       status: status ?? this.status,
-      completedAt: completedAt ?? this.completedAt,
-      waterUsed: waterUsed ?? this.waterUsed,
-      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      lastRun: lastRun ?? this.lastRun,
+      nextRun: nextRun ?? this.nextRun,
+      stoppedAt: stoppedAt ?? this.stoppedAt,
+      stoppedBy: stoppedBy ?? this.stoppedBy,
     );
   }
-}
 
+  String get formattedTime {
+    final hour = startTime.hour.toString().padLeft(2, '0');
+    final minute = startTime.minute.toString().padLeft(2, '0');
+    return '$hour:$minute ${startTime.hour >= 12 ? 'PM' : 'AM'}';
+  }
+
+  String get formattedDuration {
+    if (durationMinutes < 60) {
+      return '$durationMinutes min';
+    }
+    final hours = durationMinutes ~/ 60;
+    final mins = durationMinutes % 60;
+    return mins > 0 ? '${hours}h ${mins}min' : '${hours}h';
+  }
+}

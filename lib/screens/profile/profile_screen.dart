@@ -9,6 +9,8 @@ import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
+import 'edit_profile_screen.dart';
+import 'change_password_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -83,7 +85,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     radius: 50,
                                     backgroundColor: FamingaBrandColors.primaryOrange,
                                     child: Text(
-                                      (user?.firstName ?? 'U').substring(0, 1).toUpperCase(),
+                                      (user.firstName ?? 'U').substring(0, 1).toUpperCase(),
                                       style: const TextStyle(
                                         fontSize: 40,
                                         fontWeight: FontWeight.bold,
@@ -169,13 +171,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       Icons.person_outline,
                       'Personal Information',
                       'Update your personal details',
-                      () => _showEditProfileDialog(authProvider),
+                      () => Get.to(() => const EditProfileScreen()),
                     ),
                     _buildMenuItem(
                       Icons.lock_outline,
                       'Change Password',
                       'Update your password',
-                      () => _showChangePasswordDialog(),
+                      () => Get.to(() => const ChangePasswordScreen()),
                     ),
                     _buildMenuItem(
                       Icons.notifications_outlined,
@@ -254,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
                 color: FamingaBrandColors.textSecondary,
@@ -290,7 +292,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
       subtitle: Text(subtitle),
-      trailing: Icon(
+      trailing: const Icon(
         Icons.chevron_right,
         color: FamingaBrandColors.textSecondary,
       ),
@@ -346,7 +348,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 );
               }
             },
-            child: Text(
+            child: const Text(
               'Logout',
               style: TextStyle(color: FamingaBrandColors.statusWarning),
             ),
@@ -360,25 +362,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Get.dialog(
       AlertDialog(
         title: const Text('About Faminga Irrigation'),
-        content: Column(
+        content: const Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Faminga Irrigation',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 8),
-            const Text('Version 1.0.0'),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 8),
+            Text('Version 1.0.0'),
+            SizedBox(height: 16),
+            Text(
               'Smart irrigation management system for African farmers.',
             ),
-            const SizedBox(height: 16),
-            const Text(
+            SizedBox(height: 16),
+            Text(
               '© 2025 Faminga. All rights reserved.',
               style: TextStyle(fontSize: 12),
             ),
@@ -473,7 +475,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
         Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 12,
             color: FamingaBrandColors.textSecondary,
           ),
@@ -922,7 +924,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Irrigation Alerts'),
               subtitle: const Text('Get notified about irrigation schedules'),
               value: true,
-              activeColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: FamingaBrandColors.primaryOrange,
               onChanged: (value) {
                 // TODO: Save to Firebase
                 Get.snackbar(
@@ -936,7 +938,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('System Updates'),
               subtitle: const Text('Get notified about system status changes'),
               value: true,
-              activeColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: FamingaBrandColors.primaryOrange,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -949,7 +951,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Weather Alerts'),
               subtitle: const Text('Get notified about weather conditions'),
               value: true,
-              activeColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: FamingaBrandColors.primaryOrange,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -962,7 +964,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               title: const Text('Sensor Alerts'),
               subtitle: const Text('Get notified about sensor readings'),
               value: false,
-              activeColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: FamingaBrandColors.primaryOrange,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -1121,7 +1123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const SizedBox(height: 4),
           Text(
             answer,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 13,
               color: FamingaBrandColors.textSecondary,
             ),

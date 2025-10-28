@@ -318,7 +318,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 color: FamingaBrandColors.textSecondary,
                 fontSize: 12,
               ),

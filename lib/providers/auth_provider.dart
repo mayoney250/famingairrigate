@@ -1,8 +1,9 @@
-import 'dart:developer';
+import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../services/error_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -10,11 +11,13 @@ class AuthProvider with ChangeNotifier {
   UserModel? _currentUser;
   bool _isLoading = false;
   String? _errorMessage;
+  bool _hasAuthChecked = false;
 
   UserModel? get currentUser => _currentUser;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   bool get isAuthenticated => _currentUser != null;
+  bool get hasAuthChecked => _hasAuthChecked;
 
   AuthProvider() {
     _initAuthListener();
@@ -28,6 +31,8 @@ class AuthProvider with ChangeNotifier {
         _currentUser = null;
         notifyListeners();
       }
+      _hasAuthChecked = true;
+      notifyListeners();
     });
   }
 
@@ -40,7 +45,8 @@ class AuthProvider with ChangeNotifier {
       _currentUser = userData;
       _errorMessage = null;
     } catch (e) {
-      log('Load user data error: $e');
+      print('❌ Load user data error: $e');
+      dev.log('Load user data error: $e');
       _errorMessage = 'Failed to load user data';
     } finally {
       _isLoading = false;
@@ -54,11 +60,17 @@ class AuthProvider with ChangeNotifier {
     required String firstName,
     required String lastName,
     String? phoneNumber,
+    required String province,
+    required String district,
+    String? address,
   }) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+
+      print('🚀 Starting sign up for: $email');
+      dev.log('🚀 Starting sign up for: $email');
 
       final userCredential = await _authService.signUpWithEmailAndPassword(
         email: email,
@@ -66,16 +78,27 @@ class AuthProvider with ChangeNotifier {
         firstName: firstName,
         lastName: lastName,
         phoneNumber: phoneNumber,
+        province: province,
+        district: district,
+        address: address,
       );
 
       if (userCredential != null) {
+        print('✅ Sign up successful! UID: ${userCredential.user!.uid}');
+        dev.log('✅ Sign up successful! UID: ${userCredential.user!.uid}');
         await loadUserData(userCredential.user!.uid);
         return true;
       }
+      print('❌ Sign up returned null');
+      dev.log('❌ Sign up returned null');
+      _errorMessage = 'Registration failed - no user credential returned';
       return false;
     } catch (e) {
-      log('Sign up error: $e');
-      _errorMessage = e.toString();
+      print('❌ Sign up error: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      dev.log('❌ Sign up error: $e');
+      dev.log('❌ Error type: ${e.runtimeType}');
+      _errorMessage = ErrorService.toMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -92,19 +115,30 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
+      print('🚀 Starting sign in for: $email');
+      dev.log('🚀 Starting sign in for: $email');
+
       final userCredential = await _authService.signInWithEmailAndPassword(
         email: email,
         password: password,
       );
 
       if (userCredential != null) {
+        print('✅ Sign in successful! UID: ${userCredential.user!.uid}');
+        dev.log('✅ Sign in successful! UID: ${userCredential.user!.uid}');
         await loadUserData(userCredential.user!.uid);
         return true;
       }
+      print('❌ Sign in returned null');
+      dev.log('❌ Sign in returned null');
+      _errorMessage = 'Login failed - no user credential returned';
       return false;
     } catch (e) {
-      log('Sign in error: $e');
-      _errorMessage = e.toString();
+      print('❌ Sign in error: $e');
+      print('❌ Error type: ${e.runtimeType}');
+      dev.log('❌ Sign in error: $e');
+      dev.log('❌ Error type: ${e.runtimeType}');
+      _errorMessage = ErrorService.toMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -126,8 +160,9 @@ class AuthProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      log('Google sign-in error: $e');
-      _errorMessage = e.toString();
+      print('❌ Google sign-in error: $e');
+      dev.log('Google sign-in error: $e');
+      _errorMessage = ErrorService.toMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -144,7 +179,8 @@ class AuthProvider with ChangeNotifier {
       _currentUser = null;
       _errorMessage = null;
     } catch (e) {
-      log('Sign out error: $e');
+      print('❌ Sign out error: $e');
+      dev.log('Sign out error: $e');
       _errorMessage = 'Failed to sign out';
     } finally {
       _isLoading = false;
@@ -161,8 +197,9 @@ class AuthProvider with ChangeNotifier {
       await _authService.sendPasswordResetEmail(email);
       return true;
     } catch (e) {
-      log('Password reset error: $e');
-      _errorMessage = e.toString();
+      print('❌ Password reset error: $e');
+      dev.log('Password reset error: $e');
+      _errorMessage = ErrorService.toMessage(e);
       return false;
     } finally {
       _isLoading = false;
@@ -180,7 +217,8 @@ class AuthProvider with ChangeNotifier {
         await loadUserData(_currentUser!.userId);
       }
     } catch (e) {
-      log('Update profile error: $e');
+      print('❌ Update profile error: $e');
+      dev.log('Update profile error: $e');
       _errorMessage = 'Failed to update profile';
     } finally {
       _isLoading = false;

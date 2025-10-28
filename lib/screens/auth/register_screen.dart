@@ -22,8 +22,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _addressController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+
+  // Class scope variables:
+  String? _selectedProvince;
+  String? _selectedDistrict;
+
+  // Province/District lists (hardcoded for now)
+  final Map<String, List<String>> _provinceDistricts = const {
+    'Kigali': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
+    'Northern': ['Musanze', 'Gicumbi', 'Burera', 'Rulindo', 'Gakenke'],
+    'Southern': ['Huye', 'Nyanza', 'Gisagara', 'Muhanga', 'Nyamagabe', 'Nyaruguru', 'Kamonyi', 'Ruhango'],
+    'Eastern': ['Bugesera', 'Kayonza', 'Gatsibo', 'Nyagatare', 'Ngoma', 'Kirehe', 'Rwamagana'],
+    'Western': ['Rusizi', 'Nyamasheke', 'Rubavu', 'Rutsiro', 'Ngororero', 'Karongi', 'Nyabihu'],
+  };
+  List<String> get _provinces => _provinceDistricts.keys.toList();
+  List<String> get _districts => (_selectedProvince != null) ? _provinceDistricts[_selectedProvince!] ?? [] : [];
 
   @override
   void dispose() {
@@ -33,29 +49,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _phoneController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _addressController.dispose();
     super.dispose();
   }
 
   Future<void> _handleRegister() async {
     if (_formKey.currentState!.validate()) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      
       final success = await authProvider.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty
-            ? null
-            : _phoneController.text.trim(),
+        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        province: _selectedProvince ?? '',
+        district: _selectedDistrict ?? '',
       );
-
       if (success && mounted) {
         _showSuccessDialog();
       } else if (mounted) {
-        _showErrorSnackBar(
-          authProvider.errorMessage ?? 'Registration failed',
-        );
+        _showErrorSnackBar(authProvider.errorMessage ?? 'Registration failed');
       }
     }
   }
@@ -169,6 +182,69 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   hintText: 'Enter your phone number',
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
+                ),
+                const SizedBox(height: 16),
+                // Province
+                DropdownButtonFormField<String>(
+                  value: _selectedProvince,
+                  decoration: InputDecoration(
+                    labelText: 'Province',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: const Icon(Icons.map_outlined),
+                  ),
+                  items: _provinces
+                      .map((province) => DropdownMenuItem<String>(
+                            value: province,
+                            child: Text(province),
+                          ))
+                      .toList(),
+                  validator: (value) => value == null ? 'Choose a province' : null,
+                  onChanged: (p) {
+                    setState(() {
+                      _selectedProvince = p;
+                      _selectedDistrict = null;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+                // District
+                DropdownButtonFormField<String>(
+                  value: _selectedDistrict,
+                  decoration: InputDecoration(
+                    labelText: 'District',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                    prefixIcon: Icon(Icons.location_city_outlined, color: FamingaBrandColors.iconColor),
+                  ),
+                  items: _districts
+                      .map((district) => DropdownMenuItem<String>(
+                            value: district,
+                            child: Text(district),
+                          ))
+                      .toList(),
+                  validator: (value) => value == null ? 'Choose a district' : null,
+                  onChanged: (d) => setState(() => _selectedDistrict = d),
+                  disabledHint: const Text('Choose a province first'),
+                ),
+                const SizedBox(height: 16),
+                // Address
+                CustomTextField(
+                  controller: _addressController,
+                  label: 'Address (optional)',
+                  hintText: 'e.g., Village, Cell, Sector',
+                  prefixIcon: Icons.location_on_outlined,
+                  keyboardType: TextInputType.streetAddress,
+                  validator: (value) {
+                    if (value != null && value.trim().isNotEmpty) {
+                      if (value.trim().length < 5) return 'Address too short';
+                      if (value.length > 100) return 'Address too long';
+                    }
+                    return null;
+                  },
+                  onChanged: (value) {
+                    setState(() {
+                      // Store address value if needed to provider
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
                 

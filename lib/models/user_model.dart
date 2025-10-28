@@ -21,6 +21,9 @@ class UserModel {
   final String role;
   final String? languagePreference;
   final String? themePreference;
+  final String? idNumber;
+  final String? gender;
+  final DateTime? dateOfBirth;
 
   UserModel({
     required this.userId,
@@ -43,6 +46,9 @@ class UserModel {
     this.role = 'farmer',
     this.languagePreference = 'en',
     this.themePreference = 'light',
+    this.idNumber,
+    this.gender,
+    this.dateOfBirth,
   });
 
   String get fullName => '$firstName $lastName';
@@ -69,6 +75,9 @@ class UserModel {
       'role': role,
       'languagePreference': languagePreference,
       'themePreference': themePreference,
+      'idNumber': idNumber,
+      'gender': gender,
+      'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
     };
   }
 
@@ -94,6 +103,9 @@ class UserModel {
       role: map['role'] ?? 'farmer',
       languagePreference: map['languagePreference'] ?? 'en',
       themePreference: map['themePreference'] ?? 'light',
+      idNumber: map['idNumber'],
+      gender: map['gender'],
+      dateOfBirth: (map['dateOfBirth'] as Timestamp?)?.toDate(),
     );
   }
 
@@ -123,6 +135,9 @@ class UserModel {
     String? role,
     String? languagePreference,
     String? themePreference,
+    String? idNumber,
+    String? gender,
+    DateTime? dateOfBirth,
   }) {
     return UserModel(
       userId: userId ?? this.userId,
@@ -145,6 +160,9 @@ class UserModel {
       role: role ?? this.role,
       languagePreference: languagePreference ?? this.languagePreference,
       themePreference: themePreference ?? this.themePreference,
+      idNumber: idNumber ?? this.idNumber,
+      gender: gender ?? this.gender,
+      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
     );
   }
 }

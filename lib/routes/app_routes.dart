@@ -4,6 +4,7 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/fields/add_field_screen.dart';
 import '../screens/fields/fields_screen.dart';
 import '../screens/irrigation/irrigation_list_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -26,6 +27,7 @@ class AppRoutes {
   static const String irrigationDetail = '/irrigation-detail';
   static const String addIrrigation = '/add-irrigation';
   static const String fields = '/fields';
+  static const String addField = '/add-field';
   static const String sensors = '/sensors';
   static const String profile = '/profile';
   static const String settings = '/settings';
@@ -70,6 +72,11 @@ class AppRoutes {
     GetPage(
       name: fields,
       page: () => const FieldsScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: addField,
+      page: () => const AddFieldScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

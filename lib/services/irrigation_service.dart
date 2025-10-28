@@ -6,24 +6,39 @@ class IrrigationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Get next scheduled irrigation for a user
-  Future<IrrigationSchedule?> getNextSchedule(String userId) async {
+  Future<IrrigationScheduleModel?> getNextSchedule(String userId) async {
     try {
-      final now = DateTime.now();
-      
+      // Get all schedules for user and filter/sort in memory to avoid composite index
       final querySnapshot = await _firestore
-          .collection('irrigation_schedules')
+          .collection('irrigationSchedules')
           .where('userId', isEqualTo: userId)
-          .where('status', isEqualTo: 'scheduled')
-          .where('startTime', isGreaterThan: now.toIso8601String())
-          .orderBy('startTime', descending: false)
-          .limit(1)
           .get();
 
       if (querySnapshot.docs.isEmpty) {
         return null;
       }
 
-      return IrrigationSchedule.fromMap(querySnapshot.docs.first.data());
+      // Filter for active and future schedules in memory
+      final now = DateTime.now();
+      final schedules = querySnapshot.docs
+          .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
+          .where((schedule) {
+            final next = schedule.nextRun;
+            final candidateTime = next ?? schedule.startTime;
+            final isUpcoming = candidateTime.isAfter(now);
+            return schedule.isActive && schedule.status == 'scheduled' && isUpcoming;
+          })
+          .toList();
+
+      if (schedules.isEmpty) {
+        return null;
+      }
+
+      // Sort by candidate next time and return first
+      DateTime nextTimeFor(IrrigationScheduleModel s) => s.nextRun ?? s.startTime;
+      schedules.sort((a, b) => nextTimeFor(a).compareTo(nextTimeFor(b)));
+      
+      return schedules.first;
     } catch (e) {
       log('Error getting next schedule: $e');
       return null;
@@ -31,16 +46,42 @@ class IrrigationService {
   }
 
   // Get all schedules for a user
-  Stream<List<IrrigationSchedule>> getUserSchedules(String userId) {
+  Stream<List<IrrigationScheduleModel>> getUserSchedules(String userId) {
     return _firestore
-        .collection('irrigation_schedules')
+        .collection('irrigationSchedules')
         .where('userId', isEqualTo: userId)
-        .orderBy('startTime', descending: false)
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs
-          .map((doc) => IrrigationSchedule.fromMap(doc.data()))
+      final schedules = snapshot.docs
+          .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
           .toList();
+      
+      // Sort in memory by startTime
+      schedules.sort((a, b) => a.startTime.compareTo(b.startTime));
+      
+      return schedules;
+    });
+  }
+
+  // Get only upcoming scheduled and active cycles for a user
+  Stream<List<IrrigationScheduleModel>> getUpcomingScheduled(String userId) {
+    return _firestore
+        .collection('irrigationSchedules')
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      final now = DateTime.now();
+      DateTime effectiveTime(IrrigationScheduleModel s) => s.nextRun ?? s.startTime;
+      final schedules = snapshot.docs
+          .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
+          .where((s) =>
+            s.isActive &&
+            (s.status == 'scheduled' || s.status == 'scheduleId') &&
+            effectiveTime(s).isAfter(now))
+          .toList();
+
+      schedules.sort((a, b) => effectiveTime(a).compareTo(effectiveTime(b)));
+      return schedules;
     });
   }
 
@@ -53,30 +94,27 @@ class IrrigationService {
     required int durationMinutes,
   }) async {
     try {
-      final scheduleId = _firestore.collection('irrigation_schedules').doc().id;
       final now = DateTime.now();
 
-      final schedule = IrrigationSchedule(
-        scheduleId: scheduleId,
+      final schedule = IrrigationScheduleModel(
+        id: '',
         userId: userId,
-        farmId: farmId,
-        fieldId: fieldId,
-        fieldName: fieldName,
+        name: 'Manual Irrigation - $fieldName',
+        zoneId: fieldId,
+        zoneName: fieldName,
         startTime: now,
         durationMinutes: durationMinutes,
+        repeatDays: const [],
         isActive: true,
         status: 'running',
-        notes: 'Started manually',
         createdAt: now,
-        updatedAt: now,
       );
 
       await _firestore
-          .collection('irrigation_schedules')
-          .doc(scheduleId)
-          .set(schedule.toMap());
+          .collection('irrigationSchedules')
+          .add(schedule.toMap());
 
-      log('Irrigation started manually: $scheduleId');
+      log('Irrigation started manually');
       return true;
     } catch (e) {
       log('Error starting irrigation manually: $e');
@@ -84,15 +122,38 @@ class IrrigationService {
     }
   }
 
+  // Stop irrigation manually
+  Future<bool> stopIrrigationManually(String scheduleId) async {
+    try {
+      final now = DateTime.now();
+      
+      await _firestore
+          .collection('irrigationSchedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'stopped',
+        'isActive': false,
+        'stoppedAt': Timestamp.fromDate(now),
+        'stoppedBy': 'manual',
+        'updatedAt': Timestamp.fromDate(now),
+      });
+
+      log('Irrigation stopped manually: $scheduleId');
+      return true;
+    } catch (e) {
+      log('Error stopping irrigation manually: $e');
+      return false;
+    }
+  }
+
   // Create new schedule
-  Future<bool> createSchedule(IrrigationSchedule schedule) async {
+  Future<bool> createSchedule(IrrigationScheduleModel schedule) async {
     try {
       await _firestore
-          .collection('irrigation_schedules')
-          .doc(schedule.scheduleId)
-          .set(schedule.toMap());
+          .collection('irrigationSchedules')
+          .add(schedule.toMap());
 
-      log('Schedule created: ${schedule.scheduleId}');
+      log('Schedule created');
       return true;
     } catch (e) {
       log('Error creating schedule: $e');

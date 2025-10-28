@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../services/irrigation_service.dart';
 import '../../routes/app_routes.dart';
@@ -21,8 +22,19 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
     final userId = authProvider.currentUser?.userId;
+
+    if (!authProvider.hasAuthChecked) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Irrigation Schedules')),
+        body: const Center(
+          child: CircularProgressIndicator(
+            color: FamingaBrandColors.primaryOrange,
+          ),
+        ),
+      );
+    }
 
     if (userId == null) {
       return Scaffold(
@@ -40,17 +52,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () {
-              Get.snackbar(
-                'Coming Soon',
-                'Schedule creation feature coming soon!',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
+            onPressed: () => _openCreateSchedule(context, userId),
           ),
         ],
       ),
-      body: StreamBuilder<List<IrrigationSchedule>>(
+      body: StreamBuilder<List<IrrigationScheduleModel>>(
         stream: _irrigationService.getUserSchedules(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -66,13 +72,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.error_outline,
                     size: 48,
                     color: FamingaBrandColors.statusWarning,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Error loading schedules',
                     style: TextStyle(
                       color: FamingaBrandColors.textPrimary,
@@ -82,7 +88,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   const SizedBox(height: 8),
                   Text(
                     snapshot.error.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: FamingaBrandColors.textSecondary,
                       fontSize: 12,
                     ),
@@ -100,13 +106,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.calendar_today,
                     size: 64,
                     color: FamingaBrandColors.textSecondary,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'No Irrigation Schedules',
                     style: TextStyle(
                       color: FamingaBrandColors.textPrimary,
@@ -115,7 +121,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Create your first irrigation schedule',
                     style: TextStyle(
                       color: FamingaBrandColors.textSecondary,
@@ -124,13 +130,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ),
                   const SizedBox(height: 24),
                   ElevatedButton.icon(
-                    onPressed: () {
-                      Get.snackbar(
-                        'Coming Soon',
-                        'Schedule creation feature coming soon!',
-                        snackPosition: SnackPosition.BOTTOM,
-                      );
-                    },
+                    onPressed: () => _openCreateSchedule(context, userId),
                     icon: const Icon(Icons.add),
                     label: const Text('Create Schedule'),
                     style: ElevatedButton.styleFrom(
@@ -165,30 +165,29 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     );
   }
 
-  Widget _buildScheduleCard(IrrigationSchedule schedule) {
+  Widget _buildScheduleCard(IrrigationScheduleModel schedule) {
+    // Determine status and styling based on schedule status
     Color statusColor;
     IconData statusIcon;
     
     switch (schedule.status) {
-      case 'scheduled':
-        statusColor = FamingaBrandColors.primaryOrange;
-        statusIcon = Icons.schedule;
-        break;
       case 'running':
         statusColor = FamingaBrandColors.statusSuccess;
         statusIcon = Icons.play_circle;
+        break;
+      case 'stopped':
+        statusColor = FamingaBrandColors.statusWarning;
+        statusIcon = Icons.stop_circle;
         break;
       case 'completed':
         statusColor = FamingaBrandColors.textSecondary;
         statusIcon = Icons.check_circle;
         break;
-      case 'cancelled':
-        statusColor = FamingaBrandColors.statusWarning;
-        statusIcon = Icons.cancel;
-        break;
+      case 'scheduled':
       default:
-        statusColor = FamingaBrandColors.textSecondary;
-        statusIcon = Icons.help_outline;
+        statusColor = FamingaBrandColors.primaryOrange;
+        statusIcon = Icons.schedule;
+        break;
     }
 
     return Card(
@@ -210,8 +209,8 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          schedule.fieldName,
-                          style: TextStyle(
+                          schedule.name,
+                          style: const TextStyle(
                             color: FamingaBrandColors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -219,8 +218,16 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
+                          schedule.zoneName,
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textSecondary,
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
                           DateFormat('EEEE, MMM dd, yyyy').format(schedule.startTime),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: FamingaBrandColors.textSecondary,
                             fontSize: 12,
                           ),
@@ -266,22 +273,44 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                 children: [
                   _buildInfoItem(
                     Icons.access_time,
-                    DateFormat('hh:mm a').format(schedule.startTime),
+                    schedule.formattedTime,
                   ),
                   const SizedBox(width: 24),
                   _buildInfoItem(
                     Icons.timer,
                     schedule.formattedDuration,
                   ),
-                  if (schedule.waterUsed != null) ...[
+                  if (schedule.repeatDays.isNotEmpty) ...[
                     const SizedBox(width: 24),
                     _buildInfoItem(
-                      Icons.water_drop,
-                      '${schedule.waterUsed!.round()} L',
+                      Icons.repeat,
+                      '${schedule.repeatDays.length} days',
                     ),
                   ],
                 ],
               ),
+              // Show stop button if irrigation is running
+              if (schedule.status == 'running') ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _stopIrrigation(schedule),
+                    icon: const Icon(Icons.stop, size: 18),
+                    label: const Text('Stop Irrigation'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FamingaBrandColors.statusWarning,
+                      foregroundColor: FamingaBrandColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -300,7 +329,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         const SizedBox(width: 4),
         Text(
           text,
-          style: TextStyle(
+          style: const TextStyle(
             color: FamingaBrandColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -310,28 +339,222 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     );
   }
 
-  void _showScheduleDetails(IrrigationSchedule schedule) {
+  void _stopIrrigation(IrrigationScheduleModel schedule) {
     Get.dialog(
       AlertDialog(
-        title: Text(schedule.fieldName),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDetailRow('Date', DateFormat('MMM dd, yyyy').format(schedule.startTime)),
-            _buildDetailRow('Time', DateFormat('hh:mm a').format(schedule.startTime)),
-            _buildDetailRow('Duration', schedule.formattedDuration),
-            _buildDetailRow('Status', schedule.status),
-            if (schedule.waterUsed != null)
-              _buildDetailRow('Water Used', '${schedule.waterUsed!.round()} liters'),
-            if (schedule.notes != null && schedule.notes!.isNotEmpty)
-              _buildDetailRow('Notes', schedule.notes!),
-          ],
+        title: const Text('Stop Irrigation'),
+        content: Text(
+          'Are you sure you want to stop irrigation for ${schedule.zoneName}?',
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              
+              // Show loading
+              Get.dialog(
+                const Center(
+                  child: CircularProgressIndicator(
+                    color: FamingaBrandColors.primaryOrange,
+                  ),
+                ),
+                barrierDismissible: false,
+              );
+              
+              final success = await _irrigationService.stopIrrigationManually(
+                schedule.id,
+              );
+              
+              Get.back(); // Close loading
+              
+              if (success) {
+                Get.snackbar(
+                  'Success',
+                  'Irrigation stopped successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusSuccess,
+                  colorText: FamingaBrandColors.white,
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Failed to stop irrigation. Please try again.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FamingaBrandColors.statusWarning,
+            ),
+            child: const Text('Stop'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showScheduleDetails(IrrigationScheduleModel schedule) {
+    final repeatDaysText = schedule.repeatDays.isEmpty 
+        ? 'One-time' 
+        : schedule.repeatDays.map((day) {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            return days[day - 1];
+          }).join(', ');
+    
+    Get.dialog(
+      AlertDialog(
+        title: Text(schedule.name),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildDetailRow('Zone', schedule.zoneName),
+            _buildDetailRow('Start Time', schedule.formattedTime),
+            _buildDetailRow('Duration', schedule.formattedDuration),
+            _buildDetailRow('Repeat', repeatDaysText),
+            _buildDetailRow('Status', schedule.status.toUpperCase()),
+            if (schedule.lastRun != null)
+              _buildDetailRow('Last Run', DateFormat('MMM dd, yyyy hh:mm a').format(schedule.lastRun!)),
+            if (schedule.nextRun != null)
+              _buildDetailRow('Next Run', DateFormat('MMM dd, yyyy hh:mm a').format(schedule.nextRun!)),
+            if (schedule.stoppedAt != null)
+              _buildDetailRow('Stopped At', DateFormat('MMM dd, yyyy hh:mm a').format(schedule.stoppedAt!)),
+            if (schedule.stoppedBy != null)
+              _buildDetailRow('Stopped By', schedule.stoppedBy!),
+          ],
+        ),
+        actions: [
+          if (schedule.status == 'running')
+            TextButton(
+              onPressed: () {
+                Get.back();
+                _stopIrrigation(schedule);
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: FamingaBrandColors.statusWarning,
+              ),
+              child: const Text('Stop'),
+            ),
+          TextButton(
+            onPressed: () => Get.back(),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openCreateSchedule(BuildContext context, String userId) {
+    final nameController = TextEditingController();
+    final zoneController = TextEditingController();
+    final durationController = TextEditingController(text: '60');
+    DateTime selectedStart = DateTime.now().add(const Duration(minutes: 5));
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Create Irrigation Schedule'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            return SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameController,
+                    decoration: const InputDecoration(labelText: 'Schedule Name'),
+                  ),
+                  TextField(
+                    controller: zoneController,
+                    decoration: const InputDecoration(labelText: 'Zone Name'),
+                  ),
+                  TextField(
+                    controller: durationController,
+                    decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Text('Start Time: '),
+                      Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            initialDate: selectedStart,
+                          );
+                          if (date == null) return;
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(selectedStart),
+                          );
+                          if (time == null) return;
+                          setState(() {
+                            selectedStart = DateTime(
+                              date.year,
+                              date.month,
+                              date.day,
+                              time.hour,
+                              time.minute,
+                            );
+                          });
+                        },
+                        child: const Text('Pick'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
+              final zoneName = zoneController.text.trim().isEmpty ? 'Field' : zoneController.text.trim();
+              final duration = int.tryParse(durationController.text.trim()) ?? 60;
+
+              final schedule = IrrigationScheduleModel(
+                id: '',
+                userId: userId,
+                name: name,
+                zoneId: zoneName.toLowerCase().replaceAll(' ', '_'),
+                zoneName: zoneName,
+                startTime: selectedStart,
+                durationMinutes: duration,
+                repeatDays: const <int>[],
+                isActive: true,
+                status: 'scheduled',
+                createdAt: DateTime.now(),
+              );
+
+              final ok = await _irrigationService.createSchedule(schedule);
+              if (ok) {
+                Get.back();
+                Get.snackbar('Success', 'Schedule created');
+                setState(() {});
+                // trigger dashboard refresh so "Next Schedule" updates
+                final dash = Provider.of<DashboardProvider>(context, listen: false);
+                await dash.refresh(userId);
+              } else {
+                Get.snackbar('Error', 'Failed to create schedule');
+              }
+            },
+            child: const Text('Create'),
           ),
         ],
       ),
@@ -348,7 +571,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
             width: 100,
             child: Text(
               '$label:',
-              style: TextStyle(
+              style: const TextStyle(
                 color: FamingaBrandColors.textSecondary,
                 fontSize: 14,
               ),
@@ -357,7 +580,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
           Expanded(
             child: Text(
               value,
-              style: TextStyle(
+              style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

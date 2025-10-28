@@ -8,10 +8,10 @@ import 'package:flutter/foundation.dart';
 /// as they are protected by Firebase Security Rules and API restrictions
 class FirebaseConfig {
   // Firebase Project Configuration
-  static const String projectId = 'ngairrigate';
-  static const String apiKey = 'AIzaSyD95nh8G5koVV04Oqmq_ni9n0wl0YgbHC8';
-  static const String authDomain = 'ngairrigate.firebaseapp.com';
-  static const String storageBucket = 'ngairrigate.firebasestorage.app';
+  static const String projectId = 'famingairrigation';
+  static const String apiKey = 'AIzaSyDZDeht3F5sa6jiqedhREjFuRs7DrXzgm0';
+  static const String authDomain = 'famingairrigation.firebaseapp.com';
+  static const String storageBucket = 'famingairrigation.appspot.com';
   static const String messagingSenderId = '622157404711';
   static const String appId = '1:622157404711:web:0ef6a4c4d838c75aef0c02';
   static const String measurementId = 'G-PHY8RXWZER';
@@ -19,28 +19,27 @@ class FirebaseConfig {
   /// Initialize Firebase for the current platform
   static Future<void> initialize() async {
     try {
-      // Check if Firebase is already initialized (e.g., after hot restart)
-      if (Firebase.apps.isEmpty) {
-        await Firebase.initializeApp(
-          options: _getFirebaseOptions(),
-        );
-        
-        if (kDebugMode) {
-          print('✅ Firebase initialized successfully');
-        }
-      } else {
-        if (kDebugMode) {
-          print('✅ Firebase already initialized, skipping...');
-        }
+      // Try to initialize Firebase
+      // On web, this will succeed even if called multiple times (idempotent)
+      // On mobile, it will throw duplicate-app error if already initialized
+      await Firebase.initializeApp(
+        options: _getFirebaseOptions(),
+      );
+      
+      if (kDebugMode) {
+        print('✅ Firebase initialized successfully for ${kIsWeb ? 'web' : defaultTargetPlatform.name}');
       }
       
-      // Enable Firestore offline persistence
+      // Enable Firestore offline persistence (not available on web)
       await _configureFirestore();
     } catch (e) {
-      // Handle duplicate app error gracefully (can happen on Android with google-services.json)
-      if (e.toString().contains('duplicate-app')) {
+      // Handle duplicate app error gracefully (can happen on Android/iOS with config files)
+      // or if Firebase is already initialized
+      if (e.toString().contains('duplicate-app') || 
+          e.toString().contains('already created') ||
+          e.toString().contains('already initialized')) {
         if (kDebugMode) {
-          print('✅ Firebase already initialized (auto-initialized by platform), continuing...');
+          print('✅ Firebase already initialized, continuing...');
         }
         // Continue with Firestore configuration
         await _configureFirestore();
@@ -56,10 +55,17 @@ class FirebaseConfig {
   /// Configure Firestore settings
   static Future<void> _configureFirestore() async {
     try {
-      // Firestore offline persistence is enabled by default on mobile
-      // Additional settings can be configured here
-      if (kDebugMode) {
-        print('✅ Firestore configured with offline persistence');
+      if (kIsWeb) {
+        // Web doesn't support offline persistence configuration
+        if (kDebugMode) {
+          print('✅ Firestore configured for web');
+        }
+      } else {
+        // Firestore offline persistence is enabled by default on mobile
+        // Additional settings can be configured here if needed
+        if (kDebugMode) {
+          print('✅ Firestore configured with offline persistence');
+        }
       }
     } catch (e) {
       if (kDebugMode) {
