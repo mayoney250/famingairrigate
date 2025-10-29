@@ -186,7 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 // Province
                 DropdownButtonFormField<String>(
-                  value: _selectedProvince,
+                  initialValue: _selectedProvince,
                   decoration: InputDecoration(
                     labelText: 'Province',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
@@ -209,11 +209,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 16),
                 // District
                 DropdownButtonFormField<String>(
-                  value: _selectedDistrict,
+                  initialValue: _selectedDistrict,
                   decoration: InputDecoration(
                     labelText: 'District',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                    prefixIcon: Icon(Icons.location_city_outlined, color: FamingaBrandColors.iconColor),
+                    prefixIcon: const Icon(Icons.location_city_outlined, color: FamingaBrandColors.iconColor),
                   ),
                   items: _districts
                       .map((district) => DropdownMenuItem<String>(

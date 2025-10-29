@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -143,6 +142,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Irrigation status chip
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: (dashboardProvider.isIrrigationOpen
+                                ? FamingaBrandColors.statusSuccess
+                                : FamingaBrandColors.statusWarning)
+                            .withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        dashboardProvider.isIrrigationOpen ? 'OPEN' : 'CLOSED',
+                        style: TextStyle(
+                          color: dashboardProvider.isIrrigationOpen
+                              ? FamingaBrandColors.statusSuccess
+                              : FamingaBrandColors.statusWarning,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
                   // System Status Card
                   _buildSystemStatusCard(dashboardProvider),
                   const SizedBox(height: 20),
@@ -159,15 +183,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildQuickActions(),
                   const SizedBox(height: 20),
 
-                  // Soil Moisture and Weather Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildSoilMoistureCard(dashboardProvider)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildWeatherCard(dashboardProvider)),
-                    ],
-                  ),
+                  // KPI row (Moisture, Temp, Humidity)
+                  _buildKpiRow(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // Trend mini chart (last 24h)
+                  _buildTrendMiniChart(dashboardProvider),
                   const SizedBox(height: 20),
 
                   // Next Schedule Cycle
@@ -298,25 +319,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildQuickActionButton(
             Icons.play_circle_outline,
-            'Manual Start',
+            'Manual Control',
             FamingaBrandColors.primaryOrange,
             () {
-              Get.snackbar(
-                'Manual Start',
-                'Start irrigation manually',
-                snackPosition: SnackPosition.BOTTOM,
-              );
+              Get.toNamed(AppRoutes.irrigationControl);
             },
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildQuickActionButton(
-            Icons.info_outline,
-            'Farm Info',
+            Icons.notifications_active_outlined,
+            'Alerts',
             FamingaBrandColors.primaryOrange,
             () {
-              Get.toNamed(AppRoutes.fields);
+              Get.toNamed(AppRoutes.alerts);
             },
           ),
         ),
@@ -558,6 +575,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildKpiRow(DashboardProvider dashboardProvider) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isWide = constraints.maxWidth > 700;
+        final children = <Widget>[
+          Expanded(child: _buildSoilMoistureCard(dashboardProvider)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildTemperatureCard(dashboardProvider)),
+          const SizedBox(width: 12),
+          Expanded(child: _buildHumidityCard(dashboardProvider)),
+        ];
+
+        if (isWide) {
+          return Row(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+        } else {
+          return Column(
+            children: [
+              Row(children: children.sublist(0, 3)),
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  Widget _buildTemperatureCard(DashboardProvider dashboardProvider) {
+    final t = dashboardProvider.weatherData?.temperatureString ?? '--';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          const Text('Temperature', style: TextStyle(color: FamingaBrandColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          const Icon(Icons.thermostat, color: FamingaBrandColors.primaryOrange, size: 36),
+          const SizedBox(height: 8),
+          Text(t, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHumidityCard(DashboardProvider dashboardProvider) {
+    final h = dashboardProvider.weatherData?.humidityString ?? '--';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        children: [
+          const Text('Humidity', style: TextStyle(color: FamingaBrandColors.textPrimary, fontSize: 13, fontWeight: FontWeight.w600)),
+          const SizedBox(height: 12),
+          const Icon(Icons.water_drop, color: FamingaBrandColors.darkGreen, size: 36),
+          const SizedBox(height: 8),
+          Text(h, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTrendMiniChart(DashboardProvider dashboardProvider) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: FamingaBrandColors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Last 24h Trend', style: TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 12),
+          Container(
+            height: 80,
+            decoration: BoxDecoration(
+              color: FamingaBrandColors.primaryOrange.withOpacity(0.08),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Center(
+              child: Icon(Icons.show_chart, color: FamingaBrandColors.primaryOrange),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWeatherDetail(String label, String value) {
     return Column(
       children: [
@@ -687,10 +799,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Column(
               children: [
                 const Divider(),
-                Align(
+                const Align(
                   alignment: Alignment.centerLeft,
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: EdgeInsets.symmetric(vertical: 8),
                     child: Text(
                       "Upcoming irrigations:",
                       style: TextStyle(
@@ -704,7 +816,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ...upcoming.skip(1).map((sched) => ListTile(
                   dense: true,
                   contentPadding: EdgeInsets.zero,
-                  leading: Icon(Icons.calendar_today, color: FamingaBrandColors.primaryOrange, size: 18),
+                  leading: const Icon(Icons.calendar_today, color: FamingaBrandColors.primaryOrange, size: 18),
                   title: Text(sched.name, style: const TextStyle(fontSize: 14)),
                   subtitle: Text(
                     DateFormat('E, MMM dd, yyyy – hh:mm a').format(sched.startTime),

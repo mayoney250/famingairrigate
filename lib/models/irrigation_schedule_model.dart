@@ -57,7 +57,7 @@ class IrrigationScheduleModel {
 
   factory IrrigationScheduleModel.fromMap(Map<String, dynamic> map) {
     try {
-      DateTime _parseDate(dynamic value) {
+      DateTime parseDate(dynamic value) {
         if (value == null) return DateTime.now();
         if (value is Timestamp) return value.toDate();
         if (value is DateTime) return value;
@@ -68,7 +68,7 @@ class IrrigationScheduleModel {
         return DateTime.now();
       }
 
-      int _parseInt(dynamic value, {int fallback = 0}) {
+      int parseInt(dynamic value, {int fallback = 0}) {
         if (value == null) return fallback;
         if (value is int) return value;
         if (value is double) return value.toInt();
@@ -78,10 +78,10 @@ class IrrigationScheduleModel {
         return fallback;
       }
 
-      List<int> _parseIntList(dynamic value) {
+      List<int> parseIntList(dynamic value) {
         if (value == null) return <int>[];
         if (value is List) {
-          return value.map((e) => _parseInt(e, fallback: 0)).where((e) => e > 0).toList();
+          return value.map((e) => parseInt(e, fallback: 0)).where((e) => e > 0).toList();
         }
         return <int>[];
       }
@@ -92,15 +92,15 @@ class IrrigationScheduleModel {
         name: map['name'] ?? '',
         zoneId: map['zoneId'] ?? '',
         zoneName: map['zoneName'] ?? '',
-        startTime: _parseDate(map['startTime']),
-        durationMinutes: _parseInt(map['durationMinutes'], fallback: 30),
-        repeatDays: _parseIntList(map['repeatDays']),
+        startTime: parseDate(map['startTime']),
+        durationMinutes: parseInt(map['durationMinutes'], fallback: 30),
+        repeatDays: parseIntList(map['repeatDays']),
         isActive: map['isActive'] is bool ? map['isActive'] as bool : (map['isActive'].toString() == 'true'),
         status: map['status'] ?? 'scheduled',
-        createdAt: _parseDate(map['createdAt']),
-        lastRun: map['lastRun'] != null ? _parseDate(map['lastRun']) : null,
-        nextRun: map['nextRun'] != null ? _parseDate(map['nextRun']) : null,
-        stoppedAt: map['stoppedAt'] != null ? _parseDate(map['stoppedAt']) : null,
+        createdAt: parseDate(map['createdAt']),
+        lastRun: map['lastRun'] != null ? parseDate(map['lastRun']) : null,
+        nextRun: map['nextRun'] != null ? parseDate(map['nextRun']) : null,
+        stoppedAt: map['stoppedAt'] != null ? parseDate(map['stoppedAt']) : null,
         stoppedBy: map['stoppedBy'],
       );
     } catch (e) {

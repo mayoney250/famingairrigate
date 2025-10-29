@@ -198,11 +198,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          Get.snackbar(
-            'Sensor Details',
-            'Viewing ${sensor['name']} details',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          Get.toNamed(AppRoutes.sensorDetail, arguments: sensor);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),

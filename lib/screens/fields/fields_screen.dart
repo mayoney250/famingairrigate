@@ -63,7 +63,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(
+            return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -72,7 +72,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                     size: 48,
                     color: FamingaBrandColors.statusWarning,
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: 16),
                   Text(
                     'Error loading fields',
                     style: TextStyle(
@@ -92,13 +92,13 @@ class _FieldsScreenState extends State<FieldsScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.landscape,
                     size: 64,
                     color: FamingaBrandColors.textSecondary,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'No Fields Yet',
                     style: TextStyle(
                       color: FamingaBrandColors.textPrimary,
@@ -107,7 +107,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
+                  const Text(
                     'Create your first field to get started',
                     style: TextStyle(
                       color: FamingaBrandColors.textSecondary,
@@ -312,7 +312,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
             ),
             const SizedBox(height: 24),
             ListTile(
-              leading: Icon(
+              leading: const Icon(
                 Icons.info_outline,
                 color: FamingaBrandColors.primaryOrange,
               ),
@@ -327,7 +327,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
               },
             ),
             ListTile(
-              leading: Icon(
+              leading: const Icon(
                 Icons.edit,
                 color: FamingaBrandColors.primaryOrange,
               ),

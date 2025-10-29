@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
@@ -160,7 +159,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                 label: 'Field Size (hectares)',
                 hintText: 'e.g., 2.5',
                 prefixIcon: Icons.straighten,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter field size';
@@ -200,7 +199,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.eco,
                       color: FamingaBrandColors.iconColor,
                     ),
@@ -234,7 +233,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                       onChanged: (value) {
                         setState(() => _isOrganic = value);
                       },
-                      activeColor: FamingaBrandColors.statusSuccess,
+                      activeThumbColor: FamingaBrandColors.statusSuccess,
                     ),
                   ],
                 ),
@@ -253,7 +252,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                 ),
                 child: Row(
                   children: [
-                    Icon(
+                    const Icon(
                       Icons.info_outline,
                       color: FamingaBrandColors.primaryOrange,
                     ),

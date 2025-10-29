@@ -7,8 +7,12 @@ import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/fields/add_field_screen.dart';
 import '../screens/fields/fields_screen.dart';
 import '../screens/irrigation/irrigation_list_screen.dart';
+import '../screens/irrigation/irrigation_control_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/sensors/sensors_screen.dart';
+import '../screens/sensors/sensor_detail_screen.dart';
+import '../screens/alerts/alerts_list_screen.dart';
+import '../screens/alerts/alert_detail_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/splash_screen.dart';
 
@@ -24,13 +28,17 @@ class AppRoutes {
   static const String emailVerification = '/email-verification';
   static const String dashboard = '/dashboard';
   static const String irrigationList = '/irrigation-list';
+  static const String irrigationControl = '/irrigation-control';
   static const String irrigationDetail = '/irrigation-detail';
   static const String addIrrigation = '/add-irrigation';
   static const String fields = '/fields';
   static const String addField = '/add-field';
   static const String sensors = '/sensors';
+  static const String sensorDetail = '/sensor-detail';
   static const String profile = '/profile';
   static const String settings = '/settings';
+  static const String alerts = '/alerts';
+  static const String alertDetail = '/alert-detail';
 
   // Route definitions
   static List<GetPage> routes = [
@@ -70,6 +78,11 @@ class AppRoutes {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+      name: irrigationControl,
+      page: () => const IrrigationControlScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: fields,
       page: () => const FieldsScreen(),
       transition: Transition.rightToLeft,
@@ -85,6 +98,11 @@ class AppRoutes {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+      name: sensorDetail,
+      page: () => const SensorDetailScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: profile,
       page: () => const ProfileScreen(),
       transition: Transition.rightToLeft,
@@ -92,6 +110,16 @@ class AppRoutes {
     GetPage(
       name: settings,
       page: () => const SettingsScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: alerts,
+      page: () => const AlertsListScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: alertDetail,
+      page: () => const AlertDetailScreen(),
       transition: Transition.rightToLeft,
     ),
   ];
