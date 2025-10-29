@@ -45,6 +45,28 @@ class IrrigationService {
     }
   }
 
+  // Start an existing scheduled cycle immediately
+  Future<bool> startScheduledNow(String scheduleId) async {
+    try {
+      final now = DateTime.now();
+      await _firestore
+          .collection('irrigationSchedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'running',
+        'isActive': true,
+        'startedAt': Timestamp.fromDate(now),
+        'updatedAt': Timestamp.fromDate(now),
+      });
+
+      log('Scheduled irrigation started now: $scheduleId');
+      return true;
+    } catch (e) {
+      log('Error starting scheduled irrigation now: $e');
+      return false;
+    }
+  }
+
   // Get all schedules for a user
   Stream<List<IrrigationScheduleModel>> getUserSchedules(String userId) {
     return _firestore

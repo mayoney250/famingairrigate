@@ -795,7 +795,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ],
           // Show a compact list of ALL upcoming scheduled cycles if more than 1
-          if (upcoming.length > 1)
+          if (upcoming.isNotEmpty)
             Column(
               children: [
                 const Divider(),
@@ -813,16 +813,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                   ),
                 ),
-                ...upcoming.skip(1).map((sched) => ListTile(
-                  dense: true,
-                  contentPadding: EdgeInsets.zero,
-                  leading: const Icon(Icons.calendar_today, color: FamingaBrandColors.primaryOrange, size: 18),
-                  title: Text(sched.name, style: const TextStyle(fontSize: 14)),
-                  subtitle: Text(
-                    DateFormat('E, MMM dd, yyyy – hh:mm a').format(sched.startTime),
-                    style: const TextStyle(fontSize: 12, color: FamingaBrandColors.textSecondary),
+                ...upcoming.map((sched) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today, color: FamingaBrandColors.primaryOrange, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(sched.name, style: const TextStyle(fontSize: 14)),
+                            Text(
+                              DateFormat('E, MMM dd, yyyy – hh:mm a').format(sched.startTime),
+                              style: const TextStyle(fontSize: 12, color: FamingaBrandColors.textSecondary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(sched.formattedDuration),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final uid = authProvider.currentUser!.userId;
+                          final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
+                          if (!ok) {
+                            Get.snackbar('Error', 'Failed to start cycle');
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: FamingaBrandColors.darkGreen,
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        child: const Text('Start'),
+                      ),
+                      const SizedBox(width: 8),
+                      OutlinedButton(
+                        onPressed: () async {
+                          final uid = authProvider.currentUser!.userId;
+                          final ok = await dashboardProvider.stopCycle(sched.id, uid);
+                          if (!ok) {
+                            Get.snackbar('Error', 'Failed to stop cycle');
+                          }
+                        },
+                        child: const Text('Stop'),
+                      ),
+                    ],
                   ),
-                  trailing: Text(sched.formattedDuration),
                 )),
               ],
             ),

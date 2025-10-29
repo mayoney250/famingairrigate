@@ -528,11 +528,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               final zoneName = zoneController.text.trim().isEmpty ? 'Field' : zoneController.text.trim();
               final duration = int.tryParse(durationController.text.trim()) ?? 60;
 
+              final dash = Provider.of<DashboardProvider>(context, listen: false);
               final schedule = IrrigationScheduleModel(
                 id: '',
                 userId: userId,
                 name: name,
-                zoneId: zoneName.toLowerCase().replaceAll(' ', '_'),
+                // Save the selected field/farm id as zoneId so dashboard can scope by it
+                zoneId: dash.selectedFarmId,
                 zoneName: zoneName,
                 startTime: selectedStart,
                 durationMinutes: duration,
