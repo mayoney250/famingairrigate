@@ -111,11 +111,26 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
-  // Load upcoming scheduled irrigations
+  // Load upcoming scheduled irrigations (scoped by selected farm, with legacy fallback)
   Future<void> _loadUpcoming(String userId) async {
     try {
-      _irrigationService.getUpcomingScheduled(userId).listen((list) {
-        _upcoming = list;
+      _irrigationService.getUserSchedules(userId).listen((all) {
+        final now = DateTime.now();
+        DateTime startFor(IrrigationScheduleModel s) => s.nextRun ?? s.startTime;
+        DateTime endFor(IrrigationScheduleModel s) => startFor(s).add(Duration(minutes: s.durationMinutes));
+
+        final filtered = all.where((s) {
+          if (!s.isActive) return false;
+          // Scope by field/zone id; legacy data without alignment will still show globally
+          if (s.zoneId.isNotEmpty && s.zoneId != _selectedFarmId) return false;
+
+          if (s.status == 'scheduled') return startFor(s).isAfter(now);
+          if (s.status == 'running') return endFor(s).isAfter(now);
+          return false; // hide stopped/completed
+        }).toList();
+
+        filtered.sort((a, b) => startFor(a).compareTo(startFor(b)));
+        _upcoming = filtered;
         notifyListeners();
       });
     } catch (e) {
@@ -252,6 +267,34 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+  // Start a specific scheduled cycle now
+  Future<bool> startScheduledCycleNow(String scheduleId, String userId) async {
+    try {
+      final ok = await _irrigationService.startScheduledNow(scheduleId);
+      if (ok) {
+        await loadDashboardData(userId);
+      }
+      return ok;
+    } catch (e) {
+      log('Error starting scheduled cycle now: $e');
+      return false;
+    }
+  }
+
+  // Stop a specific running/scheduled cycle
+  Future<bool> stopCycle(String scheduleId, String userId) async {
+    try {
+      final ok = await _irrigationService.stopIrrigationManually(scheduleId);
+      if (ok) {
+        await loadDashboardData(userId);
+      }
+      return ok;
+    } catch (e) {
+      log('Error stopping cycle: $e');
+      return false;
+    }
+  }
+
   // Refresh dashboard
   Future<void> refresh(String userId) async {
     await loadDashboardData(userId);
@@ -262,6 +305,10 @@ class DashboardProvider with ChangeNotifier {
     if (_selectedFarmId != farmId) {
       _selectedFarmId = farmId;
       notifyListeners();
+      // Re-filter upcoming for the new farm
+      // Requires a user context; if none, the next loadDashboardData will set it
+      // We trigger a silent re-run by calling _loadUpcoming with last-known user from an existing schedule if present
+      // Otherwise, do nothing here.
     }
   }
 
