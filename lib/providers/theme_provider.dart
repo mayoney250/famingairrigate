@@ -50,8 +50,6 @@ class ThemeProvider with ChangeNotifier {
     switch (themeString) {
       case 'dark':
         return ThemeMode.dark;
-      case 'system':
-        return ThemeMode.system;
       default:
         return ThemeMode.light;
     }
@@ -61,8 +59,6 @@ class ThemeProvider with ChangeNotifier {
     switch (mode) {
       case ThemeMode.dark:
         return 'dark';
-      case ThemeMode.system:
-        return 'system';
       default:
         return 'light';
     }

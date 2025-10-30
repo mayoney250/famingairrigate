@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import '../../config/colors.dart';
+import '../../providers/theme_provider.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -14,14 +16,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _autoIrrigation = true;
-  bool _darkMode = false;
+  String _themeMode = 'Light';
   String _temperatureUnit = 'Celsius';
   String _language = 'English';
 
   @override
   Widget build(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    _themeMode = _themeModeFor(themeProvider.themeMode);
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Settings'),
       ),
@@ -122,16 +126,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => _language = value!);
                 },
               ),
-              _buildSwitchTile(
+              _buildDropdownTile(
                 Icons.dark_mode_outlined,
-                'Dark Mode',
-                'Use dark theme',
-                _darkMode,
-                (value) {
-                  setState(() => _darkMode = value);
+                'Theme',
+                _themeMode,
+                ['Light', 'Dark'],
+                (value) async {
+                  if (value == null) return;
+                  setState(() => _themeMode = value);
+                  await themeProvider.setThemeMode(_modeFor(value));
                   Get.snackbar(
-                    'Dark Mode',
-                    'Dark mode is coming soon!',
+                    'Theme updated',
+                    'Theme set to ${value.toLowerCase()}',
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 },
@@ -238,7 +244,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Widget _buildSection(String title, List<Widget> items) {
     return Container(
-      color: FamingaBrandColors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,10 +253,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               title,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: FamingaBrandColors.textSecondary,
+                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.7),
                 letterSpacing: 1,
               ),
             ),
@@ -273,20 +279,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
       secondary: Icon(
         icon,
         color: enabled
-            ? FamingaBrandColors.iconColor
-            : FamingaBrandColors.textSecondary,
+            ? Theme.of(context).iconTheme.color
+            : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
       ),
       title: Text(
         title,
         style: TextStyle(
           fontWeight: FontWeight.w600,
-          color: enabled ? null : FamingaBrandColors.textSecondary,
+          color: enabled
+              ? Theme.of(context).colorScheme.onSurface
+              : Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
         ),
       ),
       subtitle: Text(subtitle),
       value: value,
       onChanged: enabled ? onChanged : null,
-      activeThumbColor: FamingaBrandColors.primaryOrange,
+      activeThumbColor: Theme.of(context).colorScheme.primary,
     );
   }
 
@@ -297,14 +305,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     VoidCallback? onTap,
   ) {
     return ListTile(
-      leading: Icon(icon, color: FamingaBrandColors.iconColor),
+      leading: Icon(icon, color: Theme.of(context).iconTheme.color),
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.w600),
       ),
       subtitle: Text(subtitle),
       trailing: onTap != null
-          ? const Icon(Icons.chevron_right, color: FamingaBrandColors.textSecondary)
+          ? Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6))
           : null,
       onTap: onTap,
     );
@@ -318,7 +326,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     ValueChanged<String?> onChanged,
   ) {
     return ListTile(
-      leading: Icon(icon, color: FamingaBrandColors.iconColor),
+      leading: Icon(icon, color: Theme.of(context).iconTheme.color),
       title: Text(
         title,
         style: const TextStyle(fontWeight: FontWeight.w600),
@@ -359,14 +367,34 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 snackPosition: SnackPosition.BOTTOM,
               );
             },
-            child: const Text(
+            child: Text(
               'Clear',
-              style: TextStyle(color: FamingaBrandColors.statusWarning),
+              style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),
         ],
       ),
     );
+  }
+
+  String _themeModeFor(ThemeMode mode) {
+    switch (mode) {
+      case ThemeMode.dark:
+        return 'Dark';
+      case ThemeMode.light:
+      default:
+        return 'Light';
+    }
+  }
+
+  ThemeMode _modeFor(String value) {
+    switch (value) {
+      case 'Dark':
+        return ThemeMode.dark;
+      case 'Light':
+      default:
+        return ThemeMode.light;
+    }
   }
 }
 

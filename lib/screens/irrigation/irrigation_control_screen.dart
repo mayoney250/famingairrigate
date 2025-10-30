@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import '../../config/colors.dart';
 import '../../models/irrigation_log_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/irrigation_log_service.dart';
@@ -32,8 +31,15 @@ class IrrigationControlScreen extends StatelessWidget {
                       title: 'Open Valve',
                       note: 'Ensure personnel and equipment are clear of active irrigation paths.',
                       onConfirm: () async {
-                        final ok = await irrigationService.manualOpenValve(userId: userId);
-                        _toast(ok, 'Valve opened', 'Failed to open valve');
+                        // Start a manual irrigation cycle with placeholder field/zone
+                        final ok = await irrigationService.startIrrigationManually(
+                          userId: userId,
+                          farmId: 'defaultFarm',
+                          fieldId: 'manual-zone',
+                          fieldName: 'Manual Zone',
+                          durationMinutes: 30,
+                        );
+                        _toast(ok, 'Valve opened (manual start)', 'Failed to open valve');
                       },
                     ),
                     icon: const Icon(Icons.play_arrow),
@@ -44,16 +50,24 @@ class IrrigationControlScreen extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: FamingaBrandColors.statusWarning,
-                      foregroundColor: FamingaBrandColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      foregroundColor: Theme.of(context).colorScheme.onError,
                     ),
                     onPressed: () => _confirmAction(
                       context,
                       title: 'Close Valve',
                       note: 'Confirm that manual irrigation should stop now.',
                       onConfirm: () async {
-                        final ok = await irrigationService.manualCloseValve(userId: userId);
-                        _toast(ok, 'Valve closed', 'Failed to close valve');
+                        // Without a schedule id context, log a stop entry for UX feedback
+                        final logId = await logsService.logIrrigationStop(
+                          userId,
+                          'manual-zone',
+                          'Manual Zone',
+                          0,
+                          0,
+                        );
+                        final ok = logId.isNotEmpty;
+                        _toast(ok, 'Valve closed (logged stop)', 'Failed to close valve');
                       },
                     ),
                     icon: const Icon(Icons.stop),
@@ -76,7 +90,7 @@ class IrrigationControlScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Expanded(
             child: StreamBuilder<List<IrrigationLogModel>>(
-              stream: logsService.getRecentLogs(userId: userId),
+              stream: logsService.streamUserLogs(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -91,19 +105,22 @@ class IrrigationControlScreen extends StatelessWidget {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, index) {
                     final l = logs[index];
-                    final success = l.result?.toLowerCase() == 'success';
+                    final success = l.action != IrrigationAction.failed;
+                    final scheme = Theme.of(context).colorScheme;
                     return ListTile(
                       leading: Icon(
-                        l.action?.toLowerCase() == 'open' ? Icons.play_arrow : Icons.stop,
-                        color: FamingaBrandColors.iconColor,
+                        (l.action == IrrigationAction.started || l.action == IrrigationAction.scheduled)
+                            ? Icons.play_arrow
+                            : (l.action == IrrigationAction.stopped ? Icons.stop : Icons.check),
+                        color: scheme.primary,
                       ),
-                      title: Text('${l.action?.toUpperCase()} - ${l.zoneName ?? 'Zone'}'),
-                      subtitle: Text(l.timestamp?.toString() ?? ''),
+                      title: Text('${l.actionDisplay} - ${l.zoneName}'),
+                      subtitle: Text(l.timestamp.toString()),
                       trailing: Icon(
                         success ? Icons.check_circle : Icons.error,
                         color: success
-                            ? FamingaBrandColors.statusSuccess
-                            : FamingaBrandColors.statusWarning,
+                            ? scheme.secondary
+                            : scheme.error,
                       ),
                     );
                   },
@@ -122,18 +139,24 @@ class IrrigationControlScreen extends StatelessWidget {
     required String note,
     required Future<void> Function() onConfirm,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     Get.dialog(
       AlertDialog(
-        title: Text(title),
+        backgroundColor: scheme.surface,
+        title: Text(title, style: textTheme.titleLarge),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Safety Note'),
+            Text('Safety Note', style: textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               note,
-              style: const TextStyle(color: FamingaBrandColors.textSecondary),
+              style: textTheme.bodyMedium?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

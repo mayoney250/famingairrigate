@@ -77,7 +77,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
     final offlineSensors = _sensors.where((s) => s['status'] == 'Offline').length;
 
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Sensors'),
         actions: [
@@ -98,14 +98,14 @@ class _SensorsScreenState extends State<SensorsScreen> {
           // Stats header
           Container(
             padding: const EdgeInsets.all(16),
-            color: FamingaBrandColors.white,
+            color: Theme.of(context).colorScheme.surface,
             child: Row(
               children: [
                 Expanded(
                   child: _buildStatCard(
                     'Online',
                     onlineSensors.toString(),
-                    FamingaBrandColors.statusSuccess,
+                    Theme.of(context).colorScheme.secondary,
                     Icons.check_circle,
                   ),
                 ),
@@ -114,7 +114,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                   child: _buildStatCard(
                     'Offline',
                     offlineSensors.toString(),
-                    FamingaBrandColors.statusWarning,
+                    Theme.of(context).colorScheme.error,
                     Icons.error,
                   ),
                 ),
@@ -123,7 +123,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                   child: _buildStatCard(
                     'Total',
                     _sensors.length.toString(),
-                    FamingaBrandColors.primaryOrange,
+                    Theme.of(context).colorScheme.primary,
                     Icons.sensors,
                   ),
                 ),
@@ -152,7 +152,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
             snackPosition: SnackPosition.BOTTOM,
           );
         },
-        backgroundColor: FamingaBrandColors.primaryOrange,
+        backgroundColor: Theme.of(context).colorScheme.primary,
         child: const Icon(Icons.add),
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
@@ -210,12 +210,12 @@ class _SensorsScreenState extends State<SensorsScreen> {
                   Container(
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
                       sensor['icon'],
-                      color: FamingaBrandColors.iconColor,
+                      color: Theme.of(context).colorScheme.primary,
                       size: 28,
                     ),
                   ),
@@ -236,10 +236,10 @@ class _SensorsScreenState extends State<SensorsScreen> {
                         const SizedBox(height: 4),
                         Text(
                           sensor['location'],
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: FamingaBrandColors.textSecondary,
-                                  ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                     ),
@@ -249,16 +249,16 @@ class _SensorsScreenState extends State<SensorsScreen> {
                         const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isOnline
-                          ? FamingaBrandColors.statusSuccess.withOpacity(0.1)
-                          : FamingaBrandColors.statusWarning.withOpacity(0.1),
+                          ? Theme.of(context).colorScheme.secondary.withOpacity(0.1)
+                          : Theme.of(context).colorScheme.error.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
                       sensor['status'],
                       style: TextStyle(
                         color: isOnline
-                            ? FamingaBrandColors.statusSuccess
-                            : FamingaBrandColors.statusWarning,
+                            ? Theme.of(context).colorScheme.secondary
+                            : Theme.of(context).colorScheme.error,
                         fontWeight: FontWeight.w600,
                         fontSize: 12,
                       ),
@@ -289,15 +289,16 @@ class _SensorsScreenState extends State<SensorsScreen> {
   }
 
   Widget _buildInfoItem(IconData icon, String label, String value, {int? batteryLevel}) {
-    Color iconColor = FamingaBrandColors.iconColor;
+    final scheme = Theme.of(context).colorScheme;
+    Color iconColor = scheme.primary;
     
     if (batteryLevel != null) {
       if (batteryLevel < 20) {
-        iconColor = FamingaBrandColors.statusWarning;
+        iconColor = scheme.error;
       } else if (batteryLevel < 50) {
-        iconColor = FamingaBrandColors.primaryOrange;
+        iconColor = scheme.primary;
       } else {
-        iconColor = FamingaBrandColors.statusSuccess;
+        iconColor = scheme.secondary;
       }
     }
 
@@ -314,26 +315,26 @@ class _SensorsScreenState extends State<SensorsScreen> {
             const SizedBox(width: 4),
             Text(
               label,
-              style: const TextStyle(
-                color: FamingaBrandColors.textSecondary,
-                fontSize: 12,
-              ),
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 12,
+                  ),
             ),
           ],
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
         ),
       ],
     );
   }
 
   Widget _buildBottomNavigationBar() {
+    final scheme = Theme.of(context).colorScheme;
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) {
@@ -360,8 +361,9 @@ class _SensorsScreenState extends State<SensorsScreen> {
         }
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: FamingaBrandColors.primaryOrange,
-      unselectedItemColor: FamingaBrandColors.textSecondary,
+      selectedItemColor: scheme.primary,
+      unselectedItemColor: scheme.onSurfaceVariant,
+      backgroundColor: scheme.surface,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),

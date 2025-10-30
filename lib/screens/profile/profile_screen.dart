@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
@@ -25,7 +24,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Profile'),
         actions: [
@@ -53,10 +52,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
-                    color: FamingaBrandColors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: Theme.of(context).shadowColor.withOpacity(0.1),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -74,35 +73,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     radius: 50,
                                     backgroundImage: imageProvider,
                                   ),
-                                  placeholder: (context, url) => const CircleAvatar(
+                              placeholder: (context, url) => CircleAvatar(
                                     radius: 50,
-                                    backgroundColor: FamingaBrandColors.primaryOrange,
-                                    child: CircularProgressIndicator(
-                                      color: FamingaBrandColors.white,
-                                    ),
+                                backgroundColor: Theme.of(context).colorScheme.primary,
+                                child: CircularProgressIndicator(
+                                  color: Theme.of(context).colorScheme.onPrimary,
+                                ),
                                   ),
-                                  errorWidget: (context, url, error) => CircleAvatar(
+                              errorWidget: (context, url, error) => CircleAvatar(
                                     radius: 50,
-                                    backgroundColor: FamingaBrandColors.primaryOrange,
+                                backgroundColor: Theme.of(context).colorScheme.primary,
                                     child: Text(
                                       (user.firstName ?? 'U').substring(0, 1).toUpperCase(),
-                                      style: const TextStyle(
+                                  style: TextStyle(
                                         fontSize: 40,
                                         fontWeight: FontWeight.bold,
-                                        color: FamingaBrandColors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                       ),
                                     ),
                                   ),
                                 )
                               : CircleAvatar(
                                   radius: 50,
-                                  backgroundColor: FamingaBrandColors.primaryOrange,
+                                  backgroundColor: Theme.of(context).colorScheme.primary,
                                   child: Text(
                                     (user?.firstName ?? 'U').substring(0, 1).toUpperCase(),
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 40,
                                       fontWeight: FontWeight.bold,
-                                      color: FamingaBrandColors.white,
+                                      color: Theme.of(context).colorScheme.onPrimary,
                                     ),
                                   ),
                                 ),
@@ -114,17 +113,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               child: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: FamingaBrandColors.primaryOrange,
+                                  color: Theme.of(context).colorScheme.primary,
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: FamingaBrandColors.white,
+                                    color: Theme.of(context).colorScheme.onPrimary,
                                     width: 3,
                                   ),
                                 ),
-                                child: const Icon(
+                                child: Icon(
                                   Icons.camera_alt,
                                   size: 20,
-                                  color: FamingaBrandColors.white,
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                 ),
                               ),
                             ),
@@ -141,17 +140,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 4),
                       Text(
                         user?.email ?? '',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: FamingaBrandColors.textSecondary,
-                            ),
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                       ),
                       if (user?.phoneNumber != null) ...[
                         const SizedBox(height: 4),
                         Text(
                           user!.phoneNumber!,
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: FamingaBrandColors.textSecondary,
-                              ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
                       ],
                       const SizedBox(height: 20),
@@ -247,7 +248,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSection(String title, List<Widget> items) {
     return Container(
-      color: FamingaBrandColors.white,
+      color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,12 +257,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
               title,
-              style: const TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: FamingaBrandColors.textSecondary,
-                letterSpacing: 1,
-              ),
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    letterSpacing: 1,
+                    fontWeight: FontWeight.w600,
+                  ),
             ),
           ),
           ...items,
@@ -281,21 +281,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       leading: Icon(
         icon,
         color: isDestructive
-            ? FamingaBrandColors.statusWarning
-            : FamingaBrandColors.iconColor,
+            ? Theme.of(context).colorScheme.error
+            : Theme.of(context).colorScheme.primary,
       ),
       title: Text(
         title,
-        style: TextStyle(
-          fontWeight: FontWeight.w600,
-          color: isDestructive ? FamingaBrandColors.statusWarning : null,
-        ),
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+              color: isDestructive ? Theme.of(context).colorScheme.error : null,
+            ),
       ),
       subtitle: Text(subtitle),
-      trailing: const Icon(
-        Icons.chevron_right,
-        color: FamingaBrandColors.textSecondary,
-      ),
+      trailing: Icon(Icons.chevron_right, color: Theme.of(context).colorScheme.onSurfaceVariant),
       onTap: onTap,
     );
   }
@@ -316,9 +313,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               
               // Show loading
               Get.dialog(
-                const Center(
-                  child: CircularProgressIndicator(),
-                ),
+                Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
                 barrierDismissible: false,
               );
 
@@ -334,8 +329,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Success',
                   'You have been logged out successfully',
                   snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: FamingaBrandColors.statusSuccess,
-                  colorText: FamingaBrandColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.secondary,
+                  colorText: Theme.of(context).colorScheme.onSecondary,
                 );
               } catch (e) {
                 Get.back(); // Close loading
@@ -343,15 +338,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Error',
                   'Failed to logout: ${e.toString()}',
                   snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: FamingaBrandColors.statusWarning,
-                  colorText: FamingaBrandColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  colorText: Theme.of(context).colorScheme.onError,
                 );
               }
             },
-            child: const Text(
-              'Logout',
-              style: TextStyle(color: FamingaBrandColors.statusWarning),
-            ),
+            child: Text('Logout', style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -455,30 +447,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: FamingaBrandColors.cream,
+            color: Theme.of(context).colorScheme.surfaceVariant,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Icon(
             icon,
-            color: FamingaBrandColors.primaryOrange,
+            color: Theme.of(context).colorScheme.primary,
             size: 24,
           ),
         ),
         const SizedBox(height: 8),
         Text(
           value,
-          style: const TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: FamingaBrandColors.darkGreen,
-          ),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
         ),
         Text(
           label,
-          style: const TextStyle(
-            fontSize: 12,
-            color: FamingaBrandColors.textSecondary,
-          ),
+          style: Theme.of(context)
+              .textTheme
+              .bodySmall
+              ?.copyWith(color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
     );
@@ -489,7 +479,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Container(
         padding: const EdgeInsets.all(20),
         decoration: const BoxDecoration(
-          color: FamingaBrandColors.white,
+          color: Colors.transparent,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -504,10 +494,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(
-                Icons.camera_alt,
-                color: FamingaBrandColors.primaryOrange,
-              ),
+              leading: Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
               title: const Text('Take Photo'),
               onTap: () {
                 Get.back();
@@ -515,10 +502,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.photo_library,
-                color: FamingaBrandColors.primaryOrange,
-              ),
+              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
               title: const Text('Choose from Gallery'),
               onTap: () {
                 Get.back();
@@ -526,10 +510,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
-                Icons.delete,
-                color: FamingaBrandColors.statusWarning,
-              ),
+              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
               title: const Text('Remove Photo'),
               onTap: () {
                 Get.back();
@@ -554,10 +535,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
       if (image != null) {
         // Show loading
-        Get.dialog(
-          const Center(
-            child: CircularProgressIndicator(),
-          ),
+          Get.dialog(Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
           barrierDismissible: false,
         );
 
@@ -586,8 +564,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             'Success',
             'Profile picture updated successfully!',
             snackPosition: SnackPosition.BOTTOM,
-            backgroundColor: FamingaBrandColors.statusSuccess,
-            colorText: FamingaBrandColors.white,
+            backgroundColor: Theme.of(context).colorScheme.secondary,
+            colorText: Theme.of(context).colorScheme.onSecondary,
           );
         }
       }
@@ -597,8 +575,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'Error',
         'Failed to update profile picture: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
+        backgroundColor: Theme.of(context).colorScheme.error,
+        colorText: Theme.of(context).colorScheme.onError,
       );
     }
   }
@@ -606,10 +584,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _removeProfilePicture() async {
     try {
       // Show loading
-      Get.dialog(
-        const Center(
-          child: CircularProgressIndicator(),
-        ),
+      Get.dialog(Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
         barrierDismissible: false,
       );
 
@@ -631,8 +606,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           'Success',
           'Profile picture removed!',
           snackPosition: SnackPosition.BOTTOM,
-          backgroundColor: FamingaBrandColors.statusSuccess,
-          colorText: FamingaBrandColors.white,
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          colorText: Theme.of(context).colorScheme.onSecondary,
         );
       }
     } catch (e) {
@@ -641,8 +616,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'Error',
         'Failed to remove profile picture: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
+        backgroundColor: Theme.of(context).colorScheme.error,
+        colorText: Theme.of(context).colorScheme.onError,
       );
     }
   }
@@ -723,8 +698,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     'Success',
                     'Profile updated successfully!',
                     snackPosition: SnackPosition.BOTTOM,
-                    backgroundColor: FamingaBrandColors.statusSuccess,
-                    colorText: FamingaBrandColors.white,
+                    backgroundColor: Theme.of(context).colorScheme.secondary,
+                    colorText: Theme.of(context).colorScheme.onSecondary,
                   );
                 }
               } catch (e) {
@@ -733,8 +708,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'Error',
                   'Failed to update profile: ${e.toString()}',
                   snackPosition: SnackPosition.BOTTOM,
-                  backgroundColor: FamingaBrandColors.statusWarning,
-                  colorText: FamingaBrandColors.white,
+                  backgroundColor: Theme.of(context).colorScheme.error,
+                  colorText: Theme.of(context).colorScheme.onError,
                 );
               }
             },
@@ -839,8 +814,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Error',
                       'Password must be at least 6 characters',
                       snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: FamingaBrandColors.statusWarning,
-                      colorText: FamingaBrandColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      colorText: Theme.of(context).colorScheme.onError,
                     );
                     return;
                   }
@@ -851,8 +826,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Error',
                       'Passwords do not match',
                       snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: FamingaBrandColors.statusWarning,
-                      colorText: FamingaBrandColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      colorText: Theme.of(context).colorScheme.onError,
                     );
                     return;
                   }
@@ -877,8 +852,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Success',
                       'Password changed successfully!',
                       snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: FamingaBrandColors.statusSuccess,
-                      colorText: FamingaBrandColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.secondary,
+                      colorText: Theme.of(context).colorScheme.onSecondary,
                     );
                   } catch (e) {
                     Get.back(); // Close loading
@@ -886,8 +861,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       'Error',
                       e.toString(),
                       snackPosition: SnackPosition.BOTTOM,
-                      backgroundColor: FamingaBrandColors.statusWarning,
-                      colorText: FamingaBrandColors.white,
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                      colorText: Theme.of(context).colorScheme.onError,
                     );
                   }
                 },
@@ -901,30 +876,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showNotificationSettings() {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: FamingaBrandColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Notification Settings',
-              style: TextStyle(
-                fontSize: 20,
+              style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
             SwitchListTile(
-              title: const Text('Irrigation Alerts'),
-              subtitle: const Text('Get notified about irrigation schedules'),
+              title: Text(
+                'Irrigation Alerts',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'Get notified about irrigation schedules',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               value: true,
-              activeThumbColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: scheme.primary,
               onChanged: (value) {
                 // TODO: Save to Firebase
                 Get.snackbar(
@@ -935,10 +920,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             SwitchListTile(
-              title: const Text('System Updates'),
-              subtitle: const Text('Get notified about system status changes'),
+              title: Text(
+                'System Updates',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'Get notified about system status changes',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               value: true,
-              activeThumbColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -948,10 +941,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             SwitchListTile(
-              title: const Text('Weather Alerts'),
-              subtitle: const Text('Get notified about weather conditions'),
+              title: Text(
+                'Weather Alerts',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'Get notified about weather conditions',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               value: true,
-              activeThumbColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -961,10 +962,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             SwitchListTile(
-              title: const Text('Sensor Alerts'),
-              subtitle: const Text('Get notified about sensor readings'),
+              title: Text(
+                'Sensor Alerts',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'Get notified about sensor readings',
+                style: textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
               value: false,
-              activeThumbColor: FamingaBrandColors.primaryOrange,
+              activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
                   'Settings Updated',
@@ -981,32 +990,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showHelpAndSupport() {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: FamingaBrandColors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Help & Support',
-              style: TextStyle(
-                fontSize: 20,
+              style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.email,
-                color: FamingaBrandColors.primaryOrange,
+                color: scheme.primary,
               ),
-              title: const Text('Email Support'),
-              subtitle: const Text('akariclaude@gmail.com'),
+              title: Text(
+                'Email Support',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'akariclaude@gmail.com',
+                style: textTheme.bodyMedium,
+              ),
               onTap: () {
                 Get.back();
                 Get.snackbar(
@@ -1018,12 +1035,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.phone,
-                color: FamingaBrandColors.primaryOrange,
+                color: scheme.primary,
               ),
-              title: const Text('Phone Support'),
-              subtitle: const Text('+250 XXX XXX XXX'),
+              title: Text(
+                'Phone Support',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                '+250 XXX XXX XXX',
+                style: textTheme.bodyMedium,
+              ),
               onTap: () {
                 Get.back();
                 Get.snackbar(
@@ -1035,12 +1058,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.language,
-                color: FamingaBrandColors.primaryOrange,
+                color: scheme.primary,
               ),
-              title: const Text('Visit Website'),
-              subtitle: const Text('faminga.app'),
+              title: Text(
+                'Visit Website',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'faminga.app',
+                style: textTheme.bodyMedium,
+              ),
               onTap: () {
                 Get.back();
                 Get.snackbar(
@@ -1052,12 +1081,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             ),
             ListTile(
-              leading: const Icon(
+              leading: Icon(
                 Icons.question_answer,
-                color: FamingaBrandColors.primaryOrange,
+                color: scheme.primary,
               ),
-              title: const Text('FAQs'),
-              subtitle: const Text('Frequently asked questions'),
+              title: Text(
+                'FAQs',
+                style: textTheme.titleMedium,
+              ),
+              subtitle: Text(
+                'Frequently asked questions',
+                style: textTheme.bodyMedium,
+              ),
               onTap: () {
                 Get.back();
                 _showFAQs();
@@ -1070,9 +1105,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showFAQs() {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     Get.dialog(
       AlertDialog(
-        title: const Text('Frequently Asked Questions'),
+        backgroundColor: scheme.surface,
+        title: Text(
+          'Frequently Asked Questions',
+          style: textTheme.titleLarge,
+        ),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1100,7 +1142,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Close'),
+            child: Text(
+              'Close',
+              style: TextStyle(color: scheme.primary),
+            ),
           ),
         ],
       ),
@@ -1108,6 +1153,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildFAQItem(String question, String answer) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
       child: Column(
@@ -1115,17 +1163,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(
             question,
-            style: const TextStyle(
+            style: textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              fontSize: 14,
             ),
           ),
           const SizedBox(height: 4),
           Text(
             answer,
-            style: const TextStyle(
-              fontSize: 13,
-              color: FamingaBrandColors.textSecondary,
+            style: textTheme.bodyMedium?.copyWith(
+              color: scheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -1160,8 +1206,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         }
       },
       type: BottomNavigationBarType.fixed,
-      selectedItemColor: FamingaBrandColors.primaryOrange,
-      unselectedItemColor: FamingaBrandColors.textSecondary,
+      selectedItemColor: Theme.of(context).colorScheme.primary,
+      unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.dashboard),

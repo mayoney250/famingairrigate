@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../config/colors.dart';
 
 class CustomTextField extends StatelessWidget {
   final TextEditingController controller;
@@ -44,13 +43,15 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+          style: theme.textTheme.titleSmall?.copyWith(
+                color: theme.textTheme.titleSmall?.color ?? scheme.onSurface,
                 fontWeight: FontWeight.w600,
               ),
         ),
@@ -69,56 +70,42 @@ class CustomTextField extends StatelessWidget {
           enabled: enabled,
           readOnly: readOnly,
           inputFormatters: inputFormatters,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+          style: theme.textTheme.bodyLarge?.copyWith(
+                color: theme.textTheme.bodyLarge?.color ?? scheme.onSurface,
               ),
           decoration: InputDecoration(
             filled: true,
-            fillColor: enabled
-                ? FamingaBrandColors.white
-                : FamingaBrandColors.borderColor,
+            fillColor: enabled ? scheme.surface : scheme.surfaceVariant,
             hintText: hintText,
-            hintStyle: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: FamingaBrandColors.disabled,
+            hintStyle: theme.textTheme.bodyLarge?.copyWith(
+                  color: scheme.onSurfaceVariant,
                 ),
             prefixIcon: prefixIcon != null
                 ? Icon(
                     prefixIcon,
-                    color: FamingaBrandColors.iconColor,
+                    color: scheme.primary,
                   )
                 : null,
             suffixIcon: suffixIcon,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.borderColor,
-              ),
+              borderSide: BorderSide(color: scheme.outline),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.borderColor,
-              ),
+              borderSide: BorderSide(color: scheme.outline),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.primaryOrange,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: scheme.primary, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.statusWarning,
-              ),
+              borderSide: BorderSide(color: scheme.error),
             ),
             focusedErrorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.statusWarning,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: scheme.error, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,

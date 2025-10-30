@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
 
@@ -117,8 +116,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       Get.snackbar(
         'Error',
         'Failed to pick image: ${e.toString()}',
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
+        backgroundColor: Theme.of(context).colorScheme.error,
+        colorText: Theme.of(context).colorScheme.onError,
       );
     }
   }
@@ -131,13 +130,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       lastDate: DateTime.now(),
       builder: (context, child) {
         return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: FamingaBrandColors.primaryOrange,
-              onPrimary: FamingaBrandColors.white,
-              onSurface: FamingaBrandColors.textPrimary,
-            ),
-          ),
+          data: Theme.of(context),
           child: child!,
         );
       },
@@ -203,21 +196,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       setState(() => _isLoading = false);
       
       Get.back();
+      final scheme = Theme.of(context).colorScheme;
       Get.snackbar(
         'Success',
         'Profile updated successfully!',
-        backgroundColor: FamingaBrandColors.statusSuccess,
-        colorText: FamingaBrandColors.white,
-        icon: const Icon(Icons.check_circle, color: FamingaBrandColors.white),
+        backgroundColor: scheme.secondary,
+        colorText: scheme.onSecondary,
+        icon: Icon(Icons.check_circle, color: scheme.onSecondary),
       );
     } catch (e) {
       setState(() => _isLoading = false);
+      final scheme = Theme.of(context).colorScheme;
       Get.snackbar(
         'Error',
         'Failed to update profile: ${e.toString()}',
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
-        icon: const Icon(Icons.error, color: FamingaBrandColors.white),
+        backgroundColor: scheme.error,
+        colorText: scheme.onError,
+        icon: Icon(Icons.error, color: scheme.onError),
       );
     }
   }
@@ -226,14 +221,14 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final user = authProvider.currentUser;
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Edit Profile'),
         elevation: 0,
-        backgroundColor: FamingaBrandColors.white,
-        foregroundColor: FamingaBrandColors.textPrimary,
       ),
       body: Form(
         key: _formKey,
@@ -244,7 +239,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(24),
-                color: FamingaBrandColors.white,
+                color: scheme.surface,
                 child: Column(
                   children: [
                     Stack(
@@ -261,13 +256,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   )
                                 : CircleAvatar(
                                     radius: 60,
-                                    backgroundColor: FamingaBrandColors.primaryOrange,
+                                    backgroundColor: scheme.primary,
                                     child: Text(
                                       (user?.firstName ?? 'U')[0].toUpperCase(),
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontSize: 48,
                                         fontWeight: FontWeight.bold,
-                                        color: FamingaBrandColors.white,
+                                        color: scheme.onPrimary,
                                       ),
                                     ),
                                   ),
@@ -279,16 +274,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             child: Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                color: FamingaBrandColors.primaryOrange,
+                                color: scheme.primary,
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: FamingaBrandColors.white,
+                                  color: scheme.surface,
                                   width: 3,
                                 ),
                               ),
-                              child: const Icon(
+                              child: Icon(
                                 Icons.camera_alt,
-                                color: FamingaBrandColors.white,
+                                color: scheme.onPrimary,
                                 size: 20,
                               ),
                             ),
@@ -297,11 +292,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    const Text(
+                    Text(
                       'Tap camera icon to change photo',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: FamingaBrandColors.textSecondary,
+                      style: textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -388,42 +382,38 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     padding: const EdgeInsets.all(16),
                     margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: FamingaBrandColors.backgroundLight,
+                      color: scheme.surfaceVariant,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.email,
-                          color: FamingaBrandColors.primaryOrange,
+                          color: scheme.primary,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
+                              Text(
                                 'Email',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: FamingaBrandColors.textSecondary,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
                                 ),
                               ),
                               const SizedBox(height: 4),
                               Text(
                                 user?.email ?? '',
-                                style: const TextStyle(
-                                  fontSize: 16,
-                                  color: FamingaBrandColors.textPrimary,
+                                style: textTheme.bodyLarge?.copyWith(
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
                               const SizedBox(height: 4),
-                              const Text(
+                              Text(
                                 'Email cannot be changed',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: FamingaBrandColors.textSecondary,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color: scheme.onSurfaceVariant,
                                   fontStyle: FontStyle.italic,
                                 ),
                               ),
@@ -495,27 +485,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _saveProfile,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: FamingaBrandColors.primaryOrange,
-                      foregroundColor: FamingaBrandColors.white,
+                      backgroundColor: scheme.primary,
+                      foregroundColor: scheme.onPrimary,
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             height: 24,
                             width: 24,
                             child: CircularProgressIndicator(
-                              color: FamingaBrandColors.white,
+                              color: scheme.onPrimary,
                               strokeWidth: 2,
                             ),
                           )
-                        : const Text(
+                        : Text(
                             'Save Changes',
-                            style: TextStyle(
-                              fontSize: 16,
+                            style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
+                              color: scheme.onPrimary,
                             ),
                           ),
                   ),
@@ -535,9 +525,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required IconData icon,
     required List<Widget> children,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     return Container(
       width: double.infinity,
-      color: FamingaBrandColors.white,
+      color: scheme.surface,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -547,22 +540,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               children: [
                 Icon(
                   icon,
-                  color: FamingaBrandColors.primaryOrange,
+                  color: scheme.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontSize: 18,
+                  style: textTheme.titleLarge?.copyWith(
                     fontWeight: FontWeight.bold,
-                    color: FamingaBrandColors.textPrimary,
                   ),
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
+          Divider(height: 1, color: scheme.outlineVariant),
           ...children,
         ],
       ),
@@ -578,6 +569,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     int maxLines = 1,
     String? prefixText,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: TextFormField(
@@ -585,31 +578,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         validator: validator,
         keyboardType: keyboardType,
         maxLines: maxLines,
+        style: Theme.of(context).textTheme.bodyLarge,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: FamingaBrandColors.primaryOrange),
+          prefixIcon: Icon(icon, color: scheme.primary),
           prefixText: prefixText,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: FamingaBrandColors.textSecondary),
+            borderSide: BorderSide(color: scheme.outline),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: FamingaBrandColors.textSecondary.withOpacity(0.3)),
+            borderSide: BorderSide(color: scheme.outline.withOpacity(0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: FamingaBrandColors.primaryOrange,
+            borderSide: BorderSide(
+              color: scheme.primary,
               width: 2,
             ),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: FamingaBrandColors.statusWarning),
+            borderSide: BorderSide(color: scheme.error),
           ),
           filled: true,
-          fillColor: FamingaBrandColors.backgroundLight,
+          fillColor: scheme.surfaceVariant,
         ),
       ),
     );
@@ -622,30 +616,35 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required List<String> items,
     required void Function(String?) onChanged,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: DropdownButtonFormField<String>(
-        initialValue: value,
+        value: value,
         decoration: InputDecoration(
           labelText: label,
-          prefixIcon: Icon(icon, color: FamingaBrandColors.primaryOrange),
+          prefixIcon: Icon(icon, color: scheme.primary),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: scheme.outline),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: FamingaBrandColors.textSecondary.withOpacity(0.3)),
+            borderSide: BorderSide(color: scheme.outline.withOpacity(0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: FamingaBrandColors.primaryOrange,
+            borderSide: BorderSide(
+              color: scheme.primary,
               width: 2,
             ),
           ),
           filled: true,
-          fillColor: FamingaBrandColors.backgroundLight,
+          fillColor: scheme.surfaceVariant,
         ),
+        style: Theme.of(context).textTheme.bodyLarge,
+        dropdownColor: scheme.surface,
         items: items.map((item) {
           return DropdownMenuItem(
             value: item,
@@ -663,6 +662,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required DateTime? value,
     required VoidCallback onTap,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: InkWell(
@@ -670,34 +672,34 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         child: InputDecorator(
           decoration: InputDecoration(
             labelText: label,
-            prefixIcon: Icon(icon, color: FamingaBrandColors.primaryOrange),
-            suffixIcon: const Icon(Icons.calendar_today),
+            prefixIcon: Icon(icon, color: scheme.primary),
+            suffixIcon: Icon(Icons.calendar_today, color: scheme.onSurfaceVariant),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: scheme.outline),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: FamingaBrandColors.textSecondary.withOpacity(0.3)),
+              borderSide: BorderSide(color: scheme.outline.withOpacity(0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(
-                color: FamingaBrandColors.primaryOrange,
+              borderSide: BorderSide(
+                color: scheme.primary,
                 width: 2,
               ),
             ),
             filled: true,
-            fillColor: FamingaBrandColors.backgroundLight,
+            fillColor: scheme.surfaceVariant,
           ),
           child: Text(
             value != null
                 ? '${value.day}/${value.month}/${value.year}'
                 : 'Select date',
-            style: TextStyle(
-              fontSize: 16,
+            style: textTheme.bodyLarge?.copyWith(
               color: value != null
-                  ? FamingaBrandColors.textPrimary
-                  : FamingaBrandColors.textSecondary,
+                  ? scheme.onSurface
+                  : scheme.onSurfaceVariant,
             ),
           ),
         ),

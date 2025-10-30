@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../config/colors.dart';
 import '../../models/alert_model.dart';
 import '../../services/alert_service.dart';
 
@@ -10,14 +9,15 @@ class AlertDetailScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final alert = Get.arguments as AlertModel;
-    final color = _severityColor(alert.severity);
+    final color = _severityColor(context, alert.severity);
     final service = AlertService();
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Alert'),
         actions: [
-          if (!alert.read)
+          if (!alert.isRead)
             TextButton(
               onPressed: () async {
                 await service.markAsRead(alert.id);
@@ -37,7 +37,7 @@ class AlertDetailScreen extends StatelessWidget {
                 Icon(_severityIcon(alert.severity), color: color),
                 const SizedBox(width: 8),
                 Text(
-                  alert.severity.toUpperCase(),
+                  alert.severity.name.toUpperCase(),
                   style: TextStyle(color: color, fontWeight: FontWeight.bold),
                 ),
               ],
@@ -50,14 +50,14 @@ class AlertDetailScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               alert.message,
-              style: const TextStyle(color: FamingaBrandColors.textPrimary, fontSize: 14),
+              style: TextStyle(color: scheme.onSurface, fontSize: 14),
             ),
             const Spacer(),
             Align(
               alignment: Alignment.bottomRight,
               child: Text(
-                alert.createdAt.toString(),
-                style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
+                alert.timestamp.toString(),
+                style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
           ],
@@ -66,23 +66,26 @@ class AlertDetailScreen extends StatelessWidget {
     );
   }
 
-  Color _severityColor(String severity) {
+  Color _severityColor(BuildContext context, AlertSeverity severity) {
+    final scheme = Theme.of(context).colorScheme;
     switch (severity) {
-      case 'critical':
-        return FamingaBrandColors.statusWarning;
-      case 'warn':
-        return FamingaBrandColors.primaryOrange;
+      case AlertSeverity.critical:
+        return scheme.error;
+      case AlertSeverity.warning:
+        return scheme.tertiary;
+      case AlertSeverity.info:
       default:
-        return FamingaBrandColors.iconColor;
+        return scheme.primary;
     }
   }
 
-  IconData _severityIcon(String severity) {
+  IconData _severityIcon(AlertSeverity severity) {
     switch (severity) {
-      case 'critical':
+      case AlertSeverity.critical:
         return Icons.error;
-      case 'warn':
+      case AlertSeverity.warning:
         return Icons.warning;
+      case AlertSeverity.info:
       default:
         return Icons.info_outline;
     }

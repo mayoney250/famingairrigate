@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../config/colors.dart';
 import '../../services/auth_service.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
@@ -26,7 +25,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   // Password strength indicator
   double _passwordStrength = 0.0;
   String _passwordStrengthText = '';
-  Color _passwordStrengthColor = Colors.red;
+  // We will compute strength color from theme in build instead of storing a fixed color
   
   @override
   void dispose() {
@@ -41,7 +40,6 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       if (password.isEmpty) {
         _passwordStrength = 0.0;
         _passwordStrengthText = '';
-        _passwordStrengthColor = Colors.red;
         return;
       }
       
@@ -67,13 +65,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       
       if (strength <= 2) {
         _passwordStrengthText = 'Weak';
-        _passwordStrengthColor = Colors.red;
       } else if (strength <= 4) {
         _passwordStrengthText = 'Medium';
-        _passwordStrengthColor = Colors.orange;
       } else {
         _passwordStrengthText = 'Strong';
-        _passwordStrengthColor = Colors.green;
       }
     });
   }
@@ -86,9 +81,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       Get.snackbar(
         'Error',
         'New passwords do not match',
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
-        icon: const Icon(Icons.error, color: FamingaBrandColors.white),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        colorText: Theme.of(context).colorScheme.onError,
+        icon: Icon(Icons.error, color: Theme.of(context).colorScheme.onError),
       );
       return;
     }
@@ -107,9 +102,9 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       Get.snackbar(
         'Success',
         'Password changed successfully!',
-        backgroundColor: FamingaBrandColors.statusSuccess,
-        colorText: FamingaBrandColors.white,
-        icon: const Icon(Icons.check_circle, color: FamingaBrandColors.white),
+        backgroundColor: Theme.of(context).colorScheme.secondary,
+        colorText: Theme.of(context).colorScheme.onSecondary,
+        icon: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.onSecondary),
       );
     } catch (e) {
       setState(() => _isLoading = false);
@@ -126,22 +121,22 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       Get.snackbar(
         'Error',
         errorMessage,
-        backgroundColor: FamingaBrandColors.statusWarning,
-        colorText: FamingaBrandColors.white,
-        icon: const Icon(Icons.error, color: FamingaBrandColors.white),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        colorText: Theme.of(context).colorScheme.onError,
+        icon: Icon(Icons.error, color: Theme.of(context).colorScheme.onError),
       );
     }
   }
   
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Change Password'),
         elevation: 0,
-        backgroundColor: FamingaBrandColors.white,
-        foregroundColor: FamingaBrandColors.textPrimary,
       ),
       body: Form(
         key: _formKey,
@@ -152,38 +147,28 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(32),
-                color: FamingaBrandColors.white,
+                color: scheme.surface,
                 child: Column(
                   children: [
                     Container(
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                        color: scheme.primary.withOpacity(0.1),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.lock_reset,
                         size: 60,
-                        color: FamingaBrandColors.primaryOrange,
+                        color: scheme.primary,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Secure Your Account',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: FamingaBrandColors.textPrimary,
-                      ),
-                    ),
+                    Text('Secure Your Account', style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
-                    const Text(
+                    Text(
                       'Choose a strong password to protect your farming data',
                       textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: FamingaBrandColors.textSecondary,
-                      ),
+                      style: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -241,30 +226,36 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: LinearProgressIndicator(
-                                value: _passwordStrength,
-                                minHeight: 8,
-                                backgroundColor: Colors.grey.shade200,
-                                color: _passwordStrengthColor,
+                      Builder(builder: (context) {
+                        final strength = _passwordStrength;
+                        final strengthColor = strength <= 0.33
+                            ? scheme.error
+                            : (strength <= 0.66 ? scheme.primary : scheme.secondary);
+                        final strengthText = _passwordStrengthText;
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(4),
+                                child: LinearProgressIndicator(
+                                  value: _passwordStrength,
+                                  minHeight: 8,
+                                  backgroundColor: scheme.surfaceVariant,
+                                  color: strengthColor,
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            _passwordStrengthText,
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: _passwordStrengthColor,
+                            const SizedBox(width: 12),
+                            Text(
+                              strengthText,
+                              style: textTheme.bodyMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: strengthColor,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
+                          ],
+                        );
+                      }),
                       const SizedBox(height: 12),
                       _buildPasswordRequirement(
                         'At least 8 characters',
@@ -319,31 +310,20 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 margin: const EdgeInsets.symmetric(horizontal: 24),
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                  color: scheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+                    color: scheme.primary.withOpacity(0.3),
                   ),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
+                    Row(
                       children: [
-                        Icon(
-                          Icons.security,
-                          color: FamingaBrandColors.primaryOrange,
-                          size: 20,
-                        ),
-                        SizedBox(width: 8),
-                        Text(
-                          'Security Tips',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: FamingaBrandColors.textPrimary,
-                          ),
-                        ),
+                        Icon(Icons.security, color: scheme.primary, size: 20),
+                        const SizedBox(width: 8),
+                        Text('Security Tips', style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -365,22 +345,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   height: 56,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _changePassword,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: FamingaBrandColors.primaryOrange,
-                      foregroundColor: FamingaBrandColors.white,
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
+                    style: ElevatedButton.styleFrom(elevation: 2, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                     child: _isLoading
                         ? const SizedBox(
                             height: 24,
                             width: 24,
-                            child: CircularProgressIndicator(
-                              color: FamingaBrandColors.white,
-                              strokeWidth: 2,
-                            ),
+                            child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Text(
                             'Change Password',
@@ -403,15 +373,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   height: 56,
                   child: TextButton(
                     onPressed: _isLoading ? null : () => Get.back(),
-                    style: TextButton.styleFrom(
-                      foregroundColor: FamingaBrandColors.textPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: FamingaBrandColors.textSecondary.withOpacity(0.3),
-                        ),
-                      ),
-                    ),
+                    style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
                     child: const Text(
                       'Cancel',
                       style: TextStyle(
@@ -450,14 +412,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
         decoration: InputDecoration(
           labelText: label,
           hintText: hint,
-          prefixIcon: const Icon(
-            Icons.lock_outline,
-            color: FamingaBrandColors.primaryOrange,
-          ),
+          prefixIcon: Icon(Icons.lock_outline, color: Theme.of(context).colorScheme.primary),
           suffixIcon: IconButton(
             icon: Icon(
               obscureText ? Icons.visibility_off : Icons.visibility,
-              color: FamingaBrandColors.textSecondary,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
             onPressed: onToggleVisibility,
           ),
@@ -466,29 +425,27 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(
-              color: FamingaBrandColors.textSecondary.withOpacity(0.3),
-            ),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.outline),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(
-              color: FamingaBrandColors.primaryOrange,
-              width: 2,
-            ),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.primary, width: 2),
           ),
           errorBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: FamingaBrandColors.statusWarning),
+            borderSide: BorderSide(color: Theme.of(context).colorScheme.error),
           ),
           filled: true,
-          fillColor: FamingaBrandColors.white,
+          fillColor: Theme.of(context).colorScheme.surface,
         ),
       ),
     );
   }
   
   Widget _buildPasswordRequirement(String text, bool isMet) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    
     return Padding(
       padding: const EdgeInsets.only(bottom: 6),
       child: Row(
@@ -496,16 +453,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
           Icon(
             isMet ? Icons.check_circle : Icons.circle_outlined,
             size: 16,
-            color: isMet ? Colors.green : FamingaBrandColors.textSecondary,
+            color: isMet ? scheme.secondary : scheme.onSurfaceVariant,
           ),
           const SizedBox(width: 8),
           Text(
             text,
-            style: TextStyle(
-              fontSize: 13,
-              color: isMet
-                  ? FamingaBrandColors.textPrimary
-                  : FamingaBrandColors.textSecondary,
+            style: textTheme.bodySmall?.copyWith(
+              color: isMet ? scheme.onSurface : scheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -519,20 +473,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '• ',
-            style: TextStyle(
-              fontSize: 14,
-              color: FamingaBrandColors.primaryOrange,
-            ),
-          ),
+          Text('• ', style: TextStyle(fontSize: 14, color: Theme.of(context).colorScheme.primary)),
           Expanded(
             child: Text(
               text,
-              style: const TextStyle(
-                fontSize: 13,
-                color: FamingaBrandColors.textSecondary,
-              ),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSurfaceVariant),
             ),
           ),
         ],
