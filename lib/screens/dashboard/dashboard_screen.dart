@@ -377,9 +377,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSoilMoistureCard(DashboardProvider dashboardProvider) {
-    final moisture = dashboardProvider.soilMoisture;
-    final moisturePercent = (moisture / 100).clamp(0.0, 1.0);
-    
+    final avg = dashboardProvider.avgSoilMoisture;
+    final moisturePercent = avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0;
+    final moistureText = avg != null ? '${avg.round()}%' : '--';
+    final moistureStatus = avg != null
+        ? (avg < 40 ? 'Low' : avg < 60 ? 'Moderate' : 'Optimal')
+        : 'No Data';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -417,7 +421,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    '${moisture.round()}%',
+                    moistureText,
                     style: const TextStyle(
                       color: FamingaBrandColors.darkGreen,
                       fontSize: 28,
@@ -438,7 +442,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 8),
           Text(
-            dashboardProvider.soilMoistureStatus,
+            moistureStatus,
             style: const TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 11,
