@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/weather_data_model.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class WeatherService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -145,6 +147,33 @@ class WeatherService {
     } catch (e) {
       log('Error deleting old weather data: $e');
       rethrow;
+    }
+  }
+
+  Future<WeatherDataModel?> fetchCurrentWeatherFromOpenWeather({
+    required double lat,
+    required double lon,
+    required String apiKey,
+  }) async {
+    final Uri url = Uri.parse(
+      'https://api.openweathermap.org/data/2.5/weather?lat=$lat&lon=$lon&appid=$apiKey&units=metric',
+    );
+    final res = await http.get(url);
+    if (res.statusCode == 200) {
+      final data = json.decode(res.body);
+      return WeatherDataModel(
+        id: '',
+        userId: '',
+        temperature: (data['main']['temp'] as num).toDouble(),
+        humidity: (data['main']['humidity'] as num).toDouble(),
+        condition: (data['weather']?[0]?['main'] ?? '').toString(),
+        description: (data['weather']?[0]?['description'] ?? '').toString(),
+        timestamp: DateTime.fromMillisecondsSinceEpoch((data['dt'] as int) * 1000),
+        location: data['name'] ?? '',
+      );
+    } else {
+      log('Failed to fetch OpenWeather (status: ${res.statusCode})');
+      return null;
     }
   }
 }

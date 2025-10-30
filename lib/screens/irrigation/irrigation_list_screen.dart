@@ -7,6 +7,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../services/irrigation_service.dart';
+import '../../services/irrigation_status_service.dart';
 import '../../routes/app_routes.dart';
 
 class IrrigationListScreen extends StatefulWidget {
@@ -18,7 +19,19 @@ class IrrigationListScreen extends StatefulWidget {
 
 class _IrrigationListScreenState extends State<IrrigationListScreen> {
   final IrrigationService _irrigationService = IrrigationService();
+  final IrrigationStatusService _statusService = IrrigationStatusService();
   int _selectedIndex = 1;
+
+  @override
+  void initState() {
+    super.initState();
+    _patchOverdue();
+  }
+
+  Future<void> _patchOverdue() async {
+    await _statusService.markDueIrrigationsCompleted();
+    setState(() {}); // Force refresh after patch
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -365,7 +378,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                 barrierDismissible: false,
               );
               
-              final success = await _irrigationService.stopIrrigationManually(
+              final success = await _statusService.stopIrrigationManually(
                 schedule.id,
               );
               
@@ -544,7 +557,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                 createdAt: DateTime.now(),
               );
 
-              final ok = await _irrigationService.createSchedule(schedule);
+              final ok = await _statusService.createSchedule(schedule);
               if (ok) {
                 Get.back();
                 Get.snackbar('Success', 'Schedule created');

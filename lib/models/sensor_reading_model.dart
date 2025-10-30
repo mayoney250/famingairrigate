@@ -1,68 +1,47 @@
-class SensorReading {
-  final String readingId;
-  final String sensorId;
-  final String sensorType; // soil_moisture, temperature, humidity, ph, light
-  final String farmId;
-  final String fieldId;
-  final double value;
-  final String unit;
-  final DateTime timestamp;
-  final Map<String, dynamic>? metadata;
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-  SensorReading({
-    required this.readingId,
+class SensorReadingModel {
+  final String id;
+  final String sensorId;
+  final DateTime ts;
+  final double? moisture;
+  final double? temperature;
+  final double? humidity;
+
+  SensorReadingModel({
+    required this.id,
     required this.sensorId,
-    required this.sensorType,
-    required this.farmId,
-    required this.fieldId,
-    required this.value,
-    required this.unit,
-    required this.timestamp,
-    this.metadata,
+    required this.ts,
+    this.moisture,
+    this.temperature,
+    this.humidity,
   });
 
   Map<String, dynamic> toMap() {
     return {
-      'readingId': readingId,
+      'id': id,
       'sensorId': sensorId,
-      'sensorType': sensorType,
-      'farmId': farmId,
-      'fieldId': fieldId,
-      'value': value,
-      'unit': unit,
-      'timestamp': timestamp.toIso8601String(),
-      'metadata': metadata,
+      'ts': Timestamp.fromDate(ts),
+      'moisture': moisture,
+      'temperature': temperature,
+      'humidity': humidity,
     };
   }
 
-  factory SensorReading.fromMap(Map<String, dynamic> map) {
-    return SensorReading(
-      readingId: map['readingId'] ?? '',
+  factory SensorReadingModel.fromMap(Map<String, dynamic> map) {
+    return SensorReadingModel(
+      id: map['id'] ?? '',
       sensorId: map['sensorId'] ?? '',
-      sensorType: map['sensorType'] ?? '',
-      farmId: map['farmId'] ?? '',
-      fieldId: map['fieldId'] ?? '',
-      value: map['value']?.toDouble() ?? 0.0,
-      unit: map['unit'] ?? '',
-      timestamp: DateTime.parse(map['timestamp']),
-      metadata: map['metadata'],
+      ts: map['ts'] is Timestamp ? (map['ts'] as Timestamp).toDate() : DateTime.tryParse(map['ts'].toString()) ?? DateTime.now(),
+      moisture: map['moisture'] != null ? (map['moisture'] as num).toDouble() : null,
+      temperature: map['temperature'] != null ? (map['temperature'] as num).toDouble() : null,
+      humidity: map['humidity'] != null ? (map['humidity'] as num).toDouble() : null,
     );
   }
 
-  // Get formatted value with unit
-  String get formattedValue {
-    if (sensorType == 'temperature') {
-      return '${value.toStringAsFixed(1)}$unit';
-    } else if (sensorType == 'soil_moisture' || sensorType == 'humidity') {
-      return '${value.toInt()}$unit';
-    } else {
-      return '${value.toStringAsFixed(2)}$unit';
-    }
-  }
-
-  // Check if reading is recent (within last hour)
-  bool get isRecent {
-    return DateTime.now().difference(timestamp).inHours < 1;
+  factory SensorReadingModel.fromFirestore(DocumentSnapshot doc) {
+    final map = doc.data() as Map<String, dynamic>;
+    return SensorReadingModel.fromMap({'id': doc.id, ...map});
   }
 }
 

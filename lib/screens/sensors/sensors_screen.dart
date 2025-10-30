@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../config/colors.dart';
 import '../../routes/app_routes.dart';
+import '../../services/sensor_service.dart';
+import '../../models/sensor_model.dart';
 
 class SensorsScreen extends StatefulWidget {
   const SensorsScreen({super.key});
@@ -12,69 +14,202 @@ class SensorsScreen extends StatefulWidget {
 
 class _SensorsScreenState extends State<SensorsScreen> {
   int _selectedIndex = 3; // Sensors is at index 3 in bottom nav
+  final SensorService _sensorService = SensorService();
+  List<SensorModel> _sensors = [];
 
-  // Mock data - replace with real data from Firestore
-  final List<Map<String, dynamic>> _sensors = [
-    {
-      'name': 'Soil Moisture - North',
-      'type': 'Soil Moisture',
-      'value': '65%',
-      'status': 'Online',
-      'location': 'North Field',
-      'battery': '85%',
-      'icon': Icons.water_drop,
-    },
-    {
-      'name': 'Temperature - South',
-      'type': 'Temperature',
-      'value': '24°C',
-      'status': 'Online',
-      'location': 'South Field',
-      'battery': '92%',
-      'icon': Icons.thermostat,
-    },
-    {
-      'name': 'Humidity - East',
-      'type': 'Humidity',
-      'value': '58%',
-      'status': 'Online',
-      'location': 'East Field',
-      'battery': '76%',
-      'icon': Icons.cloud,
-    },
-    {
-      'name': 'Soil pH - West',
-      'type': 'Soil pH',
-      'value': '6.8',
-      'status': 'Offline',
-      'location': 'West Field',
-      'battery': '15%',
-      'icon': Icons.science,
-    },
-    {
-      'name': 'Light - Central',
-      'type': 'Light Intensity',
-      'value': '850 lux',
-      'status': 'Online',
-      'location': 'Central Field',
-      'battery': '88%',
-      'icon': Icons.wb_sunny,
-    },
-    {
-      'name': 'Soil Moisture - East',
-      'type': 'Soil Moisture',
-      'value': '72%',
-      'status': 'Online',
-      'location': 'East Field',
-      'battery': '90%',
-      'icon': Icons.water_drop,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSensors();
+  }
+
+  Future<void> _loadSensors() async {
+    // TODO: Replace with actual logic to retrieve user's farmId
+    const String farmId = 'demoFarmId';
+    final sensors = await _sensorService.getSensorsForFarm(farmId);
+    setState(() => _sensors = sensors);
+  }
+
+  void _showAddSensorDialog() {
+    final _formKey = GlobalKey<FormState>();
+    String displayName = '';
+    String type = 'soil';
+    String hardwareId = '';
+    String pairingMethod = 'BLE';
+    String bleMac = '';
+    String bleNote = '';
+    String wifiSsid = '';
+    String wifiPassword = '';
+    String loraGateway = '';
+    String loraNetworkId = '';
+    String loraChannel = '';
+    String assignedZoneId = '';
+    String installNote = '';
+    double? battery;
+
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Register New Sensor'),
+        content: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Basic Information', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Sensor Name (Label)'),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  onChanged: (v) => displayName = v,
+                ),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Sensor Type'),
+                  value: type,
+                  items: const [
+                    DropdownMenuItem(value: 'soil', child: Text('Soil Moisture')),
+                    DropdownMenuItem(value: 'temperature', child: Text('Temperature')),
+                    DropdownMenuItem(value: 'humidity', child: Text('Humidity')),
+                    DropdownMenuItem(value: 'ph', child: Text('Soil pH')),
+                    DropdownMenuItem(value: 'light', child: Text('Light Intensity')),
+                    DropdownMenuItem(value: 'airTemp', child: Text('Ambient Temp')),
+                  ],
+                  onChanged: (v) => type = v ?? 'soil',
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Hardware ID (Serial/MAC)'),
+                  validator: (v) => v == null || v.isEmpty ? 'Required' : null,
+                  onChanged: (v) => hardwareId = v,
+                ),
+                DropdownButtonFormField<String>(
+                  decoration: const InputDecoration(labelText: 'Pairing Method'),
+                  value: pairingMethod,
+                  items: const [
+                    DropdownMenuItem(value: 'BLE', child: Text('Bluetooth (BLE)')),
+                    DropdownMenuItem(value: 'WiFi', child: Text('WiFi')),
+                    DropdownMenuItem(value: 'LoRaWAN', child: Text('LoRaWAN Gateway')),
+                  ],
+                  onChanged: (v) => pairingMethod = v!,
+                ),
+                if (pairingMethod == 'BLE') ...[
+                  const SizedBox(height: 8),
+                  const Text('Bluetooth Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'BLE MAC Address'),
+                    validator: (v) => pairingMethod == 'BLE' && (v == null || v.isEmpty) ? 'Required' : null,
+                    onChanged: (v) => bleMac = v,
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Pairing Note/Code (Optional)'),
+                    onChanged: (v) => bleNote = v,
+                  ),
+                ],
+                if (pairingMethod == 'WiFi') ...[
+                  const SizedBox(height: 8),
+                  const Text('WiFi Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'WiFi SSID'),
+                    validator: (v) => pairingMethod == 'WiFi' && (v == null || v.isEmpty) ? 'Required' : null,
+                    onChanged: (v) => wifiSsid = v,
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'WiFi Password (Optional)'),
+                    onChanged: (v) => wifiPassword = v,
+                  ),
+                ],
+                if (pairingMethod == 'LoRaWAN') ...[
+                  const SizedBox(height: 8),
+                  const Text('LoRaWAN Settings', style: TextStyle(fontWeight: FontWeight.bold)),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Gateway Name/ID'),
+                    validator: (v) => pairingMethod == 'LoRaWAN' && (v == null || v.isEmpty) ? 'Required' : null,
+                    onChanged: (v) => loraGateway = v,
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Network ID'),
+                    onChanged: (v) => loraNetworkId = v,
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Channel'),
+                    onChanged: (v) => loraChannel = v,
+                  ),
+                ],
+                const SizedBox(height: 8),
+                const Text('Other Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Field/Zone Assignment (Optional)'),
+                  onChanged: (v) => assignedZoneId = v,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Installation Note (Optional)'),
+                  onChanged: (v) => installNote = v,
+                ),
+                TextFormField(
+                  decoration: const InputDecoration(labelText: 'Battery (%)', helperText: 'Leave blank if not known'),
+                  keyboardType: TextInputType.number,
+                  onChanged: (v) => battery = double.tryParse(v),
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (_formKey.currentState?.validate() ?? false) {
+                const String farmId = 'demoFarmId'; // Replace with actual logic
+                Map<String, dynamic> pairingMeta = {};
+                if (pairingMethod == 'BLE') {
+                  pairingMeta = {
+                    'mac': bleMac,
+                    if (bleNote.isNotEmpty) 'note': bleNote,
+                  };
+                } else if (pairingMethod == 'WiFi') {
+                  pairingMeta = {
+                    'ssid': wifiSsid,
+                    if (wifiPassword.isNotEmpty) 'password': wifiPassword,
+                  };
+                } else if (pairingMethod == 'LoRaWAN') {
+                  pairingMeta = {
+                    'gateway': loraGateway,
+                    if (loraNetworkId.isNotEmpty) 'networkId': loraNetworkId,
+                    if (loraChannel.isNotEmpty) 'channel': loraChannel,
+                  };
+                }
+                final SensorModel sensor = SensorModel(
+                  id: '',
+                  farmId: farmId,
+                  displayName: displayName,
+                  type: type,
+                  hardwareId: hardwareId,
+                  pairing: {'method': pairingMethod, 'meta': pairingMeta},
+                  status: 'pending activation',
+                  lastSeenAt: null,
+                  assignedZoneId: assignedZoneId.isNotEmpty ? assignedZoneId : null,
+                  battery: battery,
+                  installNote: installNote.isNotEmpty ? installNote : null,
+                );
+                await _sensorService.createSensor(sensor);
+                Navigator.pop(context);
+                await _loadSensors();
+              }
+            },
+            child: const Text('Add Sensor'),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    final onlineSensors = _sensors.where((s) => s['status'] == 'Online').length;
-    final offlineSensors = _sensors.where((s) => s['status'] == 'Offline').length;
+    final onlineSensors = _sensors.where((s) => s.status.toLowerCase() == 'online').length;
+    final offlineSensors = _sensors.where((s) => s.status.toLowerCase() == 'offline').length;
 
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
@@ -146,11 +281,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Get.snackbar(
-            'Add Sensor',
-            'Sensor pairing screen coming soon!',
-            snackPosition: SnackPosition.BOTTOM,
-          );
+          _showAddSensorDialog();
         },
         backgroundColor: FamingaBrandColors.primaryOrange,
         child: const Icon(Icons.add),
@@ -190,9 +321,17 @@ class _SensorsScreenState extends State<SensorsScreen> {
     );
   }
 
-  Widget _buildSensorCard(Map<String, dynamic> sensor) {
-    final bool isOnline = sensor['status'] == 'Online';
-    final int battery = int.parse(sensor['battery'].replaceAll('%', ''));
+  Widget _buildSensorCard(SensorModel sensor) {
+    final bool isOnline = sensor.status.toLowerCase() == 'online';
+    final title = sensor.displayName?.isNotEmpty == true
+        ? sensor.displayName!
+        : sensor.hardwareId;
+    final subtitle = sensor.type;
+    final lastSeenText = sensor.lastSeenAt != null
+        ? 'Last seen: ' + sensor.lastSeenAt!.toLocal().toString().substring(0, 19)
+        : 'Never online';
+    // Choose an icon based on sensor type (optional)
+    final iconData = Icons.sensors;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -200,7 +339,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
         onTap: () {
           Get.snackbar(
             'Sensor Details',
-            'Viewing ${sensor['name']} details',
+            'Viewing details for $title',
             snackPosition: SnackPosition.BOTTOM,
           );
         },
@@ -218,7 +357,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Icon(
-                      sensor['icon'],
+                      iconData,
                       color: FamingaBrandColors.iconColor,
                       size: 28,
                     ),
@@ -229,7 +368,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          sensor['name'],
+                          title,
                           style: Theme.of(context)
                               .textTheme
                               .titleMedium
@@ -239,18 +378,27 @@ class _SensorsScreenState extends State<SensorsScreen> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          sensor['location'],
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: FamingaBrandColors.textSecondary,
-                                  ),
+                          subtitle,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall?.copyWith(
+                                color: FamingaBrandColors.textSecondary,
+                              ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          lastSeenText,
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodySmall?.copyWith(
+                                color: FamingaBrandColors.textSecondary,
+                              ),
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       color: isOnline
                           ? FamingaBrandColors.statusSuccess.withOpacity(0.1)
@@ -258,7 +406,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      sensor['status'],
+                      sensor.status,
                       style: TextStyle(
                         color: isOnline
                             ? FamingaBrandColors.statusSuccess
@@ -267,21 +415,6 @@ class _SensorsScreenState extends State<SensorsScreen> {
                         fontSize: 12,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildInfoItem(Icons.analytics, 'Current Value', sensor['value']),
-                  _buildInfoItem(
-                    Icons.battery_std,
-                    'Battery',
-                    sensor['battery'],
-                    batteryLevel: battery,
                   ),
                 ],
               ),
