@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:geolocator/geolocator.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
@@ -23,23 +22,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Load dashboard data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
       
       if (authProvider.currentUser != null) {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
-        if (authProvider.currentUser?.address != null && authProvider.currentUser!.address!.trim().isNotEmpty) {
-          await dashboardProvider.setWeatherLocationFromUserAddress(authProvider.currentUser!.address);
-        } else {
-          try {
-            Position pos = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
-            dashboardProvider.setLocation(pos.latitude, pos.longitude);
-            await dashboardProvider.fetchAndSetLiveWeather();
-          } catch (e) {
-            print('Could not get device location: $e');
-          }
-        }
       }
     });
   }
@@ -388,10 +377,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSoilMoistureCard(DashboardProvider dashboardProvider) {
-    final moisture = dashboardProvider.avgSoilMoisture; // null-safe field
-    final moisturePercent = moisture != null ? (moisture / 100).clamp(0.0, 1.0) : 0.0;
-    final moistureText = moisture != null ? '${moisture.round()}%' : '--';
-
+    final moisture = dashboardProvider.soilMoisture;
+    final moisturePercent = (moisture / 100).clamp(0.0, 1.0);
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -429,7 +417,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    moistureText,
+                    '${moisture.round()}%',
                     style: const TextStyle(
                       color: FamingaBrandColors.darkGreen,
                       fontSize: 28,
@@ -441,16 +429,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            moisture != null
-              ? (moisture < 40 ? 'Low' : moisture < 60 ? 'Moderate' : 'Optimal')
-              : 'No Data',
-            style: const TextStyle(
+          const Text(
+            'Calculate Average',
+            style: TextStyle(
               color: FamingaBrandColors.textSecondary,
               fontSize: 11,
             ),
           ),
           const SizedBox(height: 8),
+          Text(
+            dashboardProvider.soilMoistureStatus,
+            style: const TextStyle(
+              color: FamingaBrandColors.textPrimary,
+              fontSize: 11,
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );

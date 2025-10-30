@@ -268,23 +268,29 @@ class ThemeConfig {
     brightness: Brightness.dark,
     
     // Color Scheme
-    colorScheme: const ColorScheme.dark(
+    colorScheme: ColorScheme.dark(
       primary: FamingaBrandColors.primaryOrange,
-      secondary: FamingaBrandColors.darkGreen,
-      surface: Color(0xFF1E1E1E),
-      error: FamingaBrandColors.statusWarning,
+      secondary: const Color(0xFF4A7C4E), // Lighter green for dark mode
+      tertiary: FamingaBrandColors.primaryOrange.withOpacity(0.8),
+      surface: const Color(0xFF1E1E1E),
+      surfaceVariant: const Color(0xFF2D2D2D),
+      error: const Color(0xFFCF6679),
       onPrimary: FamingaBrandColors.white,
       onSecondary: FamingaBrandColors.white,
-      onSurface: FamingaBrandColors.white,
+      onSurface: const Color(0xFFE0E0E0),
+      onSurfaceVariant: const Color(0xFFB0B0B0),
       onError: FamingaBrandColors.white,
+      outline: const Color(0xFF404040),
+      outlineVariant: const Color(0xFF505050),
     ),
     
-    scaffoldBackgroundColor: FamingaBrandColors.backgroundDark,
+    // Scaffold
+    scaffoldBackgroundColor: const Color(0xFF121212),
     
     // AppBar Theme
     appBarTheme: AppBarTheme(
       backgroundColor: const Color(0xFF1E1E1E),
-      foregroundColor: FamingaBrandColors.white,
+      foregroundColor: const Color(0xFFE0E0E0),
       elevation: 0,
       centerTitle: true,
       iconTheme: const IconThemeData(
@@ -293,17 +299,227 @@ class ThemeConfig {
       titleTextStyle: GoogleFonts.poppins(
         fontSize: 20,
         fontWeight: FontWeight.w600,
-        color: FamingaBrandColors.white,
+        color: const Color(0xFFE0E0E0),
       ),
     ),
     
-    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme),
+    // Text Theme
+    textTheme: GoogleFonts.poppinsTextTheme(ThemeData.dark().textTheme).copyWith(
+      displayLarge: GoogleFonts.poppins(
+        fontSize: 32,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFE0E0E0),
+      ),
+      displayMedium: GoogleFonts.poppins(
+        fontSize: 28,
+        fontWeight: FontWeight.bold,
+        color: const Color(0xFFE0E0E0),
+      ),
+      displaySmall: GoogleFonts.poppins(
+        fontSize: 24,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE0E0E0),
+      ),
+      headlineLarge: GoogleFonts.poppins(
+        fontSize: 22,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE0E0E0),
+      ),
+      headlineMedium: GoogleFonts.poppins(
+        fontSize: 20,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE0E0E0),
+      ),
+      headlineSmall: GoogleFonts.poppins(
+        fontSize: 18,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE0E0E0),
+      ),
+      titleLarge: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+        color: const Color(0xFFE0E0E0),
+      ),
+      titleMedium: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: const Color(0xFFE0E0E0),
+      ),
+      titleSmall: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: const Color(0xFFB0B0B0),
+      ),
+      bodyLarge: GoogleFonts.poppins(
+        fontSize: 16,
+        fontWeight: FontWeight.normal,
+        color: const Color(0xFFE0E0E0),
+      ),
+      bodyMedium: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.normal,
+        color: const Color(0xFFE0E0E0),
+      ),
+      bodySmall: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.normal,
+        color: const Color(0xFFB0B0B0),
+      ),
+      labelLarge: GoogleFonts.poppins(
+        fontSize: 14,
+        fontWeight: FontWeight.w500,
+        color: const Color(0xFFE0E0E0),
+      ),
+      labelMedium: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.w500,
+        color: const Color(0xFFB0B0B0),
+      ),
+      labelSmall: GoogleFonts.poppins(
+        fontSize: 10,
+        fontWeight: FontWeight.w500,
+        color: const Color(0xFFB0B0B0),
+      ),
+    ),
+    
+    // Card Theme
     cardTheme: const CardThemeData(
       color: Color(0xFF1E1E1E),
       elevation: 2,
+      shadowColor: Color(0x40000000),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.all(Radius.circular(12)),
       ),
+    ),
+    
+    // Elevated Button Theme
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: FamingaBrandColors.primaryOrange,
+        foregroundColor: FamingaBrandColors.white,
+        elevation: 2,
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+    
+    // Outlined Button Theme
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: FamingaBrandColors.primaryOrange,
+        side: const BorderSide(
+          color: FamingaBrandColors.primaryOrange,
+          width: 2,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        textStyle: GoogleFonts.poppins(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    ),
+    
+    // Text Button Theme
+    textButtonTheme: TextButtonThemeData(
+      style: TextButton.styleFrom(
+        foregroundColor: FamingaBrandColors.primaryOrange,
+        textStyle: GoogleFonts.poppins(
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ),
+    
+    // Input Decoration Theme
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: const Color(0xFF1E1E1E),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFF404040),
+        ),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFF404040),
+        ),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: FamingaBrandColors.primaryOrange,
+          width: 2,
+        ),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFFCF6679),
+        ),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(8),
+        borderSide: const BorderSide(
+          color: Color(0xFFCF6679),
+          width: 2,
+        ),
+      ),
+      contentPadding: const EdgeInsets.symmetric(
+        horizontal: 16,
+        vertical: 12,
+      ),
+      hintStyle: GoogleFonts.poppins(
+        fontSize: 14,
+        color: const Color(0xFF808080),
+      ),
+    ),
+    
+    // Icon Theme
+    iconTheme: const IconThemeData(
+      color: FamingaBrandColors.primaryOrange,
+      size: 24,
+    ),
+    
+    // Floating Action Button Theme
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: FamingaBrandColors.primaryOrange,
+      foregroundColor: FamingaBrandColors.white,
+      elevation: 4,
+    ),
+    
+    // Bottom Navigation Bar Theme
+    bottomNavigationBarTheme: BottomNavigationBarThemeData(
+      backgroundColor: const Color(0xFF1E1E1E),
+      selectedItemColor: FamingaBrandColors.primaryOrange,
+      unselectedItemColor: const Color(0xFF808080),
+      type: BottomNavigationBarType.fixed,
+      elevation: 8,
+      selectedLabelStyle: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+      ),
+      unselectedLabelStyle: GoogleFonts.poppins(
+        fontSize: 12,
+        fontWeight: FontWeight.normal,
+      ),
+    ),
+    
+    // Divider Theme
+    dividerTheme: const DividerThemeData(
+      color: Color(0xFF404040),
+      thickness: 1,
+      space: 1,
     ),
   );
 }

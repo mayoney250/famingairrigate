@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../config/colors.dart';
 
 class CustomButton extends StatelessWidget {
   final String text;
@@ -34,14 +33,15 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildElevatedButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: width ?? double.infinity,
       height: height ?? 56,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: backgroundColor ?? FamingaBrandColors.primaryButton,
-          foregroundColor: textColor ?? FamingaBrandColors.white,
+          backgroundColor: backgroundColor ?? scheme.primary,
+          foregroundColor: textColor ?? scheme.onPrimary,
           elevation: 2,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
@@ -54,9 +54,7 @@ class CustomButton extends StatelessWidget {
                 width: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    FamingaBrandColors.white,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : icon != null
@@ -69,7 +67,7 @@ class CustomButton extends StatelessWidget {
                         text,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: textColor ?? FamingaBrandColors.white,
+                                  color: textColor ?? scheme.onPrimary,
                                   fontWeight: FontWeight.w600,
                                 ),
                       ),
@@ -78,7 +76,7 @@ class CustomButton extends StatelessWidget {
                 : Text(
                     text,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: textColor ?? FamingaBrandColors.white,
+                          color: textColor ?? scheme.onPrimary,
                           fontWeight: FontWeight.w600,
                         ),
                   ),
@@ -87,17 +85,15 @@ class CustomButton extends StatelessWidget {
   }
 
   Widget _buildOutlinedButton(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return SizedBox(
       width: width ?? double.infinity,
       height: height ?? 56,
       child: OutlinedButton(
         onPressed: isLoading ? null : onPressed,
         style: OutlinedButton.styleFrom(
-          foregroundColor: FamingaBrandColors.primaryOrange,
-          side: const BorderSide(
-            color: FamingaBrandColors.primaryOrange,
-            width: 2,
-          ),
+          foregroundColor: scheme.primary,
+          side: BorderSide(color: scheme.primary, width: 2),
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
@@ -109,9 +105,7 @@ class CustomButton extends StatelessWidget {
                 width: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    FamingaBrandColors.primaryOrange,
-                  ),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
             : icon != null
@@ -124,7 +118,7 @@ class CustomButton extends StatelessWidget {
                         text,
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  color: FamingaBrandColors.primaryOrange,
+                                  color: scheme.primary,
                                   fontWeight: FontWeight.w600,
                                 ),
                       ),
@@ -133,7 +127,7 @@ class CustomButton extends StatelessWidget {
                 : Text(
                     text,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.primaryOrange,
+                          color: scheme.primary,
                           fontWeight: FontWeight.w600,
                         ),
                   ),

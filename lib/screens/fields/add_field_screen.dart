@@ -1,8 +1,6 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
-import '../../config/colors.dart';
 import '../../models/field_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/field_service.dart';
@@ -78,8 +76,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
         Get.snackbar(
           'Success',
           'Field "${field.label}" created successfully!',
-          backgroundColor: FamingaBrandColors.statusSuccess,
-          colorText: FamingaBrandColors.white,
+          backgroundColor: Theme.of(context).colorScheme.secondary,
+          colorText: Theme.of(context).colorScheme.onSecondary,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 3),
         );
@@ -91,8 +89,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
         Get.snackbar(
           'Error',
           'Failed to create field: $e',
-          backgroundColor: FamingaBrandColors.statusWarning,
-          colorText: FamingaBrandColors.white,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          colorText: Theme.of(context).colorScheme.onError,
           snackPosition: SnackPosition.BOTTOM,
         );
       }
@@ -105,8 +103,10 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Add New Field'),
         leading: IconButton(
@@ -124,16 +124,15 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               // Header
               Text(
                 'Field Information',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: FamingaBrandColors.textPrimary,
+                style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Enter basic details about your field',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: FamingaBrandColors.textSecondary,
+                style: textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
                     ),
               ),
               const SizedBox(height: 32),
@@ -160,7 +159,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                 label: 'Field Size (hectares)',
                 hintText: 'e.g., 2.5',
                 prefixIcon: Icons.straighten,
-                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
                     return 'Please enter field size';
@@ -194,16 +193,13 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: FamingaBrandColors.white,
+                  color: scheme.surface,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: FamingaBrandColors.borderColor),
+                  border: Border.all(color: scheme.outline),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.eco,
-                      color: FamingaBrandColors.iconColor,
-                    ),
+                    Icon(Icons.eco, color: scheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Column(
@@ -211,20 +207,16 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                         children: [
                           Text(
                             'Organic Farming',
-                            style: Theme.of(context)
-                                .textTheme
-                                .titleMedium
-                                ?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
+                            style: textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
                             'Is this field certified organic?',
-                            style:
-                                Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: FamingaBrandColors.textSecondary,
-                                    ),
+                            style: textTheme.bodySmall?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
                           ),
                         ],
                       ),
@@ -234,7 +226,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                       onChanged: (value) {
                         setState(() => _isOrganic = value);
                       },
-                      activeColor: FamingaBrandColors.statusSuccess,
+                      activeColor: scheme.secondary,
                     ),
                   ],
                 ),
@@ -245,25 +237,20 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                  color: scheme.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+                    color: scheme.primary.withOpacity(0.3),
                   ),
                 ),
                 child: Row(
                   children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: FamingaBrandColors.primaryOrange,
-                    ),
+                    Icon(Icons.info_outline, color: scheme.primary),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'You can add more details like crop types and irrigation systems after creating the field.',
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: FamingaBrandColors.textPrimary,
-                            ),
+                        style: textTheme.bodySmall,
                       ),
                     ),
                   ],

@@ -1,11 +1,9 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/irrigation_schedule_model.dart';
-import 'irrigation_status_service.dart';
 
 class IrrigationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final IrrigationStatusService irrigationStatusService = IrrigationStatusService();
 
   // Get next scheduled irrigation for a user
   Future<IrrigationScheduleModel?> getNextSchedule(String userId) async {
@@ -47,6 +45,28 @@ class IrrigationService {
     }
   }
 
+  // Start an existing scheduled cycle immediately
+  Future<bool> startScheduledNow(String scheduleId) async {
+    try {
+      final now = DateTime.now();
+      await _firestore
+          .collection('irrigationSchedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'running',
+        'isActive': true,
+        'startedAt': Timestamp.fromDate(now),
+        'updatedAt': Timestamp.fromDate(now),
+      });
+
+      log('Scheduled irrigation started now: $scheduleId');
+      return true;
+    } catch (e) {
+      log('Error starting scheduled irrigation now: $e');
+      return false;
+    }
+  }
+
   // Get all schedules for a user
   Stream<List<IrrigationScheduleModel>> getUserSchedules(String userId) {
     return _firestore
@@ -85,6 +105,125 @@ class IrrigationService {
       schedules.sort((a, b) => effectiveTime(a).compareTo(effectiveTime(b)));
       return schedules;
     });
+  }
+
+  // Start irrigation manually
+  Future<bool> startIrrigationManually({
+    required String userId,
+    required String farmId,
+    required String fieldId,
+    required String fieldName,
+    required int durationMinutes,
+  }) async {
+    try {
+      final now = DateTime.now();
+
+      final schedule = IrrigationScheduleModel(
+        id: '',
+        userId: userId,
+        name: 'Manual Irrigation - $fieldName',
+        zoneId: fieldId,
+        zoneName: fieldName,
+        startTime: now,
+        durationMinutes: durationMinutes,
+        repeatDays: const [],
+        isActive: true,
+        status: 'running',
+        createdAt: now,
+      );
+
+      await _firestore
+          .collection('irrigationSchedules')
+          .add(schedule.toMap());
+
+      log('Irrigation started manually');
+      return true;
+    } catch (e) {
+      log('Error starting irrigation manually: $e');
+      return false;
+    }
+  }
+
+  // Stop irrigation manually
+  Future<bool> stopIrrigationManually(String scheduleId) async {
+    try {
+      final now = DateTime.now();
+      
+      await _firestore
+          .collection('irrigationSchedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'stopped',
+        'isActive': false,
+        'stoppedAt': Timestamp.fromDate(now),
+        'stoppedBy': 'manual',
+        'updatedAt': Timestamp.fromDate(now),
+      });
+
+      log('Irrigation stopped manually: $scheduleId');
+      return true;
+    } catch (e) {
+      log('Error stopping irrigation manually: $e');
+      return false;
+    }
+  }
+
+  // Create new schedule
+  Future<bool> createSchedule(IrrigationScheduleModel schedule) async {
+    try {
+      await _firestore
+          .collection('irrigationSchedules')
+          .add(schedule.toMap());
+
+      log('Schedule created');
+      return true;
+    } catch (e) {
+      log('Error creating schedule: $e');
+      return false;
+    }
+  }
+
+  // Update schedule status
+  Future<bool> updateScheduleStatus(String scheduleId, String status) async {
+    try {
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
+          .update({
+        'status': status,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
+      log('Schedule status updated: $scheduleId -> $status');
+      return true;
+    } catch (e) {
+      log('Error updating schedule status: $e');
+      return false;
+    }
+  }
+
+  // Complete irrigation and log water usage
+  Future<bool> completeIrrigation(
+    String scheduleId,
+    double waterUsed,
+  ) async {
+    try {
+      await _firestore
+          .collection('irrigation_schedules')
+          .doc(scheduleId)
+          .update({
+        'status': 'completed',
+        'completedAt': DateTime.now().toIso8601String(),
+        'waterUsed': waterUsed,
+        'updatedAt': DateTime.now().toIso8601String(),
+      });
+
+      log('Irrigation completed: $scheduleId, water used: $waterUsed L');
+      return true;
+    } catch (e) {
+      log('Error completing irrigation: $e');
+      return false;
+    }
   }
 
   // Get water usage for period
