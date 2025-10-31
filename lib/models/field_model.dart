@@ -18,6 +18,12 @@ class FieldModel {
   final List<String>? cropIds;
   final List<String>? irrigationSystemIds;
 
+  // 🆕 Added fields
+  final String? cropType;
+  final String? description;
+  final GeoPoint? location; // Single map coordinate (latitude, longitude)
+  final String? growthStage;
+
   FieldModel({
     required this.id,
     required this.userId,
@@ -35,6 +41,10 @@ class FieldModel {
     this.temperature,
     this.cropIds,
     this.irrigationSystemIds,
+    this.cropType,
+    this.description,
+    this.location,
+    this.growthStage,
   });
 
   Map<String, dynamic> toMap() {
@@ -60,6 +70,14 @@ class FieldModel {
       'temperature': temperature,
       'cropIds': cropIds,
       'irrigationSystemIds': irrigationSystemIds,
+
+      // 🆕 New fields
+      'cropType': cropType,
+      'description': description,
+      'location': location != null
+          ? {'latitude': location!.latitude, 'longitude': location!.longitude}
+          : null,
+      'growthStage': growthStage,
     };
   }
 
@@ -85,12 +103,22 @@ class FieldModel {
       moisture: map['moisture']?.toDouble(),
       pH: map['pH']?.toDouble(),
       temperature: map['temperature']?.toDouble(),
-      cropIds: map['cropIds'] != null
-          ? List<String>.from(map['cropIds'])
-          : null,
+      cropIds:
+          map['cropIds'] != null ? List<String>.from(map['cropIds']) : null,
       irrigationSystemIds: map['irrigationSystemIds'] != null
           ? List<String>.from(map['irrigationSystemIds'])
           : null,
+
+      // 🆕 New fields
+      cropType: map['cropType'],
+      description: map['description'],
+      location: map['location'] != null
+          ? GeoPoint(
+              map['location']['latitude'] ?? 0.0,
+              map['location']['longitude'] ?? 0.0,
+            )
+          : null,
+      growthStage: map['growthStage'],
     );
   }
 
@@ -116,6 +144,10 @@ class FieldModel {
     double? temperature,
     List<String>? cropIds,
     List<String>? irrigationSystemIds,
+    String? cropType,
+    String? description,
+    GeoPoint? location,
+    String? growthStage,
   }) {
     return FieldModel(
       id: id ?? this.id,
@@ -133,8 +165,12 @@ class FieldModel {
       pH: pH ?? this.pH,
       temperature: temperature ?? this.temperature,
       cropIds: cropIds ?? this.cropIds,
-      irrigationSystemIds: irrigationSystemIds ?? this.irrigationSystemIds,
+      irrigationSystemIds:
+          irrigationSystemIds ?? this.irrigationSystemIds,
+      cropType: cropType ?? this.cropType,
+      description: description ?? this.description,
+      location: location ?? this.location,
+      growthStage: growthStage ?? this.growthStage,
     );
   }
 }
-

@@ -78,18 +78,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => _autoIrrigation = value);
                 },
               ),
-              _buildListTile(
-                Icons.schedule,
-                'Irrigation Schedule',
-                'Set up irrigation schedules',
-                () {
-                  Get.snackbar(
-                    'Schedule',
-                    'Irrigation schedule settings coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
+    
               _buildListTile(
                 Icons.water,
                 'Water Usage Goals',
@@ -170,36 +159,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          _buildSection(
-            'Security',
-            [
-              _buildListTile(
-                Icons.lock_outline,
-                'Change Password',
-                'Update your account password',
-                () {
-                  Get.snackbar(
-                    'Change Password',
-                    'Password change coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
-              _buildListTile(
-                Icons.fingerprint,
-                'Biometric Login',
-                'Use fingerprint or face ID',
-                () {
-                  Get.snackbar(
-                    'Biometric Login',
-                    'Biometric authentication coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
-            ],
-          ),
+          // const SizedBox(height: 16),
+          // _buildSection(
+          //   'Security',
+          //   [
+          //     _buildListTile(
+          //       Icons.lock_outline,
+          //       'Change Password',
+          //       'Update your account password',
+          //       () {
+          //         Get.snackbar(
+          //           'Change Password',
+          //           'Password change coming soon!',
+          //           snackPosition: SnackPosition.BOTTOM,
+          //         );
+          //       },
+          //     ),
+          //     _buildListTile(
+          //       Icons.fingerprint,
+          //       'Biometric Login',
+          //       'Use fingerprint or face ID',
+          //       () {
+          //         Get.snackbar(
+          //           'Biometric Login',
+          //           'Biometric authentication coming soon!',
+          //           snackPosition: SnackPosition.BOTTOM,
+          //         );
+          //       },
+          //     ),
+          //   ],
+          // ),
           const SizedBox(height: 16),
           _buildSection(
             'About',

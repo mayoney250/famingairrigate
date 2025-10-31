@@ -577,6 +577,7 @@ class _ScheduleCardState extends State<_ScheduleCard> with SingleTickerProviderS
               const SizedBox(height: 6),
               Text(schedule.zoneName, style: Theme.of(context).textTheme.bodyMedium),
               const SizedBox(height: 8),
+              Text('Start: ' + DateFormat('hh:mm a, dd MMM yyyy').format(schedule.startTime), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: scheme.primary)),
               if (isRunning && secondsLeft > 0)
                 Row(
                   children: [
