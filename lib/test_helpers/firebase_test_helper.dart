@@ -141,10 +141,9 @@ class FirebaseTestHelper {
   static Future<String> _testCreateAlert() async {
     final alertService = AlertService();
     return await alertService.createLowMoistureAlert(
-      userId,
-      'test_field_1',
-      'Test Zone A',
-      28.5, // Low moisture level
+      farmId: 'test_farm_1',
+      zoneName: 'Test Zone A',
+      moistureLevel: 28.5,
     );
   }
   

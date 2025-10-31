@@ -17,7 +17,7 @@ class AlertDetailScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Alert'),
         actions: [
-          if (!alert.isRead)
+          if (!alert.read)
             TextButton(
               onPressed: () async {
                 await service.markAsRead(alert.id);
@@ -37,14 +37,14 @@ class AlertDetailScreen extends StatelessWidget {
                 Icon(_severityIcon(alert.severity), color: color),
                 const SizedBox(width: 8),
                 Text(
-                  alert.severity.name.toUpperCase(),
+                  alert.severity.toUpperCase(),
                   style: TextStyle(color: color, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 12),
             Text(
-              alert.title,
+              alert.message,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
@@ -56,7 +56,7 @@ class AlertDetailScreen extends StatelessWidget {
             Align(
               alignment: Alignment.bottomRight,
               child: Text(
-                alert.timestamp.toString(),
+                alert.ts.toString(),
                 style: TextStyle(color: scheme.onSurfaceVariant, fontSize: 12),
               ),
             ),
@@ -66,28 +66,31 @@ class AlertDetailScreen extends StatelessWidget {
     );
   }
 
-  Color _severityColor(BuildContext context, AlertSeverity severity) {
-    final scheme = Theme.of(context).colorScheme;
+  Color _severityColor(BuildContext context, String severity) {
     switch (severity) {
-      case AlertSeverity.critical:
-        return scheme.error;
-      case AlertSeverity.warning:
-        return scheme.tertiary;
-      case AlertSeverity.info:
+      case 'high':
+      case 'critical':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+      case 'info':
       default:
-        return scheme.primary;
+        return Colors.green;
     }
   }
 
-  IconData _severityIcon(AlertSeverity severity) {
+  IconData _severityIcon(String severity) {
     switch (severity) {
-      case AlertSeverity.critical:
-        return Icons.error;
-      case AlertSeverity.warning:
+      case 'high':
+      case 'critical':
         return Icons.warning;
-      case AlertSeverity.info:
+      case 'medium':
+        return Icons.warning_amber;
+      case 'low':
+      case 'info':
       default:
-        return Icons.info_outline;
+        return Icons.info;
     }
   }
 }

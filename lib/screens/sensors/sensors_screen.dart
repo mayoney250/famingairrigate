@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../routes/app_routes.dart';
+import '../../services/sensor_service.dart';
+import '../../models/sensor_model.dart';
+import '../../providers/dashboard_provider.dart';
+import '../../services/sensor_local_service.dart';
 
 class SensorsScreen extends StatefulWidget {
   const SensorsScreen({super.key});
@@ -11,340 +16,68 @@ class SensorsScreen extends StatefulWidget {
 }
 
 class _SensorsScreenState extends State<SensorsScreen> {
-  int _selectedIndex = 3; // Sensors is at index 3 in bottom nav
+  int _selectedIndex = 3;
+  final SensorService _sensorService = SensorService();
+  List<SensorModel> _sensors = [];
 
-  // Mock data - replace with real data from Firestore
-  final List<Map<String, dynamic>> _sensors = [
-    {
-      'name': 'Soil Moisture - North',
-      'type': 'Soil Moisture',
-      'value': '65%',
-      'status': 'Online',
-      'location': 'North Field',
-      'battery': '85%',
-      'icon': Icons.water_drop,
-    },
-    {
-      'name': 'Temperature - South',
-      'type': 'Temperature',
-      'value': '24°C',
-      'status': 'Online',
-      'location': 'South Field',
-      'battery': '92%',
-      'icon': Icons.thermostat,
-    },
-    {
-      'name': 'Humidity - East',
-      'type': 'Humidity',
-      'value': '58%',
-      'status': 'Online',
-      'location': 'East Field',
-      'battery': '76%',
-      'icon': Icons.cloud,
-    },
-    {
-      'name': 'Soil pH - West',
-      'type': 'Soil pH',
-      'value': '6.8',
-      'status': 'Offline',
-      'location': 'West Field',
-      'battery': '15%',
-      'icon': Icons.science,
-    },
-    {
-      'name': 'Light - Central',
-      'type': 'Light Intensity',
-      'value': '850 lux',
-      'status': 'Online',
-      'location': 'Central Field',
-      'battery': '88%',
-      'icon': Icons.wb_sunny,
-    },
-    {
-      'name': 'Soil Moisture - East',
-      'type': 'Soil Moisture',
-      'value': '72%',
-      'status': 'Online',
-      'location': 'East Field',
-      'battery': '90%',
-      'icon': Icons.water_drop,
-    },
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _loadSensors());
+  }
+
+  Future<void> _loadSensors() async {
+    final dash = Provider.of<DashboardProvider>(context, listen: false);
+    final farmId = dash.selectedFarmId;
+    // 1) show local cache first
+    final local = await SensorLocalService.getSensorsForFarm(farmId);
+    if (mounted) setState(() => _sensors = local);
+    // 2) refresh from remote and cache
+    final remote = await _sensorService.getSensorsForFarm(farmId);
+    await SensorLocalService.upsertSensors(remote);
+    if (!mounted) return;
+    setState(() => _sensors = remote);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final onlineSensors = _sensors.where((s) => s['status'] == 'Online').length;
-    final offlineSensors = _sensors.where((s) => s['status'] == 'Offline').length;
-
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Sensors'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              Get.snackbar(
-                'Refreshing',
-                'Updating sensor data...',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
+            icon: const Icon(Icons.add),
+            tooltip: 'Add Sensor',
+            onPressed: _showAddSensorDialog,
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Stats header
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: FamingaBrandColors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildStatCard(
-                    'Online',
-                    onlineSensors.toString(),
-                    FamingaBrandColors.statusSuccess,
-                    Icons.check_circle,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Offline',
-                    offlineSensors.toString(),
-                    FamingaBrandColors.statusWarning,
-                    Icons.error,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildStatCard(
-                    'Total',
-                    _sensors.length.toString(),
-                    FamingaBrandColors.primaryOrange,
-                    Icons.sensors,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Sensors list
-          Expanded(
-            child: ListView.builder(
+      body: _sensors.isEmpty
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: const [
+                  Icon(Icons.sensors, size: 48, color: FamingaBrandColors.iconColor),
+                  SizedBox(height: 12),
+                  Text('No sensors yet. Tap + to add.', style: TextStyle(color: Colors.black54)),
+                ],
+              ),
+            )
+          : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _sensors.length,
-              itemBuilder: (context, index) {
-                final sensor = _sensors[index];
-                return _buildSensorCard(sensor);
-              },
+              itemBuilder: (context, i) => _SensorCard(sensor: _sensors[i]),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Get.snackbar(
-            'Add Sensor',
-            'Sensor pairing screen coming soon!',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        },
-        backgroundColor: FamingaBrandColors.primaryOrange,
-        child: const Icon(Icons.add),
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
+      bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
 
-  Widget _buildStatCard(String label, String value, Color color, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: color,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSensorCard(Map<String, dynamic> sensor) {
-    final bool isOnline = sensor['status'] == 'Online';
-    final int battery = int.parse(sensor['battery'].replaceAll('%', ''));
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          Get.snackbar(
-            'Sensor Details',
-            'Viewing ${sensor['name']} details',
-            snackPosition: SnackPosition.BOTTOM,
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Icon(
-                      sensor['icon'],
-                      color: FamingaBrandColors.iconColor,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          sensor['name'],
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.bold,
-                              ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          sensor['location'],
-                          style:
-                              Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: FamingaBrandColors.textSecondary,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: isOnline
-                          ? FamingaBrandColors.statusSuccess.withOpacity(0.1)
-                          : FamingaBrandColors.statusWarning.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      sensor['status'],
-                      style: TextStyle(
-                        color: isOnline
-                            ? FamingaBrandColors.statusSuccess
-                            : FamingaBrandColors.statusWarning,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  _buildInfoItem(Icons.analytics, 'Current Value', sensor['value']),
-                  _buildInfoItem(
-                    Icons.battery_std,
-                    'Battery',
-                    sensor['battery'],
-                    batteryLevel: battery,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoItem(IconData icon, String label, String value, {int? batteryLevel}) {
-    Color iconColor = FamingaBrandColors.iconColor;
-    
-    if (batteryLevel != null) {
-      if (batteryLevel < 20) {
-        iconColor = FamingaBrandColors.statusWarning;
-      } else if (batteryLevel < 50) {
-        iconColor = FamingaBrandColors.primaryOrange;
-      } else {
-        iconColor = FamingaBrandColors.statusSuccess;
-      }
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              icon,
-              size: 16,
-              color: iconColor,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                color: FamingaBrandColors.textSecondary,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-            fontSize: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildBottomNavigationBar() {
+  BottomNavigationBar _buildBottomNavigationBar(BuildContext context) {
     return BottomNavigationBar(
       currentIndex: _selectedIndex,
       onTap: (index) {
         if (index == _selectedIndex) return;
-
-        setState(() => _selectedIndex = index);
-
         switch (index) {
           case 0:
             Get.offAllNamed(AppRoutes.dashboard);
@@ -356,38 +89,238 @@ class _SensorsScreenState extends State<SensorsScreen> {
             Get.offAllNamed(AppRoutes.fields);
             break;
           case 3:
-            // Already on Sensors
             break;
           case 4:
             Get.offAllNamed(AppRoutes.profile);
             break;
         }
       },
-      type: BottomNavigationBarType.fixed,
-      selectedItemColor: FamingaBrandColors.primaryOrange,
-      unselectedItemColor: FamingaBrandColors.textSecondary,
       items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.water_drop),
-          label: 'Irrigation',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.landscape),
-          label: 'Fields',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.sensors),
-          label: 'Sensors',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
+        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
+        BottomNavigationBarItem(icon: Icon(Icons.water_drop), label: 'Irrigation'),
+        BottomNavigationBarItem(icon: Icon(Icons.landscape), label: 'Fields'),
+        BottomNavigationBarItem(icon: Icon(Icons.sensors), label: 'Sensors'),
+        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
       ],
+    );
+  }
+
+  void _showAddSensorDialog() {
+    final formKey = GlobalKey<FormState>();
+    String displayName = '';
+    String type = 'soil';
+    String hardwareId = '';
+    String pairingMethod = 'BLE';
+
+    // method-specific minimal
+    String bleMac = '';
+    String wifiSsid = '';
+    String loraGateway = '';
+
+    // optional/advanced
+    String assignedZoneId = '';
+    String installNote = '';
+    String bleNote = '';
+    String wifiPassword = '';
+    String loraNetworkId = '';
+    String loraChannel = '';
+
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Add Sensor'),
+          content: Form(
+            key: formKey,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Main Details', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 6),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Sensor Name/Label'),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                    onChanged: (v) => displayName = v,
+                  ),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Sensor Type'),
+                    value: type,
+                    items: const [
+                      DropdownMenuItem(value: 'soil', child: Text('Soil Moisture')),
+                      DropdownMenuItem(value: 'temperature', child: Text('Temperature')),
+                      DropdownMenuItem(value: 'humidity', child: Text('Humidity')),
+                      DropdownMenuItem(value: 'ph', child: Text('Soil pH')),
+                      DropdownMenuItem(value: 'light', child: Text('Light Intensity')),
+                      DropdownMenuItem(value: 'airTemp', child: Text('Ambient Temp')),
+                    ],
+                    onChanged: (v) => setState(() => type = v ?? 'soil'),
+                  ),
+                  TextFormField(
+                    decoration: const InputDecoration(labelText: 'Hardware ID/Serial'),
+                    validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                    onChanged: (v) => hardwareId = v,
+                  ),
+                  DropdownButtonFormField<String>(
+                    decoration: const InputDecoration(labelText: 'Pairing Method'),
+                    value: pairingMethod,
+                    items: const [
+                      DropdownMenuItem(value: 'BLE', child: Text('Bluetooth (BLE)')),
+                      DropdownMenuItem(value: 'WiFi', child: Text('WiFi')),
+                      DropdownMenuItem(value: 'LoRaWAN', child: Text('LoRaWAN Gateway')),
+                    ],
+                    onChanged: (v) => setState(() => pairingMethod = v!),
+                  ),
+                  if (pairingMethod == 'BLE')
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'BLE MAC Address'),
+                      validator: (v) => pairingMethod == 'BLE' && (v == null || v.isEmpty) ? 'Required' : null,
+                      onChanged: (v) => bleMac = v,
+                    ),
+                  if (pairingMethod == 'WiFi')
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'WiFi SSID'),
+                      validator: (v) => pairingMethod == 'WiFi' && (v == null || v.isEmpty) ? 'Required' : null,
+                      onChanged: (v) => wifiSsid = v,
+                    ),
+                  if (pairingMethod == 'LoRaWAN')
+                    TextFormField(
+                      decoration: const InputDecoration(labelText: 'Gateway ID/Name'),
+                      validator: (v) => pairingMethod == 'LoRaWAN' && (v == null || v.isEmpty) ? 'Required' : null,
+                      onChanged: (v) => loraGateway = v,
+                    ),
+                  const SizedBox(height: 8),
+                  ExpansionTile(
+                    title: const Text('Advanced (Optional)', style: TextStyle(fontSize: 14)),
+                    children: [
+                      if (pairingMethod == 'BLE')
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'Pairing Note/Code (Optional)'),
+                          onChanged: (v) => bleNote = v,
+                        ),
+                      if (pairingMethod == 'WiFi')
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'WiFi Password (Optional)'),
+                          onChanged: (v) => wifiPassword = v,
+                        ),
+                      if (pairingMethod == 'LoRaWAN') ...[
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'LoRaWAN Network ID (Optional)'),
+                          onChanged: (v) => loraNetworkId = v,
+                        ),
+                        TextFormField(
+                          decoration: const InputDecoration(labelText: 'Channel (Optional)'),
+                          onChanged: (v) => loraChannel = v,
+                        ),
+                      ],
+                      TextFormField(
+                        decoration: const InputDecoration(labelText: 'Field/Zone Assignment (Optional)'),
+                        onChanged: (v) => assignedZoneId = v,
+                      ),
+                      TextFormField(
+                        decoration: const InputDecoration(labelText: 'Installation Note (Optional)'),
+                        maxLines: 2,
+                        onChanged: (v) => installNote = v,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () async {
+                if (!(formKey.currentState?.validate() ?? false)) return;
+                final dash = Provider.of<DashboardProvider>(context, listen: false);
+                final farmId = dash.selectedFarmId;
+                Map<String, dynamic> pairingMeta = {};
+                if (pairingMethod == 'BLE') {
+                  pairingMeta = {'mac': bleMac, if (bleNote.isNotEmpty) 'note': bleNote};
+                } else if (pairingMethod == 'WiFi') {
+                  pairingMeta = {'ssid': wifiSsid, if (wifiPassword.isNotEmpty) 'password': wifiPassword};
+                } else if (pairingMethod == 'LoRaWAN') {
+                  pairingMeta = {
+                    'gateway': loraGateway,
+                    if (loraNetworkId.isNotEmpty) 'networkId': loraNetworkId,
+                    if (loraChannel.isNotEmpty) 'channel': loraChannel,
+                  };
+                }
+                final sensor = SensorModel(
+                  id: '',
+                  farmId: farmId,
+                  displayName: displayName,
+                  type: type,
+                  hardwareId: hardwareId,
+                  pairing: {'method': pairingMethod, 'meta': pairingMeta},
+                  status: 'pending activation',
+                  lastSeenAt: null,
+                  assignedZoneId: assignedZoneId.isNotEmpty ? assignedZoneId : null,
+                  installNote: installNote.isNotEmpty ? installNote : null,
+                );
+                await _sensorService.createSensor(sensor);
+                await SensorLocalService.upsertSensor(sensor);
+                if (!mounted) return;
+                Navigator.pop(context);
+                await _loadSensors();
+                Get.snackbar('Sensor Added', 'Sensor "$displayName" created.', snackPosition: SnackPosition.BOTTOM);
+              },
+              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(44)),
+              child: const Text('Add Sensor', style: TextStyle(fontSize: 16)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SensorCard extends StatelessWidget {
+  final SensorModel sensor;
+  const _SensorCard({required this.sensor});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(sensor.displayName ?? sensor.hardwareId, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      const SizedBox(height: 2),
+                      Text('Type: ${sensor.type}   Status: ${sensor.status}', style: TextStyle(color: scheme.onSurfaceVariant)),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            if (sensor.installNote != null && sensor.installNote!.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text(sensor.installNote!, style: const TextStyle(color: Colors.black54)),
+            ],
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(sensor.hardwareId, style: TextStyle(fontSize: 12, color: FamingaBrandColors.iconColor)),
+                Text(sensor.pairing['method'] ?? '', style: TextStyle(fontSize: 12, color: FamingaBrandColors.textSecondary)),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

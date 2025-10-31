@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'models/alert_model.dart';
+import 'models/sensor_model.dart';
+import 'models/sensor_reading_model.dart';
 import 'config/firebase_config.dart';
 import 'config/theme_config.dart';
 import 'providers/auth_provider.dart';
@@ -13,6 +17,13 @@ void main() async {
   
   // Initialize Firebase
   await FirebaseConfig.initialize();
+  await Hive.initFlutter();
+  Hive.registerAdapter(AlertModelAdapter());
+  Hive.registerAdapter(SensorModelAdapter());
+  Hive.registerAdapter(SensorReadingModelAdapter());
+  await Hive.openBox<AlertModel>('alertsBox');
+  await Hive.openBox<SensorModel>('sensorsBox');
+  await Hive.openBox<SensorReadingModel>('readingsBox');
   
   runApp(const FamingaIrrigationApp());
 }

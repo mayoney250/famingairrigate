@@ -1,16 +1,30 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
+part 'sensor_model.g.dart';
 
-class SensorModel {
+@HiveType(typeId: 3)
+class SensorModel extends HiveObject {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String farmId;
+  @HiveField(2)
   final String? displayName;
+  @HiveField(3)
   final String type; // 'soil', 'temperature', etc.
+  @HiveField(4)
   final String hardwareId;
+  @HiveField(5)
   final Map<String, dynamic> pairing; // method, meta (with keys for BLE, WiFi, LoRa, etc.)
+  @HiveField(6)
   final String status; // 'online', 'offline', ...
+  @HiveField(7)
   final DateTime? lastSeenAt;
+  @HiveField(8)
   final String? assignedZoneId;
+  @HiveField(9)
   final double? battery;
+  @HiveField(10)
   final String? installNote;
 
   SensorModel({
@@ -36,7 +50,7 @@ class SensorModel {
       'hardwareId': hardwareId,
       'pairing': pairing,
       'status': status,
-      'lastSeenAt': lastSeenAt != null ? Timestamp.fromDate(lastSeenAt!) : null,
+      'lastSeenAt': lastSeenAt,
       'assignedZoneId': assignedZoneId,
       'battery': battery,
       'installNote': installNote,
@@ -52,7 +66,11 @@ class SensorModel {
       hardwareId: map['hardwareId'] ?? '',
       pairing: Map<String, dynamic>.from(map['pairing'] ?? {}),
       status: map['status'] ?? 'offline',
-      lastSeenAt: map['lastSeenAt'] != null ? (map['lastSeenAt'] is Timestamp ? (map['lastSeenAt'] as Timestamp).toDate() : DateTime.tryParse(map['lastSeenAt'].toString()) ) : null,
+      lastSeenAt: map['lastSeenAt'] != null
+          ? (map['lastSeenAt'] is Timestamp
+              ? (map['lastSeenAt'] as Timestamp).toDate()
+              : DateTime.tryParse(map['lastSeenAt'].toString()))
+          : null,
       assignedZoneId: map['assignedZoneId'],
       battery: map['battery'] != null ? (map['battery'] as num).toDouble() : null,
       installNote: map['installNote'],

@@ -8,6 +8,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../routes/app_routes.dart';
 // Removed temporary DB test screen import
+import 'package:hive_flutter/hive_flutter.dart';
+import '../../services/alert_local_service.dart';
+import '../../models/alert_model.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -18,6 +21,8 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
+  int unreadCount = 0;
+  List<AlertModel> allAlerts = [];
 
   @override
   void initState() {
@@ -30,7 +35,36 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (authProvider.currentUser != null) {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
       }
+      _loadAlerts();
     });
+  }
+
+  Future<void> _loadAlerts() async {
+    final alerts = await AlertLocalService.getAlerts();
+    setState(() {
+      allAlerts = alerts..sort((a, b) => b.ts.compareTo(a.ts));
+      unreadCount = alerts.where((a) => !a.read).length;
+    });
+    // Watch for alert box changes
+    final box = await Hive.openBox<AlertModel>('alertsBox');
+    box.listenable().addListener(() async {
+      final current = await AlertLocalService.getAlerts();
+      setState(() {
+        allAlerts = current..sort((a, b) => b.ts.compareTo(a.ts));
+        unreadCount = current.where((a) => !a.read).length;
+      });
+    });
+  }
+
+  void _openAlertCenter() async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => AlertCenterBottomSheet(alerts: allAlerts, onMarkRead: (id) async {
+        await AlertLocalService.markRead(id);
+        _loadAlerts();
+      }),
+    );
   }
 
   @override
@@ -92,6 +126,31 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.notifications),
+                tooltip: 'Alerts',
+                onPressed: _openAlertCenter,
+              ),
+              if (unreadCount > 0)
+                Positioned(
+                  right: 8,
+                  top: 8,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Text(
+                      unreadCount.toString(),
+                      style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                )
+            ],
+          ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
               final user = authProvider.currentUser;
@@ -199,7 +258,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-      floatingActionButton: null,
+      floatingActionButton: FloatingActionButton.extended(
+        label: const Text('Demo Add Alert'),
+        icon: const Icon(Icons.add_alert),
+        onPressed: () async {
+          final fakeAlert = AlertModel(
+            id: DateTime.now().millisecondsSinceEpoch.toString(),
+            farmId: 'fakefarm',
+            sensorId: null,
+            type: 'THRESHOLD',
+            message: 'Soil moisture dropped below threshold!',
+            severity: 'high',
+            ts: DateTime.now(),
+            read: false,
+          );
+          await AlertLocalService.addAlert(fakeAlert);
+          _loadAlerts();
+        },
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -1071,5 +1147,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
       ],
     );
+  }
+}
+
+class AlertCenterBottomSheet extends StatelessWidget {
+  final List<AlertModel> alerts;
+  final Future<void> Function(String id) onMarkRead;
+  const AlertCenterBottomSheet({required this.alerts, required this.onMarkRead});
+  @override
+  Widget build(BuildContext context) {
+    if (alerts.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: Text('No alerts yet')),);
+    }
+    return SafeArea(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(24),
+        itemCount: alerts.length,
+        separatorBuilder: (_, __) => const Divider(),
+        itemBuilder: (context, i) {
+          final a = alerts[i];
+          Color iconColor = a.severity == 'high'
+              ? Colors.red
+              : a.severity == 'medium' ? Colors.orange : Colors.green;
+          IconData icon = a.type == 'OFFLINE'
+              ? Icons.sensor_door
+              : a.type == 'VALVE'
+                  ? Icons.water_drop
+                  : Icons.warning;
+          return ListTile(
+            leading: Icon(icon, color: iconColor),
+            title: Text(a.message,
+                style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
+            subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts)}'),
+            trailing: a.read
+                ? null
+                : IconButton(
+                    icon: const Icon(Icons.check, color: Colors.green),
+                    tooltip: 'Mark as read',
+                    onPressed: () => onMarkRead(a.id),
+                  ),
+          );
+        },
+      ),
+    );
+  }
+
+  String timeAgo(DateTime dt) {
+    final d = DateTime.now().difference(dt);
+    if (d.inMinutes < 1) return 'Just now';
+    if (d.inHours < 1) return '${d.inMinutes}min ago';
+    if (d.inDays < 1) return '${d.inHours}h ago';
+    return '${d.inDays}d ago';
   }
 }

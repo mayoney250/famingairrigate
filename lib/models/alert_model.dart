@@ -1,128 +1,66 @@
+import 'package:hive/hive.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+part 'alert_model.g.dart';
 
-enum AlertType {
-  lowMoisture,
-  highTemperature,
-  lowBattery,
-  irrigationCompleted,
-  irrigationFailed,
-  sensorOffline,
-  weatherWarning,
-}
-
-enum AlertSeverity {
-  info,
-  warning,
-  critical,
-}
-
-class AlertModel {
+@HiveType(typeId: 2)
+class AlertModel extends HiveObject {
+  @HiveField(0)
   final String id;
-  final String userId;
-  final String? fieldId;
-  final String? zoneId;
-  final AlertType type;
-  final AlertSeverity severity;
-  final String title;
+  @HiveField(1)
+  final String farmId;
+  @HiveField(2)
+  final String? sensorId;
+  @HiveField(3)
+  final String type; // 'THRESHOLD','OFFLINE','VALVE'
+  @HiveField(4)
   final String message;
-  final bool isRead;
-  final DateTime timestamp;
+  @HiveField(5)
+  final String severity; // e.g. 'low','medium','high'
+  @HiveField(6)
+  final DateTime ts;
+  @HiveField(7)
+  final bool read;
 
   AlertModel({
     required this.id,
-    required this.userId,
-    this.fieldId,
-    this.zoneId,
+    required this.farmId,
+    this.sensorId,
     required this.type,
-    required this.severity,
-    required this.title,
     required this.message,
-    this.isRead = false,
-    required this.timestamp,
+    required this.severity,
+    required this.ts,
+    this.read = false,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'userId': userId,
-      'fieldId': fieldId,
-      'zoneId': zoneId,
-      'type': type.toString().split('.').last,
-      'severity': severity.toString().split('.').last,
-      'title': title,
-      'message': message,
-      'isRead': isRead,
-      'timestamp': Timestamp.fromDate(timestamp),
-    };
-  }
-
-  factory AlertModel.fromMap(Map<String, dynamic> map) {
-    return AlertModel(
+  factory AlertModel.fromMap(Map<String, dynamic> map) => AlertModel(
       id: map['id'] ?? '',
-      userId: map['userId'] ?? '',
-      fieldId: map['fieldId'],
-      zoneId: map['zoneId'],
-      type: AlertType.values.firstWhere(
-        (e) => e.toString().split('.').last == map['type'],
-        orElse: () => AlertType.irrigationCompleted,
-      ),
-      severity: AlertSeverity.values.firstWhere(
-        (e) => e.toString().split('.').last == map['severity'],
-        orElse: () => AlertSeverity.info,
-      ),
-      title: map['title'] ?? '',
+      farmId: map['farmId'] ?? '',
+      sensorId: map['sensorId'],
+      type: map['type'] ?? 'THRESHOLD',
       message: map['message'] ?? '',
-      isRead: map['isRead'] ?? false,
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
+      severity: map['severity'] ?? 'info',
+      ts: map['ts'] is Timestamp
+          ? (map['ts'] as Timestamp).toDate()
+          : (map['ts'] is DateTime
+              ? map['ts']
+              : DateTime.tryParse(map['ts'].toString()) ?? DateTime.now()),
+      read: map['read'] ?? false,
     );
-  }
+
+  Map<String, dynamic> toMap() => {
+        'id': id,
+        'farmId': farmId,
+        'sensorId': sensorId,
+        'type': type,
+        'message': message,
+        'severity': severity,
+        'ts': ts,
+        'read': read,
+      };
 
   factory AlertModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-    return AlertModel.fromMap(data);
-  }
-
-  AlertModel copyWith({
-    String? id,
-    String? userId,
-    String? fieldId,
-    String? zoneId,
-    AlertType? type,
-    AlertSeverity? severity,
-    String? title,
-    String? message,
-    bool? isRead,
-    DateTime? timestamp,
-  }) {
-    return AlertModel(
-      id: id ?? this.id,
-      userId: userId ?? this.userId,
-      fieldId: fieldId ?? this.fieldId,
-      zoneId: zoneId ?? this.zoneId,
-      type: type ?? this.type,
-      severity: severity ?? this.severity,
-      title: title ?? this.title,
-      message: message ?? this.message,
-      isRead: isRead ?? this.isRead,
-      timestamp: timestamp ?? this.timestamp,
-    );
-  }
-
-  String get timeAgo {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inSeconds < 60) {
-      return 'Just now';
-    } else if (difference.inMinutes < 60) {
-      return '${difference.inMinutes} mins ago';
-    } else if (difference.inHours < 24) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays} days ago';
-    } else {
-      return '${difference.inDays ~/ 7} weeks ago';
-    }
+    final map = doc.data() as Map<String, dynamic>;
+    return AlertModel.fromMap({'id': doc.id, ...map});
   }
 }
 

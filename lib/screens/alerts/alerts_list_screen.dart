@@ -5,46 +5,50 @@ import '../../config/colors.dart';
 import '../../models/alert_model.dart';
 import '../../services/alert_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/dashboard_provider.dart';
 
 class AlertsListScreen extends StatelessWidget {
   const AlertsListScreen({super.key});
 
-  Color _severityColor(BuildContext context, AlertSeverity severity) {
-    final scheme = Theme.of(context).colorScheme;
+  Color _severityColor(BuildContext context, String severity) {
     switch (severity) {
-      case AlertSeverity.critical:
-        return scheme.error;
-      case AlertSeverity.warning:
-        return scheme.tertiary;
-      case AlertSeverity.info:
+      case 'high':
+      case 'critical':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+      case 'info':
       default:
-        return scheme.primary;
+        return Colors.green;
     }
   }
 
-  IconData _severityIcon(AlertSeverity severity) {
+  IconData _severityIcon(String severity) {
     switch (severity) {
-      case AlertSeverity.critical:
-        return Icons.error;
-      case AlertSeverity.warning:
+      case 'high':
+      case 'critical':
         return Icons.warning;
-      case AlertSeverity.info:
+      case 'medium':
+        return Icons.warning_amber;
+      case 'low':
+      case 'info':
       default:
-        return Icons.info_outline;
+        return Icons.info;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final service = AlertService();
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final userId = auth.currentUser?.userId ?? '';
+    final dash = Provider.of<DashboardProvider>(context, listen: false);
+    final farmId = dash.selectedFarmId;
     final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Alerts')),
       body: StreamBuilder<List<AlertModel>>(
-        stream: service.streamUserAlerts(userId),
+        stream: service.streamFarmAlerts(farmId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -66,22 +70,21 @@ class AlertsListScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   tileColor: scheme.surface,
                   leading: Icon(_severityIcon(a.severity), color: color),
-                  title: Text(a.title, style: TextStyle(color: textColor)),
+                  title: Text(a.message, style: TextStyle(color: textColor)),
                   subtitle: Text(a.message, style: TextStyle(color: scheme.onSurfaceVariant)),
-                  trailing: a.isRead
+                  trailing: a.read
                       ? Icon(Icons.check, color: scheme.primary)
-                      : Container
-                          (
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              a.severity.name.toUpperCase(),
-                              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
-                            ),
+                      : Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(12),
                           ),
+                          child: Text(
+                            a.severity.toUpperCase(),
+                            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                          ),
+                        ),
                   onTap: () => Get.toNamed('/alert-detail', arguments: a),
                 ),
               );

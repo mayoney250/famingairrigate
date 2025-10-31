@@ -18,51 +18,45 @@ class AlertService {
     }
   }
 
-  // Get all alerts for user
-  Future<List<AlertModel>> getUserAlerts(String userId) async {
+  // Get all alerts for a farm
+  Future<List<AlertModel>> getFarmAlerts(String farmId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .orderBy('timestamp', descending: true)
+          .where('farmId', isEqualTo: farmId)
+          .orderBy('ts', descending: true)
           .limit(50)
           .get();
 
-      return snapshot.docs
-          .map((doc) => AlertModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => AlertModel.fromFirestore(doc)).toList();
     } catch (e) {
       log('Error fetching alerts: $e');
       rethrow;
     }
   }
 
-  // Stream of user alerts
-  Stream<List<AlertModel>> streamUserAlerts(String userId) {
+  // Stream of farm alerts
+  Stream<List<AlertModel>> streamFarmAlerts(String farmId) {
     return _firestore
         .collection(_collection)
-        .where('userId', isEqualTo: userId)
-        .orderBy('timestamp', descending: true)
+        .where('farmId', isEqualTo: farmId)
+        .orderBy('ts', descending: true)
         .limit(50)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => AlertModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) => snapshot.docs.map((doc) => AlertModel.fromFirestore(doc)).toList());
   }
 
   // Get unread alerts
-  Future<List<AlertModel>> getUnreadAlerts(String userId) async {
+  Future<List<AlertModel>> getUnreadAlerts(String farmId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('isRead', isEqualTo: false)
-          .orderBy('timestamp', descending: true)
+          .where('farmId', isEqualTo: farmId)
+          .where('read', isEqualTo: false)
+          .orderBy('ts', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => AlertModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => AlertModel.fromFirestore(doc)).toList();
     } catch (e) {
       log('Error fetching unread alerts: $e');
       rethrow;
@@ -70,12 +64,12 @@ class AlertService {
   }
 
   // Get unread count
-  Future<int> getUnreadCount(String userId) async {
+  Future<int> getUnreadCount(String farmId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('isRead', isEqualTo: false)
+          .where('farmId', isEqualTo: farmId)
+          .where('read', isEqualTo: false)
           .count()
           .get();
 
@@ -89,9 +83,7 @@ class AlertService {
   // Mark alert as read
   Future<void> markAsRead(String alertId) async {
     try {
-      await _firestore.collection(_collection).doc(alertId).update({
-        'isRead': true,
-      });
+      await _firestore.collection(_collection).doc(alertId).update({'read': true});
       log('Alert marked as read: $alertId');
     } catch (e) {
       log('Error marking alert as read: $e');
@@ -100,18 +92,16 @@ class AlertService {
   }
 
   // Mark all alerts as read
-  Future<void> markAllAsRead(String userId) async {
+  Future<void> markAllAsRead(String farmId) async {
     try {
-      final unreadAlerts = await getUnreadAlerts(userId);
+      final unreadAlerts = await getUnreadAlerts(farmId);
       final batch = _firestore.batch();
-
       for (final alert in unreadAlerts) {
         final docRef = _firestore.collection(_collection).doc(alert.id);
-        batch.update(docRef, {'isRead': true});
+        batch.update(docRef, {'read': true});
       }
-
       await batch.commit();
-      log('All alerts marked as read for user: $userId');
+      log('All alerts marked as read for farm: $farmId');
     } catch (e) {
       log('Error marking all alerts as read: $e');
       rethrow;
@@ -129,21 +119,16 @@ class AlertService {
     }
   }
 
-  // Delete all alerts for user
-  Future<void> deleteAllAlerts(String userId) async {
+  // Delete all alerts for farm
+  Future<void> deleteAllAlerts(String farmId) async {
     try {
-      final snapshot = await _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .get();
-
+      final snapshot = await _firestore.collection(_collection).where('farmId', isEqualTo: farmId).get();
       final batch = _firestore.batch();
       for (final doc in snapshot.docs) {
         batch.delete(doc.reference);
       }
-
       await batch.commit();
-      log('All alerts deleted for user: $userId');
+      log('All alerts deleted for farm: $farmId');
     } catch (e) {
       log('Error deleting all alerts: $e');
       rethrow;
@@ -151,21 +136,15 @@ class AlertService {
   }
 
   // Get alerts by type
-  Future<List<AlertModel>> getAlertsByType(
-    String userId,
-    AlertType type,
-  ) async {
+  Future<List<AlertModel>> getAlertsByType(String farmId, String type) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('type', isEqualTo: type.toString().split('.').last)
-          .orderBy('timestamp', descending: true)
+          .where('farmId', isEqualTo: farmId)
+          .where('type', isEqualTo: type)
+          .orderBy('ts', descending: true)
           .get();
-
-      return snapshot.docs
-          .map((doc) => AlertModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => AlertModel.fromFirestore(doc)).toList();
     } catch (e) {
       log('Error fetching alerts by type: $e');
       rethrow;
@@ -173,80 +152,74 @@ class AlertService {
   }
 
   // Get alerts by severity
-  Future<List<AlertModel>> getAlertsBySeverity(
-    String userId,
-    AlertSeverity severity,
-  ) async {
+  Future<List<AlertModel>> getAlertsBySeverity(String farmId, String severity) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('severity', isEqualTo: severity.toString().split('.').last)
-          .orderBy('timestamp', descending: true)
+          .where('farmId', isEqualTo: farmId)
+          .where('severity', isEqualTo: severity)
+          .orderBy('ts', descending: true)
           .get();
-
-      return snapshot.docs
-          .map((doc) => AlertModel.fromFirestore(doc))
-          .toList();
+      return snapshot.docs.map((doc) => AlertModel.fromFirestore(doc)).toList();
     } catch (e) {
       log('Error fetching alerts by severity: $e');
       rethrow;
     }
   }
 
-  // Create specific alert types (helper methods)
-  Future<String> createLowMoistureAlert(
-    String userId,
-    String fieldId,
-    String zoneName,
-    double moistureLevel,
-  ) async {
+  // Helper creators
+  Future<String> createLowMoistureAlert({
+    required String farmId,
+    String? sensorId,
+    required String zoneName,
+    required double moistureLevel,
+  }) async {
     final alert = AlertModel(
       id: '',
-      userId: userId,
-      fieldId: fieldId,
-      type: AlertType.lowMoisture,
-      severity: AlertSeverity.warning,
-      title: 'Low Soil Moisture',
-      message: 'Zone $zoneName has moisture level below 30% ($moistureLevel%)',
-      timestamp: DateTime.now(),
+      farmId: farmId,
+      sensorId: sensorId,
+      type: 'THRESHOLD',
+      severity: 'warning',
+      message: 'Zone $zoneName has moisture below threshold (${moistureLevel.toStringAsFixed(1)}%).',
+      ts: DateTime.now(),
+      read: false,
     );
     return createAlert(alert);
   }
 
-  Future<String> createHighTemperatureAlert(
-    String userId,
-    String fieldId,
-    String zoneName,
-    double temperature,
-  ) async {
+  Future<String> createHighTemperatureAlert({
+    required String farmId,
+    String? sensorId,
+    required String zoneName,
+    required double temperature,
+  }) async {
     final alert = AlertModel(
       id: '',
-      userId: userId,
-      fieldId: fieldId,
-      type: AlertType.highTemperature,
-      severity: AlertSeverity.warning,
-      title: 'High Temperature Alert',
-      message: 'Temperature exceeded 35°C in Zone $zoneName (${temperature.toStringAsFixed(1)}°C)',
-      timestamp: DateTime.now(),
+      farmId: farmId,
+      sensorId: sensorId,
+      type: 'THRESHOLD',
+      severity: 'warning',
+      message: 'High temperature in $zoneName (${temperature.toStringAsFixed(1)}°C).',
+      ts: DateTime.now(),
+      read: false,
     );
     return createAlert(alert);
   }
 
-  Future<String> createIrrigationCompletedAlert(
-    String userId,
-    String zoneId,
-    String zoneName,
-  ) async {
+  Future<String> createIrrigationCompletedAlert({
+    required String farmId,
+    String? sensorId,
+    required String zoneName,
+  }) async {
     final alert = AlertModel(
       id: '',
-      userId: userId,
-      zoneId: zoneId,
-      type: AlertType.irrigationCompleted,
-      severity: AlertSeverity.info,
-      title: 'Irrigation Completed',
-      message: 'Zone $zoneName irrigation completed successfully',
-      timestamp: DateTime.now(),
+      farmId: farmId,
+      sensorId: sensorId,
+      type: 'VALVE',
+      severity: 'info',
+      message: 'Irrigation completed for $zoneName.',
+      ts: DateTime.now(),
+      read: false,
     );
     return createAlert(alert);
   }

@@ -1,11 +1,20 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
+part 'sensor_reading_model.g.dart';
 
-class SensorReadingModel {
+@HiveType(typeId: 4)
+class SensorReadingModel extends HiveObject {
+  @HiveField(0)
   final String id;
+  @HiveField(1)
   final String sensorId;
+  @HiveField(2)
   final DateTime ts;
+  @HiveField(3)
   final double? moisture;
+  @HiveField(4)
   final double? temperature;
+  @HiveField(5)
   final double? humidity;
 
   SensorReadingModel({
@@ -21,7 +30,7 @@ class SensorReadingModel {
     return {
       'id': id,
       'sensorId': sensorId,
-      'ts': Timestamp.fromDate(ts),
+      'ts': ts,
       'moisture': moisture,
       'temperature': temperature,
       'humidity': humidity,
@@ -32,7 +41,9 @@ class SensorReadingModel {
     return SensorReadingModel(
       id: map['id'] ?? '',
       sensorId: map['sensorId'] ?? '',
-      ts: map['ts'] is Timestamp ? (map['ts'] as Timestamp).toDate() : DateTime.tryParse(map['ts'].toString()) ?? DateTime.now(),
+      ts: map['ts'] is Timestamp
+          ? (map['ts'] as Timestamp).toDate()
+          : DateTime.tryParse(map['ts'].toString()) ?? DateTime.now(),
       moisture: map['moisture'] != null ? (map['moisture'] as num).toDouble() : null,
       temperature: map['temperature'] != null ? (map['temperature'] as num).toDouble() : null,
       humidity: map['humidity'] != null ? (map['humidity'] as num).toDouble() : null,
