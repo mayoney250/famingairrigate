@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
+import '../services/user_local_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -41,15 +42,36 @@ class AuthProvider with ChangeNotifier {
       _isLoading = true;
       notifyListeners();
 
-      final userData = await _authService.getUserData(userId);
-      _currentUser = userData;
-      _errorMessage = null;
-    } catch (e) {
-      print('❌ Load user data error: $e');
-      dev.log('Load user data error: $e');
-      _errorMessage = 'Failed to load user data';
+      try {
+        final userData = await _authService.getUserData(userId);
+        if (userData != null) {
+          _currentUser = userData;
+          await UserLocalService.saveUser(userData);
+          _errorMessage = null;
+        } else {
+          // fall back to cache if remote returned null
+          final cached = await UserLocalService.getUser(userId);
+          if (cached != null) {
+            _currentUser = cached;
+            _errorMessage = null;
+          } else {
+            _errorMessage = 'Failed to load user data';
+          }
+        }
+      } catch (e) {
+        print('❌ Load user data error (remote): $e');
+        // Try local cache
+        final cached = await UserLocalService.getUser(userId);
+        if (cached != null) {
+          _currentUser = cached;
+          _errorMessage = null;
+        } else {
+          _errorMessage = 'Failed to load user data';
+        }
+      }
     } finally {
       _isLoading = false;
+      _hasAuthChecked = true;
       notifyListeners();
     }
   }

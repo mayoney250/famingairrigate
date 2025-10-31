@@ -1,28 +1,54 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive/hive.dart';
+part 'user_model.g.dart';
 
-class UserModel {
+@HiveType(typeId: 5)
+class UserModel extends HiveObject {
+  @HiveField(0)
   final String userId;
+  @HiveField(1)
   final String email;
+  @HiveField(2)
   final String firstName;
+  @HiveField(3)
   final String lastName;
+  @HiveField(4)
   final String? phoneNumber;
+  @HiveField(5)
   final String? avatar;
+  @HiveField(6)
   final bool isActive;
+  @HiveField(7)
   final DateTime createdAt;
+  @HiveField(8)
   final List<String> tokens;
+  @HiveField(9)
   final bool isOnline;
+  @HiveField(10)
   final String? lastActive;
+  @HiveField(11)
   final String? about;
+  @HiveField(12)
   final bool isPublic;
+  @HiveField(13)
   final String? district;
+  @HiveField(14)
   final String? province;
+  @HiveField(15)
   final String country;
+  @HiveField(16)
   final String? address;
+  @HiveField(17)
   final String role;
+  @HiveField(18)
   final String? languagePreference;
+  @HiveField(19)
   final String? themePreference;
+  @HiveField(20)
   final String? idNumber;
+  @HiveField(21)
   final String? gender;
+  @HiveField(22)
   final DateTime? dateOfBirth;
 
   UserModel({
