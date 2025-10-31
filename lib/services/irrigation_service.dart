@@ -47,11 +47,6 @@ class IrrigationService {
 
   // Start an existing scheduled cycle immediately
   Future<bool> startScheduledNow(String scheduleId) async {
-    return await startIrrigation(scheduleId);
-  }
-
-  // Start irrigation for a schedule
-  Future<bool> startIrrigation(String scheduleId) async {
     try {
       final now = DateTime.now();
       await _firestore
@@ -63,10 +58,11 @@ class IrrigationService {
         'startedAt': Timestamp.fromDate(now),
         'updatedAt': Timestamp.fromDate(now),
       });
-      log('Irrigation started: $scheduleId');
+
+      log('Scheduled irrigation started now: $scheduleId');
       return true;
     } catch (e) {
-      log('Error starting irrigation: $e');
+      log('Error starting scheduled irrigation now: $e');
       return false;
     }
   }
@@ -150,27 +146,24 @@ class IrrigationService {
 
   // Stop irrigation manually
   Future<bool> stopIrrigationManually(String scheduleId) async {
-    return await stopIrrigation(scheduleId, stoppedBy: 'manual');
-  }
-
-  // Stop irrigation (generic)
-  Future<bool> stopIrrigation(String scheduleId, {String stoppedBy = 'automatic'}) async {
     try {
       final now = DateTime.now();
+      
       await _firestore
           .collection('irrigationSchedules')
           .doc(scheduleId)
           .update({
-        'status': 'completed',
+        'status': 'stopped',
         'isActive': false,
         'stoppedAt': Timestamp.fromDate(now),
-        'stoppedBy': stoppedBy,
+        'stoppedBy': 'manual',
         'updatedAt': Timestamp.fromDate(now),
       });
-      log('Irrigation stopped ($stoppedBy): $scheduleId');
+
+      log('Irrigation stopped manually: $scheduleId');
       return true;
     } catch (e) {
-      log('Error stopping irrigation: $e');
+      log('Error stopping irrigation manually: $e');
       return false;
     }
   }
@@ -194,7 +187,7 @@ class IrrigationService {
   Future<bool> updateScheduleStatus(String scheduleId, String status) async {
     try {
       await _firestore
-          .collection('irrigationSchedules')
+          .collection('irrigation_schedules')
           .doc(scheduleId)
           .update({
         'status': status,
@@ -216,7 +209,7 @@ class IrrigationService {
   ) async {
     try {
       await _firestore
-          .collection('irrigationSchedules')
+          .collection('irrigation_schedules')
           .doc(scheduleId)
           .update({
         'status': 'completed',
@@ -237,7 +230,7 @@ class IrrigationService {
   Future<double> getWaterUsage(String userId, DateTime startDate, DateTime endDate) async {
     try {
       final querySnapshot = await _firestore
-          .collection('irrigationSchedules')
+          .collection('irrigation_schedules')
           .where('userId', isEqualTo: userId)
           .where('status', isEqualTo: 'completed')
           .where('completedAt', isGreaterThanOrEqualTo: startDate.toIso8601String())
@@ -278,7 +271,7 @@ class IrrigationService {
   Future<bool> deleteSchedule(String scheduleId) async {
     try {
       await _firestore
-          .collection('irrigationSchedules')
+          .collection('irrigation_schedules')
           .doc(scheduleId)
           .delete();
 
@@ -287,15 +280,6 @@ class IrrigationService {
     } catch (e) {
       log('Error deleting schedule: $e');
       return false;
-    }
-  }
-
-  // Toggle running/stopped for schedule
-  Future<bool> toggleSchedule(String scheduleId, bool isRunning) async {
-    if (isRunning) {
-      return await stopIrrigation(scheduleId, stoppedBy: 'manual');
-    } else {
-      return await startIrrigation(scheduleId);
     }
   }
 }

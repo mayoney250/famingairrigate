@@ -7,11 +7,14 @@ import '../services/irrigation_service.dart';
 import '../services/sensor_service.dart';
 import '../services/weather_service.dart';
 import '../services/error_service.dart';
+import '../services/irrigation_status_service.dart';
+import 'package:geocoding/geocoding.dart';
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
   final SensorService _sensorService = SensorService();
   final WeatherService _weatherService = WeatherService();
+  final IrrigationStatusService _statusService = IrrigationStatusService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // State variables
@@ -21,11 +24,58 @@ class DashboardProvider with ChangeNotifier {
   // Dashboard data
   List<IrrigationScheduleModel> _upcoming = <IrrigationScheduleModel>[];
   WeatherData? _weatherData;
-  double _soilMoisture = 75.0;
+  double? _avgSoilMoisture; // Add field
   double _weeklyWaterUsage = 0.0;
   double _weeklySavings = 0.0;
   String _selectedFarmId = 'farm1'; // Will be replaced by first field id
   List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name}]
+
+  // Add location fields to DashboardProvider
+  double? _latitude;
+  double? _longitude;
+
+  setLocation(double lat, double lon) {
+    _latitude = lat;
+    _longitude = lon;
+    notifyListeners();
+  }
+
+  Future<void> fetchAndSetLiveWeather() async {
+    if (_latitude != null && _longitude != null) {
+      final weather = await _weatherService.fetchCurrentWeatherFromOpenWeather(
+        lat: _latitude!,
+        lon: _longitude!,
+        apiKey: '1bbb141391cf468601f7de322cecb11e', // User-provided key
+      );
+      if (weather != null) {
+        _weatherData = WeatherData(
+          temperature: weather.temperature,
+          feelsLike: weather.temperature,
+          humidity: weather.humidity.toInt(),
+          condition: weather.condition.toLowerCase(),
+          description: weather.description,
+          windSpeed: 3.5,
+          pressure: 1013,
+          timestamp: weather.timestamp,
+          location: weather.location,
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> setWeatherLocationFromUserAddress(String? address) async {
+    if (address == null || address.trim().isEmpty) return;
+    try {
+      List<Location> locations = await locationFromAddress(address);
+      if (locations.isNotEmpty) {
+        setLocation(locations.first.latitude, locations.first.longitude);
+        await fetchAndSetLiveWeather();
+      }
+    } catch (e) {
+      print('Failed to geocode address: $e');
+    }
+  }
 
   // Getters
   bool get isLoading => _isLoading;
@@ -33,22 +83,17 @@ class DashboardProvider with ChangeNotifier {
   IrrigationScheduleModel? get nextSchedule => _upcoming.isNotEmpty ? _upcoming.first : null;
   List<IrrigationScheduleModel> get upcomingSchedules => _upcoming;
   WeatherData? get weatherData => _weatherData;
-  double get soilMoisture => _soilMoisture;
+  double? get avgSoilMoisture => _avgSoilMoisture;
   double get weeklyWaterUsage => _weeklyWaterUsage;
   double get weeklySavings => _weeklySavings;
   String get selectedFarmId => _selectedFarmId;
   List<Map<String, String>> get fields => _fields;
 
-  // Get soil moisture status message
-  String get soilMoistureStatus {
-    return _sensorService.getSoilMoistureStatus(_soilMoisture);
-  }
-
   // Get system status
   String get systemStatus {
-    if (_soilMoisture < 40) {
+    if (_avgSoilMoisture == null || _avgSoilMoisture! < 40) {
       return 'Attention Required';
-    } else if (_soilMoisture >= 60 && _soilMoisture <= 80) {
+    } else if (_avgSoilMoisture! >= 60 && _avgSoilMoisture! <= 80) {
       return 'Optimal';
     } else {
       return 'Good';
@@ -207,10 +252,10 @@ class DashboardProvider with ChangeNotifier {
   // Load soil moisture
   Future<void> _loadSoilMoisture() async {
     try {
-      _soilMoisture = await _sensorService.getAverageSoilMoisture(_selectedFarmId);
+      _avgSoilMoisture = await _sensorService.getAverageSoilMoisture(_selectedFarmId);
     } catch (e) {
       log('Error loading soil moisture: $e');
-      _soilMoisture = 75.0; // Default value
+      _avgSoilMoisture = 75.0; // Default value
     }
   }
 
@@ -247,7 +292,7 @@ class DashboardProvider with ChangeNotifier {
     int durationMinutes = 60,
   }) async {
     try {
-      final success = await _irrigationService.startIrrigationManually(
+      final success = await _statusService.startIrrigationManually(
         userId: userId,
         farmId: _selectedFarmId,
         fieldId: fieldId,
@@ -270,7 +315,7 @@ class DashboardProvider with ChangeNotifier {
   // Start a specific scheduled cycle now
   Future<bool> startScheduledCycleNow(String scheduleId, String userId) async {
     try {
-      final ok = await _irrigationService.startScheduledNow(scheduleId);
+      final ok = await _statusService.startScheduledNow(scheduleId);
       if (ok) {
         await loadDashboardData(userId);
       }
@@ -284,7 +329,7 @@ class DashboardProvider with ChangeNotifier {
   // Stop a specific running/scheduled cycle
   Future<bool> stopCycle(String scheduleId, String userId) async {
     try {
-      final ok = await _irrigationService.stopIrrigationManually(scheduleId);
+      final ok = await _statusService.stopIrrigationManually(scheduleId);
       if (ok) {
         await loadDashboardData(userId);
       }
@@ -309,20 +354,6 @@ class DashboardProvider with ChangeNotifier {
       // Requires a user context; if none, the next loadDashboardData will set it
       // We trigger a silent re-run by calling _loadUpcoming with last-known user from an existing schedule if present
       // Otherwise, do nothing here.
-    }
-  }
-
-  // Generate mock sensor reading for testing
-  Future<void> generateMockSensorData() async {
-    try {
-      await _sensorService.generateMockReading(
-        _selectedFarmId,
-        'field1',
-      );
-      await _loadSoilMoisture();
-      notifyListeners();
-    } catch (e) {
-      log('Error generating mock sensor data: $e');
     }
   }
 }
