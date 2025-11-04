@@ -108,7 +108,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
   void _showAddSensorDialog() {
     final formKey = GlobalKey<FormState>();
     String displayName = '';
-    String type = 'soil';
+    String type = 'soil'; // default, remove use from UI, but still needed downstream (firestore, model)
     String hardwareId = '';
     String pairingMethod = 'BLE';
 
@@ -143,19 +143,6 @@ class _SensorsScreenState extends State<SensorsScreen> {
                     decoration: const InputDecoration(labelText: 'Sensor Name/Label'),
                     validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
                     onChanged: (v) => displayName = v,
-                  ),
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(labelText: 'Sensor Type'),
-                    value: type,
-                    items: const [
-                      DropdownMenuItem(value: 'soil', child: Text('Soil Moisture')),
-                      DropdownMenuItem(value: 'temperature', child: Text('Temperature')),
-                      DropdownMenuItem(value: 'humidity', child: Text('Humidity')),
-                      DropdownMenuItem(value: 'ph', child: Text('Soil pH')),
-                      DropdownMenuItem(value: 'light', child: Text('Light Intensity')),
-                      DropdownMenuItem(value: 'airTemp', child: Text('Ambient Temp')),
-                    ],
-                    onChanged: (v) => setState(() => type = v ?? 'soil'),
                   ),
                   TextFormField(
                     decoration: const InputDecoration(labelText: 'Hardware ID/Serial'),

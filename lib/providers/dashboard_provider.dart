@@ -9,6 +9,11 @@ import '../services/weather_service.dart';
 import '../services/error_service.dart';
 import '../services/irrigation_status_service.dart';
 import 'package:geocoding/geocoding.dart';
+import '../models/sensor_data_model.dart';
+import '../services/sensor_data_service.dart';
+import '../models/flow_meter_model.dart';
+import '../services/flow_meter_service.dart';
+import 'dart:async';
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
@@ -136,10 +141,7 @@ class DashboardProvider with ChangeNotifier {
           log('Error in _loadWeatherData: $e');
           return null;
         }),
-        _loadSoilMoisture().catchError((e) {
-          log('Error in _loadSoilMoisture: $e');
-          return null;
-        }),
+        // soil moisture now computed via sensorData in _refreshDailySoilAverage
         _loadWeeklyStats(userId).catchError((e) {
           log('Error in _loadWeeklyStats: $e');
           return null;
@@ -148,6 +150,11 @@ class DashboardProvider with ChangeNotifier {
 
       _isLoading = false;
       notifyListeners();
+      if (_fields.isNotEmpty) {
+        subscribeToLiveFieldData(userId);
+      }
+      await _refreshDailySoilAverage();
+      await _refreshWeeklyWaterUsage();
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
@@ -249,16 +256,7 @@ class DashboardProvider with ChangeNotifier {
     );
   }
 
-  // Load soil moisture
-  Future<void> _loadSoilMoisture() async {
-    try {
-      _avgSoilMoisture = await _sensorService.getAverageSoilMoisture(_selectedFarmId);
-    } catch (e) {
-      log('Error loading soil moisture: $e');
-      _avgSoilMoisture = 75.0; // Default value
-    }
-  }
-
+  // Legacy soil moisture loader removed; we use _refreshDailySoilAverage fed by sensorData
   // Load weekly statistics
   Future<void> _loadWeeklyStats(String userId) async {
     try {
@@ -355,6 +353,134 @@ class DashboardProvider with ChangeNotifier {
       // We trigger a silent re-run by calling _loadUpcoming with last-known user from an existing schedule if present
       // Otherwise, do nothing here.
     }
+  }
+
+  // Live/streamed sensor and flow meter values
+  final SensorDataService _sensorDataService = SensorDataService();
+  final FlowMeterService _flowMeterService = FlowMeterService();
+  final Map<String, SensorDataModel?> _latestSensorDataPerField = {};
+  final Map<String, FlowMeterModel?> _latestFlowDataPerField = {};
+  String? _lastActionError;
+
+  Map<String, SensorDataModel?> get latestSensorDataPerField => _latestSensorDataPerField;
+  Map<String, FlowMeterModel?> get latestFlowDataPerField => _latestFlowDataPerField;
+  String? get lastActionError => _lastActionError;
+
+  Timer? _aggTimer;
+
+  DateTime _startOfToday() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime _startOfThisWeekMonday() {
+    final now = DateTime.now();
+    final mondayDelta = (now.weekday - DateTime.monday) % 7; // 0 if monday
+    final monday = now.subtract(Duration(days: mondayDelta));
+    return DateTime(monday.year, monday.month, monday.day);
+  }
+
+  Future<void> _refreshDailySoilAverage() async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfToday();
+      double sum = 0;
+      int count = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        final readings = await _sensorDataService.getReadingsInRange(fieldId, start, DateTime.now());
+        if (readings.isNotEmpty) {
+          // average per field in window
+          final avgField = readings.map((r) => r.soilMoisture).reduce((a,b)=>a+b) / readings.length;
+          sum += avgField;
+          count++;
+        }
+      }
+      _avgSoilMoisture = count > 0 ? sum / count : null;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _refreshWeeklyWaterUsage({String? userId}) async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfThisWeekMonday();
+      double total = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+      }
+      _weeklyWaterUsage = total;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  void _startAggTimer(String userId) {
+    _aggTimer?.cancel();
+    _aggTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
+      await _refreshDailySoilAverage();
+      await _refreshWeeklyWaterUsage();
+    });
+  }
+
+  // Dev utility: add a test flow meter reading for a field
+  Future<bool> addTestFlowUsage({
+    required String userId,
+    required String fieldId,
+    double? liters,
+  }) async {
+    try {
+      _lastActionError = null;
+      final amount = liters ?? (5 + (DateTime.now().millisecondsSinceEpoch % 200) / 10.0); // 5.0 – 25.0-ish
+      final test = FlowMeterModel(
+        id: '',
+        userId: userId,
+        fieldId: fieldId,
+        liters: amount,
+        timestamp: DateTime.now(),
+      );
+      await _flowMeterService.createReading(test, userId: userId);
+
+      // update local latest + aggregates
+      _latestFlowDataPerField[fieldId] = test;
+      await _refreshWeeklyWaterUsage(userId: userId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastActionError = e.toString();
+      return false;
+    }
+  }
+
+  // Start/restart live listeners for all fields the user has
+  void subscribeToLiveFieldData(String userId) {
+    for (var field in _fields) {
+      final fieldId = field['id']!;
+      // Prime with latest once so UI doesn't wait for stream
+      _sensorDataService.getLatestReading(fieldId).then((sensorData) {
+        _latestSensorDataPerField[fieldId] = sensorData;
+        _refreshDailySoilAverage();
+        notifyListeners();
+      }).catchError((_) {});
+      // Sensor readings
+      _sensorDataService.streamLatestReading(fieldId).listen((sensorData) {
+        _latestSensorDataPerField[fieldId] = sensorData;
+        // Update live aggregates quickly from latest values
+        _refreshDailySoilAverage();
+        notifyListeners();
+      });
+      // Flow meter optional: ignore if collection doesn't exist
+      _flowMeterService.getLatestReading(fieldId, userId: userId).then((flowData) {
+        _latestFlowDataPerField[fieldId] = flowData;
+        notifyListeners();
+      }).catchError((_) {});
+      _flowMeterService.streamLatestReading(fieldId, userId: userId).listen((flowData) {
+        _latestFlowDataPerField[fieldId] = flowData;
+        _refreshWeeklyWaterUsage(userId: userId);
+        notifyListeners();
+      }, onError: (_) {});
+    }
+    _startAggTimer(userId);
   }
 }
 
