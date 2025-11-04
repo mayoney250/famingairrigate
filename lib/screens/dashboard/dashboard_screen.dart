@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import 'package:firebase_auth/firebase_auth.dart' as fb;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
@@ -11,6 +12,7 @@ import '../../routes/app_routes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
+// dev-only simulation imports removed
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -192,6 +194,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
                   ),
                   const SizedBox(height: 20),
+                  _buildLiveFieldSensorSummaries(dashboardProvider),
+                  const SizedBox(height: 20),
+                  // simulation buttons removed
 
                   // Next Schedule Cycle
                   Text(
@@ -222,24 +227,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        label: const Text('Demo Add Alert'),
-        icon: const Icon(Icons.add_alert),
-        onPressed: () async {
-          final fakeAlert = AlertModel(
-            id: DateTime.now().millisecondsSinceEpoch.toString(),
-            farmId: 'fakefarm',
-            sensorId: null,
-            type: 'THRESHOLD',
-            message: 'Soil moisture dropped below threshold!',
-            severity: 'high',
-            ts: DateTime.now(),
-            read: false,
-          );
-          await AlertLocalService.addAlert(fakeAlert);
-          _loadAlerts();
-        },
-      ),
+      // Removed notification simulator FAB for production
       bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
@@ -1129,6 +1117,101 @@ class _DashboardScreenState extends State<DashboardScreen> {
           label: 'Profile',
         ),
       ],
+    );
+  }
+
+  Widget _buildLiveFieldSensorSummaries(DashboardProvider dashboardProvider) {
+    final fields = dashboardProvider.fields;
+    final sensors = dashboardProvider.latestSensorDataPerField;
+    final flows = dashboardProvider.latestFlowDataPerField;
+    if (fields.isEmpty) {
+      return const Text('No fields found.', style: TextStyle(color: Colors.grey));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: fields.map((f) {
+        final sid = f['id']!;
+        final sensor = sensors[sid];
+        final flow = flows[sid];
+        String waterMsg = '';
+        String soilMsg = '';
+        if (sensor != null) {
+          if (sensor.soilMoisture < 50) {
+            soilMsg = "Soil is dry – it's time to irrigate.";
+          } else if (sensor.soilMoisture > 100) {
+            soilMsg = "Soil is too wet – check drainage.";
+          } else {
+            soilMsg = "Soil conditions are optimal – no action needed.";
+          }
+        }
+        // (Add more logic here if you want to flag abnormal water usage)
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: FamingaBrandColors.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                f['name'] ?? sid,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              if (kDebugMode)
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final firebaseUid = fb.FirebaseAuth.instance.currentUser?.uid;
+                      final auth = Provider.of<AuthProvider>(context, listen: false);
+                      final ok = await dashboardProvider.addTestFlowUsage(
+                        userId: firebaseUid ?? auth.currentUser!.userId,
+                        fieldId: sid,
+                      );
+                      if (ok) {
+                        Get.snackbar('Flow Test', 'Test water usage added', snackPosition: SnackPosition.BOTTOM);
+                      } else {
+                        final msg = dashboardProvider.lastActionError ?? 'Failed to add test usage';
+                        Get.snackbar('Flow Test', msg, snackPosition: SnackPosition.BOTTOM);
+                      }
+                    },
+                    icon: const Icon(Icons.science, size: 16),
+                    label: const Text('Add Test Water'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: FamingaBrandColors.primaryOrange,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text('Soil Water: ' + (sensor != null ? '${sensor.soilMoisture.toStringAsFixed(1)}%' : '--'))),
+                  Expanded(child: Text('Temp: ' + (sensor != null ? '${sensor.temperature.toStringAsFixed(1)}°C' : '--'))),
+                  Expanded(child: Text('Water Used: ' + (flow != null ? '${flow.liters.toStringAsFixed(2)} L' : '--'))),
+                ],
+              ),
+              if (soilMsg.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    soilMsg,
+                    style: TextStyle(
+                      color: soilMsg.contains('optimal')
+                        ? Colors.green
+                        : (soilMsg.contains('dry') ? Colors.orange : Colors.blue),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
     );
   }
 }
