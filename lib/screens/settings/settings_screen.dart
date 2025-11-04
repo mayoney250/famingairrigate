@@ -3,6 +3,10 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/theme_provider.dart';
+import 'terms_and_services_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'download_data_screen.dart';
+import 'water_usage_goals_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -79,26 +83,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 },
               ),
               _buildListTile(
-                Icons.schedule,
-                'Irrigation Schedule',
-                'Set up irrigation schedules',
-                () {
-                  Get.snackbar(
-                    'Schedule',
-                    'Irrigation schedule settings coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
-              _buildListTile(
                 Icons.water,
                 'Water Usage Goals',
                 'Set water conservation targets',
                 () {
-                  Get.snackbar(
-                    'Water Goals',
-                    'Water usage goals coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WaterUsageGoalsScreen()),
                   );
                 },
               ),
@@ -153,10 +144,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 'Download Data',
                 'Export your irrigation data',
                 () {
-                  Get.snackbar(
-                    'Download Data',
-                    'Data export coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DownloadDataScreen()),
                   );
                 },
               ),
@@ -170,67 +160,59 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ],
           ),
+          // const SizedBox(height: 16),
+          // _buildSection(
+          //   'Security',
+          //   [
+          //     _buildListTile(
+          //       Icons.lock_outline,
+          //       'Change Password',
+          //       'Update your account password',
+          //       () {
+          //         Get.snackbar(
+          //           'Change Password',
+          //           'Password change coming soon!',
+          //           snackPosition: SnackPosition.BOTTOM,
+          //         );
+          //       },
+          //     ),
+          //     _buildListTile(
+          //       Icons.fingerprint,
+          //       'Biometric Login',
+          //       'Use fingerprint or face ID',
+          //       () {
+          //         Get.snackbar(
+          //           'Biometric Login',
+          //           'Biometric authentication coming soon!',
+          //           snackPosition: SnackPosition.BOTTOM,
+          //         );
+          //       },
+          //     ),
+          //   ],
+          // ),
           const SizedBox(height: 16),
           _buildSection(
-            'Security',
+            'Legal',
             [
               _buildListTile(
-                Icons.lock_outline,
-                'Change Password',
-                'Update your account password',
+                Icons.description,
+                'Terms and Services',
+                'View terms and services',
                 () {
-                  Get.snackbar(
-                    'Change Password',
-                    'Password change coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TermsAndServicesScreen()),
                   );
                 },
               ),
               _buildListTile(
-                Icons.fingerprint,
-                'Biometric Login',
-                'Use fingerprint or face ID',
-                () {
-                  Get.snackbar(
-                    'Biometric Login',
-                    'Biometric authentication coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          _buildSection(
-            'About',
-            [
-              _buildListTile(
-                Icons.info_outline,
-                'App Version',
-                '1.0.0',
-                null,
-              ),
-              _buildListTile(
-                Icons.privacy_tip_outlined,
-                'Privacy Policy',
+                Icons.privacy_tip,
+                'Privacy and Policy',
                 'Read our privacy policy',
                 () {
-                  Get.snackbar(
-                    'Privacy Policy',
-                    'Privacy policy coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
-                  );
-                },
-              ),
-              _buildListTile(
-                Icons.description_outlined,
-                'Terms of Service',
-                'Read our terms of service',
-                () {
-                  Get.snackbar(
-                    'Terms of Service',
-                    'Terms of service coming soon!',
-                    snackPosition: SnackPosition.BOTTOM,
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
                   );
                 },
               ),
