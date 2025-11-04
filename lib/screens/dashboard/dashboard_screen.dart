@@ -70,9 +70,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        backgroundColor: FamingaBrandColors.backgroundLight,
+        backgroundColor: Theme.of(context).colorScheme.background,
         elevation: 0,
         title: Row(
           children: [
@@ -85,44 +85,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
             const SizedBox(width: 8),
-            Consumer<DashboardProvider>(
-              builder: (context, dash, _) {
-                final fieldOptions = dash.fields;
-                final selected = dash.selectedFarmId;
-                return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: FamingaBrandColors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: FamingaBrandColors.borderColor),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: fieldOptions.any((f) => f['id'] == selected)
-                          ? selected
-                          : (fieldOptions.isNotEmpty ? fieldOptions.first['id']! : selected),
-                      icon: const Icon(Icons.arrow_drop_down, size: 20, color: FamingaBrandColors.textPrimary),
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
-                        fontSize: 14,
-                      ),
-                      items: (fieldOptions.isEmpty
-                              ? <Map<String,String>>[{ 'id': selected, 'name': selected }]
-                              : fieldOptions)
-                          .map((f) => DropdownMenuItem<String>(
-                                value: f['id'],
-                                child: Text(f['name'] ?? f['id']!),
-                              ))
-                          .toList(),
-                      onChanged: (val) {
-                        if (val == null) return;
-                        dash.selectFarm(val);
-                      },
-                    ),
-                  ),
-                );
-              },
-            ),
+            // Removed field dropdown from dashboard per request
+            const SizedBox.shrink(),
           ],
         ),
         actions: [
@@ -422,7 +386,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 16),
         decoration: BoxDecoration(
-          color: FamingaBrandColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: FamingaBrandColors.borderColor),
         ),
@@ -463,7 +427,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: FamingaBrandColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
@@ -537,7 +501,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: FamingaBrandColors.white,
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: FamingaBrandColors.borderColor),
         ),
@@ -588,7 +552,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: FamingaBrandColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
@@ -669,7 +633,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: FamingaBrandColors.white,
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
@@ -802,30 +766,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       Text(sched.formattedDuration),
                       const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () async {
-                          final uid = authProvider.currentUser!.userId;
-                          final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
-                          if (!ok) {
-                            Get.snackbar('Error', 'Failed to start cycle');
-                          }
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: FamingaBrandColors.darkGreen,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        ),
-                        child: const Text('Start'),
-                      ),
-                      const SizedBox(width: 8),
-                      OutlinedButton(
-                        onPressed: () async {
-                          final uid = authProvider.currentUser!.userId;
-                          final ok = await dashboardProvider.stopCycle(sched.id, uid);
-                          if (!ok) {
-                            Get.snackbar('Error', 'Failed to stop cycle');
-                          }
-                        },
-                        child: const Text('Stop'),
+                      Row(
+                        children: [
+                          if (!(sched.name.toLowerCase().startsWith('manual irrigation') || sched.status == 'running'))
+                            ElevatedButton(
+                              onPressed: () async {
+                                final uid = authProvider.currentUser!.userId;
+                                final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
+                                if (!ok) {
+                                  Get.snackbar('Error', 'Failed to start cycle');
+                                }
+                              },
+                              child: const Text('Start'),
+                            ),
+                          const SizedBox(width: 8),
+                          if (sched.status == 'running')
+                            OutlinedButton(
+                              onPressed: () async {
+                                final uid = authProvider.currentUser!.userId;
+                                final ok = await dashboardProvider.stopCycle(sched.id, uid);
+                                if (!ok) {
+                                  Get.snackbar('Error', 'Failed to stop cycle');
+                                }
+                              },
+                              child: const Text('Stop'),
+                            ),
+                        ],
                       ),
                     ],
                   ),
@@ -872,30 +838,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     DashboardProvider dashboardProvider,
     AuthProvider authProvider,
   ) {
+    final durationController = TextEditingController(text: '60');
+    String selectedFieldId = dashboardProvider.selectedFarmId;
+
     Get.dialog(
       AlertDialog(
-        title: const Text('Start Irrigation'),
-        content: const Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Start irrigation cycle manually for:'),
-            SizedBox(height: 16),
-            Text(
-              'North Field',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: FamingaBrandColors.primaryOrange,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Duration: 60 minutes',
-              style: TextStyle(
-                color: FamingaBrandColors.textSecondary,
-              ),
-            ),
-          ],
+        title: const Text('Start Irrigation Manually'),
+        content: StatefulBuilder(
+          builder: (context, setState) {
+            final fields = dashboardProvider.fields; // [{id,name}]
+            if (fields.isNotEmpty && !fields.any((f) => f['id'] == selectedFieldId)) {
+              selectedFieldId = fields.first['id']!;
+            }
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedFieldId,
+                  items: fields
+                      .map((f) => DropdownMenuItem<String>(
+                            value: f['id'],
+                            child: Text(f['name'] ?? f['id']!),
+                          ))
+                      .toList(),
+                  onChanged: (val) => setState(() => selectedFieldId = val ?? selectedFieldId),
+                  decoration: const InputDecoration(labelText: 'Field'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: durationController,
+                  decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+                  keyboardType: TextInputType.number,
+                ),
+              ],
+            );
+          },
         ),
         actions: [
           TextButton(
@@ -905,7 +883,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ElevatedButton(
             onPressed: () async {
               Get.back();
-              
+
               // Show loading
               Get.dialog(
                 Center(
@@ -923,12 +901,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 barrierDismissible: false,
               );
 
-              // Start irrigation
+              final field = dashboardProvider.fields.firstWhere(
+                (f) => f['id'] == selectedFieldId,
+                orElse: () => {'id': selectedFieldId, 'name': selectedFieldId},
+              );
+              final duration = int.tryParse(durationController.text.trim()) ?? 60;
+
               final success = await dashboardProvider.startManualIrrigation(
                 userId: authProvider.currentUser!.userId,
-                fieldId: 'field1',
-                fieldName: 'North Field',
-                durationMinutes: 60,
+                fieldId: field['id']!,
+                fieldName: field['name'] ?? field['id']!,
+                durationMinutes: duration,
               );
 
               Get.back(); // Close loading
@@ -968,7 +951,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: FamingaBrandColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: FamingaBrandColors.borderColor),
             ),
@@ -1032,7 +1015,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: FamingaBrandColors.white,
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: FamingaBrandColors.borderColor),
             ),

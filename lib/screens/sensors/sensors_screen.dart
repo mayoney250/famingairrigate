@@ -42,7 +42,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: FamingaBrandColors.backgroundLight,
+      backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
         title: const Text('Sensors'),
         actions: [
@@ -57,10 +57,10 @@ class _SensorsScreenState extends State<SensorsScreen> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.sensors, size: 48, color: FamingaBrandColors.iconColor),
-                  SizedBox(height: 12),
-                  Text('No sensors yet. Tap + to add.', style: TextStyle(color: Colors.black54)),
+                children: [
+                  Icon(Icons.sensors, size: 48, color: Theme.of(context).colorScheme.primary),
+                  const SizedBox(height: 12),
+                  Text('No sensors yet. Tap + to add.', style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
                 ],
               ),
             )
@@ -314,8 +314,8 @@ class _SensorCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(sensor.hardwareId, style: TextStyle(fontSize: 12, color: FamingaBrandColors.iconColor)),
-                Text(sensor.pairing['method'] ?? '', style: TextStyle(fontSize: 12, color: FamingaBrandColors.textSecondary)),
+                Text(sensor.hardwareId, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
+                Text(sensor.pairing['method'] ?? '', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant.withOpacity(0.65))),
               ],
             ),
           ],

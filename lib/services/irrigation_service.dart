@@ -271,7 +271,7 @@ class IrrigationService {
   Future<bool> deleteSchedule(String scheduleId) async {
     try {
       await _firestore
-          .collection('irrigation_schedules')
+          .collection('irrigationSchedules')
           .doc(scheduleId)
           .delete();
 

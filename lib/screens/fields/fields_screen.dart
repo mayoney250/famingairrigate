@@ -3,6 +3,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter/foundation.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../models/field_model.dart';
 import '../../models/irrigation_schedule_model.dart';
@@ -60,7 +64,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Fields'),
+        title: const Text('My Fields'),
         actions: [
           TextButton.icon(
             onPressed: () => _showAddEditFieldModal(context, userId: userId),
@@ -184,6 +188,20 @@ class _FieldsScreenState extends State<FieldsScreen> {
     final sizeController = TextEditingController(text: field?.size.toString() ?? '');
     final ownerController = TextEditingController(text: field?.owner ?? '');
     bool isOrganic = field?.isOrganic ?? false;
+    // Additional fields
+    final fieldNameController = TextEditingController(text: field?.label ?? '');
+    final fieldLabelController = TextEditingController(text: field?.label ?? '');
+    final descriptionController = TextEditingController();
+    final latController = TextEditingController(text: (field?.borderCoordinates.isNotEmpty ?? false)
+        ? field!.borderCoordinates.first.latitude.toString()
+        : '');
+    final lngController = TextEditingController(text: (field?.borderCoordinates.isNotEmpty ?? false)
+        ? field!.borderCoordinates.first.longitude.toString()
+        : '');
+    String soilType = 'Unknown';
+    String growthStage = 'Germination';
+    String cropType = 'Unknown';
+    final cropTypeOtherController = TextEditingController();
 
     Get.bottomSheet(
       StatefulBuilder(
@@ -201,17 +219,213 @@ class _FieldsScreenState extends State<FieldsScreen> {
                 children: [
                   Text(isEditing ? 'Edit Field' : 'Add New Field', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 24),
-                  TextField(controller: labelController, decoration: const InputDecoration(labelText: 'Field Name*')),
-                  const SizedBox(height: 16),
-                  TextField(controller: sizeController, decoration: const InputDecoration(labelText: 'Size (hectares)*'), keyboardType: TextInputType.number),
-                  const SizedBox(height: 16),
-                  TextField(controller: ownerController, decoration: const InputDecoration(labelText: 'Owner*')),
-                  const SizedBox(height: 16),
-                  SwitchListTile(
-                    title: const Text('Organic Farming'),
-                    value: isOrganic,
-                    onChanged: (value) => modalState(() => isOrganic = value),
-                    contentPadding: EdgeInsets.zero,
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWide = constraints.maxWidth > 640; // responsive breakpoint
+                      final fieldWidth = isWide ? (constraints.maxWidth - 16) / 2 : constraints.maxWidth;
+                      return Wrap(
+                        spacing: 16,
+                        runSpacing: 16,
+                        children: [
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: fieldNameController,
+                              decoration: const InputDecoration(labelText: 'Field Name*'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: fieldLabelController,
+                              decoration: const InputDecoration(labelText: 'Field Label*'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: sizeController,
+                              decoration: const InputDecoration(labelText: 'Size (hectares)*'),
+                              keyboardType: TextInputType.number,
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: DropdownButtonFormField<String>(
+                              value: soilType,
+                              items: const [
+                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
+                                DropdownMenuItem(value: 'Clay', child: Text('Clay')),
+                                DropdownMenuItem(value: 'Sandy', child: Text('Sandy')),
+                                DropdownMenuItem(value: 'Loam', child: Text('Loam')),
+                                DropdownMenuItem(value: 'Silt', child: Text('Silt')),
+                                DropdownMenuItem(value: 'Peat', child: Text('Peat')),
+                                DropdownMenuItem(value: 'Chalk', child: Text('Chalk')),
+                              ],
+                              onChanged: (v) => modalState(() => soilType = v ?? 'Unknown'),
+                              decoration: const InputDecoration(labelText: 'Soil Type'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: DropdownButtonFormField<String>(
+                              value: growthStage,
+                              items: const [
+                                DropdownMenuItem(value: 'Germination', child: Text('Germination')),
+                                DropdownMenuItem(value: 'Seedling', child: Text('Seedling')),
+                                DropdownMenuItem(value: 'Vegetative Growth', child: Text('Vegetative Growth')),
+                                DropdownMenuItem(value: 'Flowering', child: Text('Flowering')),
+                                DropdownMenuItem(value: 'Fruit', child: Text('Fruit')),
+                                DropdownMenuItem(value: 'Maturity', child: Text('Maturity')),
+                                DropdownMenuItem(value: 'Harvest', child: Text('Harvest')),
+                              ],
+                              onChanged: (v) => modalState(() => growthStage = v ?? 'Germination'),
+                              decoration: const InputDecoration(labelText: 'Growth Stage'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: DropdownButtonFormField<String>(
+                              value: cropType,
+                              items: const [
+                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
+                                DropdownMenuItem(value: 'Maize', child: Text('Maize')),
+                                DropdownMenuItem(value: 'Wheat', child: Text('Wheat')),
+                                DropdownMenuItem(value: 'Rice', child: Text('Rice')),
+                                DropdownMenuItem(value: 'Soybean', child: Text('Soybean')),
+                                DropdownMenuItem(value: 'Cotton', child: Text('Cotton')),
+                                DropdownMenuItem(value: 'Coffee', child: Text('Coffee')),
+                                DropdownMenuItem(value: 'Tea', child: Text('Tea')),
+                                DropdownMenuItem(value: 'Vegetables', child: Text('Vegetables')),
+                                DropdownMenuItem(value: 'Fruits', child: Text('Fruits')),
+                                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                              ],
+                              onChanged: (v) => modalState(() => cropType = v ?? 'Unknown'),
+                              decoration: const InputDecoration(labelText: 'Crop Type'),
+                            ),
+                          ),
+                          if (cropType == 'Other')
+                            SizedBox(
+                              width: fieldWidth,
+                              child: TextField(
+                                controller: cropTypeOtherController,
+                                decoration: const InputDecoration(labelText: 'Specify Crop Type*'),
+                              ),
+                            ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: ownerController,
+                              decoration: const InputDecoration(labelText: 'Owner*'),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: SwitchListTile(
+                              title: const Text('Organic Farming'),
+                              value: isOrganic,
+                              onChanged: (value) => modalState(() => isOrganic = value),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: descriptionController,
+                              maxLines: 3,
+                              decoration: const InputDecoration(labelText: 'Description'),
+                            ),
+                          ),
+                          // Map picker
+                          SizedBox(
+                            width: constraints.maxWidth,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Location', style: Theme.of(context).textTheme.labelLarge),
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  height: 220,
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(12),
+                                    child: kIsWeb
+                                        ? _WebMapPlaceholder(
+                                            onUseMyLocation: () async {
+                                              try {
+                                                final pos = await _ensureLocationPermissionAndGetPosition();
+                                                modalState(() {
+                                                  latController.text = pos.latitude.toStringAsFixed(6);
+                                                  lngController.text = pos.longitude.toStringAsFixed(6);
+                                                });
+                                              } catch (_) {}
+                                            },
+                                            onOpenMaps: () async {
+                                              final url = Uri.parse('https://www.google.com/maps');
+                                              if (await canLaunchUrl(url)) {
+                                                await launchUrl(url, mode: LaunchMode.externalApplication);
+                                              }
+                                            },
+                                          )
+                                        : FutureBuilder<Position>(
+                                            future: _ensureLocationPermissionAndGetPosition(),
+                                            builder: (context, snap) {
+                                              final LatLng defaultCenter = const LatLng(-1.286389, 36.817223); // Nairobi fallback
+                                              final LatLng center = (snap.hasData)
+                                                  ? LatLng(snap.data!.latitude, snap.data!.longitude)
+                                                  : defaultCenter;
+                                              LatLng? selected;
+                                              if (latController.text.isNotEmpty && lngController.text.isNotEmpty) {
+                                                final lt = double.tryParse(latController.text);
+                                                final lg = double.tryParse(lngController.text);
+                                                if (lt != null && lg != null) selected = LatLng(lt, lg);
+                                              }
+                                              return GoogleMap(
+                                                initialCameraPosition: CameraPosition(target: selected ?? center, zoom: selected != null ? 14 : 10),
+                                                myLocationEnabled: snap.connectionState == ConnectionState.done,
+                                                myLocationButtonEnabled: true,
+                                                zoomControlsEnabled: true,
+                                                markers: {
+                                                  if (selected != null)
+                                                    Marker(
+                                                      markerId: const MarkerId('field_location'),
+                                                      position: selected,
+                                                    )
+                                                },
+                                                onTap: (LatLng pos) {
+                                                  modalState(() {
+                                                    latController.text = pos.latitude.toStringAsFixed(6);
+                                                    lngController.text = pos.longitude.toStringAsFixed(6);
+                                                  });
+                                                },
+                                              );
+                                            },
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: latController,
+                              readOnly: true,
+                              decoration: const InputDecoration(labelText: 'Latitude'),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            ),
+                          ),
+                          SizedBox(
+                            width: fieldWidth,
+                            child: TextField(
+                              controller: lngController,
+                              readOnly: true,
+                              decoration: const InputDecoration(labelText: 'Longitude'),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
+                            ),
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 24),
                   Row(
@@ -221,11 +435,19 @@ class _FieldsScreenState extends State<FieldsScreen> {
                       Expanded(
                         child: ElevatedButton(
                           onPressed: () async {
-                            final label = labelController.text.trim();
+                            final label = fieldLabelController.text.trim();
+                            final name = fieldNameController.text.trim();
                             final owner = ownerController.text.trim();
                             final size = double.tryParse(sizeController.text.trim());
+                            final lat = double.tryParse(latController.text.trim());
+                            final lng = double.tryParse(lngController.text.trim());
 
-                            if (label.isEmpty || owner.isEmpty || size == null || size <= 0) {
+                            final effectiveCropType = cropType == 'Other'
+                                ? cropTypeOtherController.text.trim()
+                                : cropType;
+
+                            if (name.isEmpty || label.isEmpty || owner.isEmpty || size == null || size <= 0 ||
+                                (cropType == 'Other' && effectiveCropType.isEmpty)) {
                               Get.snackbar('Validation Error', 'Please fill all required fields correctly.',
                                   backgroundColor: Theme.of(context).colorScheme.error,
                                   colorText: Theme.of(context).colorScheme.onError);
@@ -235,12 +457,22 @@ class _FieldsScreenState extends State<FieldsScreen> {
                             Get.dialog(const Center(child: CircularProgressIndicator()), barrierDismissible: false);
 
                             bool success;
+                            String? createdId;
                             if (isEditing) {
                               final updatedData = {
                                 'label': label,
                                 'size': size,
                                 'owner': owner,
                                 'isOrganic': isOrganic,
+                                // extra metadata
+                                'name': name,
+                                'soilType': soilType,
+                                'growthStage': growthStage,
+                                'cropType': effectiveCropType,
+                                'description': descriptionController.text.trim(),
+                                if (lat != null && lng != null) 'borderCoordinates': [
+                                  {'latitude': lat, 'longitude': lng}
+                                ],
                               };
                               success = await _fieldService.updateField(field.id, updatedData);
                             } else {
@@ -249,13 +481,24 @@ class _FieldsScreenState extends State<FieldsScreen> {
                                 userId: userId,
                                 label: label,
                                 addedDate: DateTime.now().toIso8601String(),
-                                borderCoordinates: [],
+                                borderCoordinates: (lat != null && lng != null)
+                                    ? [GeoPoint(lat, lng)]
+                                    : [],
                                 size: size,
                                 owner: owner,
                                 isOrganic: isOrganic,
                               );
-                              final newId = await _fieldService.createField(newField);
-                              success = newId != null;
+                              createdId = await _fieldService.createField(newField);
+                              success = createdId != null;
+                              if (success && createdId != null) {
+                                await _fieldService.updateField(createdId, {
+                                  'name': name,
+                                  'soilType': soilType,
+                                  'growthStage': growthStage,
+                                  'cropType': effectiveCropType,
+                                  'description': descriptionController.text.trim(),
+                                });
+                              }
                             }
 
                             Get.back(); // Close loading dialog
@@ -282,6 +525,25 @@ class _FieldsScreenState extends State<FieldsScreen> {
       ),
       isScrollControlled: true,
     );
+  }
+
+  Future<Position> _ensureLocationPermissionAndGetPosition() async {
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+    if (permission == LocationPermission.deniedForever) {
+      // Return a default central position when permission is permanently denied
+      return Future.error('Location permissions are permanently denied');
+    }
+    try {
+      return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+    } catch (_) {
+      // Fallback to last known or throw
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) return last;
+      return Future.error('Unable to get current location');
+    }
   }
 
   void _confirmDeleteField(BuildContext context, FieldModel field) {
@@ -418,13 +680,63 @@ class _FieldDetailsSheet extends StatefulWidget {
   __FieldDetailsSheetState createState() => __FieldDetailsSheetState();
 }
 
+class _WebMapPlaceholder extends StatelessWidget {
+  final VoidCallback onUseMyLocation;
+  final VoidCallback onOpenMaps;
+
+  const _WebMapPlaceholder({required this.onUseMyLocation, required this.onOpenMaps});
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      color: scheme.surfaceVariant.withOpacity(0.3),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.map_outlined, size: 48),
+            const SizedBox(height: 8),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Map picker requires a Google Maps API key on web. Use the buttons below or configure the API key.',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 12,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: onUseMyLocation,
+                  icon: const Icon(Icons.my_location),
+                  label: const Text('Use My Location'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: onOpenMaps,
+                  icon: const Icon(Icons.open_in_new),
+                  label: const Text('Open Google Maps'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
   Future<Map<String, dynamic>>? _analyticsFuture;
+  Future<Map<String, dynamic>>? _fieldMetaFuture;
 
   @override
   void initState() {
     super.initState();
     _analyticsFuture = _fetchAnalytics();
+    _fieldMetaFuture = _fetchFieldMeta();
   }
 
   Future<Map<String, dynamic>> _fetchAnalytics() async {
@@ -445,6 +757,16 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
     };
   }
 
+  Future<Map<String, dynamic>> _fetchFieldMeta() async {
+    try {
+      final doc = await FirebaseFirestore.instance.collection('fields').doc(widget.field.id).get();
+      final data = (doc.data() ?? {}) as Map<String, dynamic>;
+      return data;
+    } catch (_) {
+      return {};
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -463,57 +785,45 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
           children: [
             Text('Field Details', style: textTheme.titleLarge),
             const Divider(height: 24),
-            _buildDetailRow('Field Name', widget.field.label),
-            _buildDetailRow('Owner', widget.field.owner),
-            _buildDetailRow('Size', '${widget.field.size} ha'),
-            _buildDetailRow('Organic', widget.field.isOrganic ? 'Yes' : 'No'),
-            const Divider(height: 24),
-            Text('Analytics', style: textTheme.titleMedium),
-            const SizedBox(height: 16),
             FutureBuilder<Map<String, dynamic>>(
-              future: _analyticsFuture,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+              future: _fieldMetaFuture,
+              builder: (context, metaSnap) {
+                final meta = metaSnap.data ?? {};
+                final name = (meta['name'] as String?)?.trim();
+                final soilType = (meta['soilType'] as String?) ?? 'Unknown';
+                final growthStage = (meta['growthStage'] as String?) ?? 'N/A';
+                final cropType = (meta['cropType'] as String?) ?? 'N/A';
+                final description = (meta['description'] as String?) ?? '-';
+                String coords = '-';
+                if (widget.field.borderCoordinates.isNotEmpty) {
+                  final gp = widget.field.borderCoordinates.first;
+                  coords = '${gp.latitude.toStringAsFixed(6)}, ${gp.longitude.toStringAsFixed(6)}';
                 }
-                if (snapshot.hasError || !snapshot.hasData) {
-                  return const Text('Could not load analytics.');
-                }
-                final data = snapshot.data!;
-                final IrrigationScheduleModel? last = data['lastIrrigation'];
-                final IrrigationScheduleModel? next = data['nextIrrigation'];
-                
+                final rows = <Widget>[
+                  _buildDetailRow('Field Name', name?.isNotEmpty == true ? name! : widget.field.label),
+                  _buildDetailRow('Field Label', widget.field.label),
+                  _buildDetailRow('Owner', widget.field.owner),
+                  _buildDetailRow('Size', '${widget.field.size} ha'),
+                  _buildDetailRow('Organic', widget.field.isOrganic ? 'Yes' : 'No'),
+                  _buildDetailRow('Soil Type', soilType),
+                  _buildDetailRow('Growth Stage', growthStage),
+                  _buildDetailRow('Crop Type', cropType),
+                  _buildDetailRow('Coordinates', coords),
+                ];
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildDetailRow('Last Irrigation', last != null ? DateFormat.yMd().add_jm().format(last.startTime) : 'N/A'),
-                    _buildDetailRow('Upcoming Schedule', next != null ? DateFormat.yMd().add_jm().format(next.startTime) : 'N/A'),
-                    _buildDetailRow('Soil Moisture', '${data['moisture']?.toStringAsFixed(1) ?? 'N/A'}%'),
-                    _buildDetailRow('Temperature', '${data['temperature']?.toStringAsFixed(1) ?? 'N/A'}°C'),
+                    ...rows,
+                    const SizedBox(height: 8),
+                    Text('Description', style: textTheme.labelLarge),
+                    const SizedBox(height: 4),
+                    Text(description, style: textTheme.bodyMedium),
                   ],
                 );
               },
             ),
-             const Divider(height: 24),
-            Text('Actions', style: textTheme.titleMedium),
-            const SizedBox(height: 16),
-            Row(
-                children: [
-                    Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.water_drop_outlined), label: const Text('Start'), onPressed: () {})),
-                    const SizedBox(width: 16),
-                    Expanded(child: OutlinedButton.icon(icon: const Icon(Icons.stop_circle_outlined), label: const Text('Stop'), onPressed: () {})),
-                ],
-            ),
-            const SizedBox(height: 8),
-            SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                    icon: const Icon(Icons.view_list_outlined),
-                    label: const Text('View Schedules'),
-                    onPressed: () {
-                         Get.toNamed(AppRoutes.irrigationList, arguments: {'fieldId': widget.field.id});
-                    },
-                ),
-            )
+            const Divider(height: 24),
+            // Actions header and spacing removed per user request.
           ],
         ),
       ),
