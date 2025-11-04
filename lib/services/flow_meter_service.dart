@@ -3,30 +3,24 @@ import '../models/flow_meter_model.dart';
 
 class FlowMeterService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final String _collection = 'flow_meter';
-  CollectionReference<Map<String, dynamic>> _userScoped(String userId) =>
-      _firestore.collection('users').doc(userId).collection(_collection);
+  // Use permitted collection per current security rules
+  final String _collection = 'irrigationLogs';
 
   Future<String> createReading(FlowMeterModel reading, {String? userId}) async {
-    final col = userId != null ? _userScoped(userId) : _firestore.collection(_collection);
-    final docRef = await col.add(reading.toMap());
+    // Store as an irrigation log entry tagged as flow
+    final col = _firestore.collection(_collection);
+    final payload = {
+      ...reading.toMap(),
+      'type': 'flow',
+    };
+    final docRef = await col.add(payload);
     return docRef.id;
   }
 
   Future<FlowMeterModel?> getLatestReading(String fieldId, {String? userId}) async {
-    // Try user-scoped first if provided
-    if (userId != null) {
-      final userSnap = await _userScoped(userId)
-          .where('fieldId', isEqualTo: fieldId)
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
-      if (userSnap.docs.isNotEmpty) {
-        return FlowMeterModel.fromFirestore(userSnap.docs.first);
-      }
-    }
     final snapshot = await _firestore
         .collection(_collection)
+        .where('type', isEqualTo: 'flow')
         .where('fieldId', isEqualTo: fieldId)
         .orderBy('timestamp', descending: true)
         .limit(1)
@@ -38,49 +32,20 @@ class FlowMeterService {
   }
 
   Stream<FlowMeterModel?> streamLatestReading(String fieldId, {String? userId}) {
-    final topStream = _firestore
+    return _firestore
         .collection(_collection)
+        .where('type', isEqualTo: 'flow')
         .where('fieldId', isEqualTo: fieldId)
         .orderBy('timestamp', descending: true)
         .limit(1)
         .snapshots()
         .map((s) => s.docs.isNotEmpty ? FlowMeterModel.fromFirestore(s.docs.first) : null);
-
-    if (userId == null) return topStream;
-
-    final userStream = _userScoped(userId)
-        .where('fieldId', isEqualTo: fieldId)
-        .orderBy('timestamp', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((s) => s.docs.isNotEmpty ? FlowMeterModel.fromFirestore(s.docs.first) : null);
-
-    // Prefer user-scoped event if present; otherwise fall back to top-level
-    return userStream.asyncMap((u) async {
-      if (u != null) return u;
-      return await topStream.first;
-    });
   }
 
   Future<double> getUsageSince(String fieldId, DateTime start, {String? userId}) async {
-    // Try user-scoped first if provided
-    if (userId != null) {
-      final userSnap = await _userScoped(userId)
-          .where('fieldId', isEqualTo: fieldId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
-          .get();
-      if (userSnap.docs.isNotEmpty) {
-        double tot = 0;
-        for (final d in userSnap.docs) {
-          final data = d.data();
-          final liters = data['liters'];
-          if (liters != null) tot += (liters as num).toDouble();
-        }
-        return tot;
-      }
-    }
     final snap = await _firestore
         .collection(_collection)
+        .where('type', isEqualTo: 'flow')
         .where('fieldId', isEqualTo: fieldId)
         .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(start))
         .get();

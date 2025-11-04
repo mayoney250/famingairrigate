@@ -1161,31 +1161,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 f['name'] ?? sid,
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
               ),
-              if (kDebugMode)
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      final firebaseUid = fb.FirebaseAuth.instance.currentUser?.uid;
-                      final auth = Provider.of<AuthProvider>(context, listen: false);
-                      final ok = await dashboardProvider.addTestFlowUsage(
-                        userId: firebaseUid ?? auth.currentUser!.userId,
-                        fieldId: sid,
-                      );
-                      if (ok) {
-                        Get.snackbar('Flow Test', 'Test water usage added', snackPosition: SnackPosition.BOTTOM);
-                      } else {
-                        final msg = dashboardProvider.lastActionError ?? 'Failed to add test usage';
-                        Get.snackbar('Flow Test', msg, snackPosition: SnackPosition.BOTTOM);
-                      }
-                    },
-                    icon: const Icon(Icons.science, size: 16),
-                    label: const Text('Add Test Water'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: FamingaBrandColors.primaryOrange,
-                    ),
-                  ),
-                ),
+              // Dev-only water test button removed per request
               const SizedBox(height: 8),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
