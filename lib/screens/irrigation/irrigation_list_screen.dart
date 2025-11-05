@@ -845,6 +845,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                               'zoneName': field['name'] ?? field['id'],
                               'startTime': Timestamp.fromDate(selectedStart),
                               'durationMinutes': duration,
+                              'status': 'scheduled',
                               'updatedAt': Timestamp.fromDate(DateTime.now()),
                             });
                             Get.back();

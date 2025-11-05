@@ -118,23 +118,23 @@ class IrrigationService {
     try {
       final now = DateTime.now();
 
-      final schedule = IrrigationScheduleModel(
-        id: '',
-        userId: userId,
-        name: 'Manual Irrigation - $fieldName',
-        zoneId: fieldId,
-        zoneName: fieldName,
-        startTime: now,
-        durationMinutes: durationMinutes,
-        repeatDays: const [],
-        isActive: true,
-        status: 'running',
-        createdAt: now,
-      );
+      final scheduleData = {
+        'userId': userId,
+        'name': 'Manual Irrigation - $fieldName',
+        'zoneId': fieldId,
+        'zoneName': fieldName,
+        'startTime': Timestamp.fromDate(now),
+        'durationMinutes': durationMinutes,
+        'repeatDays': [],
+        'isActive': true,
+        'status': 'running',
+        'createdAt': Timestamp.fromDate(now),
+        'isManual': true,
+      };
 
       await _firestore
           .collection('irrigationSchedules')
-          .add(schedule.toMap());
+          .add(scheduleData);
 
       log('Irrigation started manually');
       return true;
