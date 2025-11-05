@@ -570,16 +570,16 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                children: [
                     Text('Create Irrigation Schedule', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: nameController,
+                  TextField(
+                    controller: nameController,
                       decoration: const InputDecoration(labelText: 'Schedule Name', border: OutlineInputBorder()),
-                    ),
+                  ),
                     const SizedBox(height: 12),
                     FutureBuilder<List<Map<String,String>>>(
                       future: fieldsFuture,
@@ -625,68 +625,68 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       },
                     ),
                     const SizedBox(height: 12),
-                    TextField(
-                      controller: durationController,
+                  TextField(
+                    controller: durationController,
                       decoration: const InputDecoration(labelText: 'Duration (minutes)', border: OutlineInputBorder()),
-                      keyboardType: TextInputType.number,
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
+                    keyboardType: TextInputType.number,
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
                         Text('Start Time: ', style: Theme.of(context).textTheme.bodyMedium),
-                        Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
-                        const Spacer(),
-                        TextButton(
-                          onPressed: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                              initialDate: selectedStart,
-                            );
-                            if (date == null) return;
-                            final time = await showTimePicker(
-                              context: context,
-                              initialTime: TimeOfDay.fromDateTime(selectedStart),
-                            );
-                            if (time == null) return;
-                            setState(() {
+                      Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
+                      const Spacer(),
+                      TextButton(
+                        onPressed: () async {
+                          final date = await showDatePicker(
+                            context: context,
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime.now().add(const Duration(days: 365)),
+                            initialDate: selectedStart,
+                          );
+                          if (date == null) return;
+                          final time = await showTimePicker(
+                            context: context,
+                            initialTime: TimeOfDay.fromDateTime(selectedStart),
+                          );
+                          if (time == null) return;
+                          setState(() {
                               selectedStart = DateTime(date.year, date.month, date.day, time.hour, time.minute);
-                            });
-                          },
-                          child: const Text('Pick'),
-                        ),
-                      ],
-                    ),
+                          });
+                        },
+                        child: const Text('Pick'),
+                      ),
+                    ],
+                  ),
                     const SizedBox(height: 16),
                     Row(
                       children: [
                         TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
                         const Spacer(),
-                        ElevatedButton(
-                          onPressed: () async {
-                            final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
-                            final duration = int.tryParse(durationController.text.trim()) ?? 60;
+          ElevatedButton(
+            onPressed: () async {
+              final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
+              final duration = int.tryParse(durationController.text.trim()) ?? 60;
                             List<Map<String,String>> options = await fieldsFuture;
                             final field = options.firstWhere((f) => f['id'] == selectedFieldId, orElse: () => {'id': selectedFieldId, 'name': selectedFieldId});
-                            final schedule = IrrigationScheduleModel(
-                              id: '',
-                              userId: userId,
-                              name: name,
+              final schedule = IrrigationScheduleModel(
+                id: '',
+                userId: userId,
+                name: name,
                               zoneId: field['id']!,
                               zoneName: field['name'] ?? field['id']!,
-                              startTime: selectedStart,
-                              durationMinutes: duration,
-                              repeatDays: const <int>[],
-                              isActive: true,
-                              status: 'scheduled',
-                              createdAt: DateTime.now(),
-                            );
-                            final ok = await _irrigationService.createSchedule(schedule);
-                            if (ok) {
-                              Get.back();
+                startTime: selectedStart,
+                durationMinutes: duration,
+                repeatDays: const <int>[],
+                isActive: true,
+                status: 'scheduled',
+                createdAt: DateTime.now(),
+              );
+              final ok = await _irrigationService.createSchedule(schedule);
+              if (ok) {
+                Get.back();
                               Get.snackbar('Success', 'Schedule saved');
-                            } else {
+              } else {
                               Get.snackbar('Error', 'Failed to save schedule');
                             }
                           },
@@ -753,7 +753,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                             ),
                             child: const Text('No fields available'),
                           );
-                        }
+              }
                         if (!options.any((f) => f['id'] == selectedFieldId)) {
                           selectedFieldId = options.first['id']!;
                         }
@@ -812,8 +812,8 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                             });
                           },
                           child: const Text('Pick'),
-                        ),
-                      ],
+          ),
+        ],
                     ),
                     const SizedBox(height: 16),
                     Row(

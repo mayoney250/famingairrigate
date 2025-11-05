@@ -120,6 +120,30 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+  // Add this helper for summarizing soil status across all fields
+  String systemSoilStatusSummary() {
+    // Uses same logic as the per-field card
+    final sensors = latestSensorDataPerField;
+    bool anyDry = false, anyWet = false, anyOptimal = false, anyData = false;
+    for (final sid in fields.map((f) => f['id'])) {
+      final sensor = sid != null ? sensors[sid] : null;
+      if (sensor != null) {
+        anyData = true;
+        if (sensor.soilMoisture < 50) {
+          anyDry = true;
+        } else if (sensor.soilMoisture > 100) {
+          anyWet = true;
+        } else {
+          anyOptimal = true;
+        }
+      }
+    }
+    if (!anyData) return "No soil moisture data.";
+    if (anyWet) return "Soil is too wet – check drainage.";
+    if (anyDry) return "Soil is dry – it's time to irrigate.";
+    return "Soil conditions are optimal – no action needed.";
+  }
+
   // Load dashboard data
   Future<void> loadDashboardData(String userId) async {
     try {

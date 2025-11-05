@@ -322,10 +322,10 @@ class _FieldsScreenState extends State<FieldsScreen> {
                           SizedBox(
                             width: fieldWidth,
                             child: SwitchListTile(
-                              title: const Text('Organic Farming'),
-                              value: isOrganic,
-                              onChanged: (value) => modalState(() => isOrganic = value),
-                              contentPadding: EdgeInsets.zero,
+                    title: const Text('Organic Farming'),
+                    value: isOrganic,
+                    onChanged: (value) => modalState(() => isOrganic = value),
+                    contentPadding: EdgeInsets.zero,
                             ),
                           ),
                           SizedBox(
@@ -802,9 +802,9 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
                 final rows = <Widget>[
                   _buildDetailRow('Field Name', name?.isNotEmpty == true ? name! : widget.field.label),
                   _buildDetailRow('Field Label', widget.field.label),
-                  _buildDetailRow('Owner', widget.field.owner),
-                  _buildDetailRow('Size', '${widget.field.size} ha'),
-                  _buildDetailRow('Organic', widget.field.isOrganic ? 'Yes' : 'No'),
+            _buildDetailRow('Owner', widget.field.owner),
+            _buildDetailRow('Size', '${widget.field.size} ha'),
+            _buildDetailRow('Organic', widget.field.isOrganic ? 'Yes' : 'No'),
                   _buildDetailRow('Soil Type', soilType),
                   _buildDetailRow('Growth Stage', growthStage),
                   _buildDetailRow('Crop Type', cropType),
@@ -822,7 +822,7 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
                 );
               },
             ),
-            const Divider(height: 24),
+             const Divider(height: 24),
             // Actions header and spacing removed per user request.
           ],
         ),

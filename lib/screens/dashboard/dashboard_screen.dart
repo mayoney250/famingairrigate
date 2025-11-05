@@ -105,18 +105,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
+                  decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                    ),
+                  ),
                     child: Text(
                       unreadCount.toString(),
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                 )
-            ],
-          ),
+          ],
+        ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
               final user = authProvider.currentUser;
@@ -233,21 +233,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildSystemStatusCard(DashboardProvider dashboardProvider) {
+    final systemMsg = dashboardProvider.systemSoilStatusSummary();
+    Color cardBg = FamingaBrandColors.darkGreen;
+    IconData cardIcon = Icons.check_circle;
+    if (systemMsg.contains('dry')) {
+      cardBg = Colors.orange.shade700;
+      cardIcon = Icons.warning_amber_outlined;
+    } else if (systemMsg.contains('wet')) {
+      cardBg = Colors.blue.shade700;
+      cardIcon = Icons.water_drop_outlined;
+    } else if (systemMsg.contains('optimal')) {
+      cardBg = Colors.green.shade700;
+      cardIcon = Icons.check_circle;
+    } else if (systemMsg.contains('No soil moisture data')) {
+      cardBg = Colors.grey.shade600;
+      cardIcon = Icons.info_outline;
+    }
+    // Optionally: hide card if all no-data
+    if (systemMsg.contains('No soil moisture data')) {
+      return const SizedBox.shrink();
+    }
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            FamingaBrandColors.darkGreen,
-            FamingaBrandColors.darkGreen.withOpacity(0.8),
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: cardBg,
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: FamingaBrandColors.darkGreen.withOpacity(0.3),
+            color: cardBg.withOpacity(0.18),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -264,40 +277,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: FamingaBrandColors.white.withOpacity(0.2),
+                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(
-                        Icons.check_circle,
-                        color: FamingaBrandColors.white,
+                      child: Icon(
+                        cardIcon,
+                        color: Colors.white,
                         size: 20,
                       ),
                     ),
                     const SizedBox(width: 8),
-                    const Text(
+                    Text(
                       'System Status',
                       style: TextStyle(
-                        color: FamingaBrandColors.white,
+                        color: Colors.white,
                         fontSize: 12,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  dashboardProvider.systemStatus,
+                  systemMsg,
                   style: const TextStyle(
-                    color: FamingaBrandColors.white,
-                    fontSize: 28,
+                    color: Colors.white,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  dashboardProvider.systemStatusMessage,
-                  style: TextStyle(
-                    color: FamingaBrandColors.white.withOpacity(0.9),
-                    fontSize: 13,
                   ),
                 ),
               ],
@@ -306,14 +312,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: FamingaBrandColors.white.withOpacity(0.2),
+              color: Colors.white.withOpacity(0.2),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.check_circle_outline,
-              color: FamingaBrandColors.white,
-              size: 32,
-            ),
+            child: Icon(cardIcon, color: Colors.white, size: 32),
           ),
         ],
       ),
@@ -408,10 +410,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final avg = dashboardProvider.avgSoilMoisture;
     final moisturePercent = avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0;
     final moistureText = avg != null ? '${avg.round()}%' : '--';
-    final moistureStatus = avg != null
-        ? (avg < 40 ? 'Low' : avg < 60 ? 'Moderate' : 'Optimal')
-        : 'No Data';
-
+    final moistureLabel = "Average Today";
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -420,15 +419,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text(
-            'Soil Moisture',
-            style: TextStyle(
-              color: FamingaBrandColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
+          const Text('Soil Moisture', style: TextStyle(
+            color: FamingaBrandColors.textPrimary,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          )),
           const SizedBox(height: 16),
           Stack(
             alignment: Alignment.center,
@@ -437,16 +434,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 100,
                 height: 100,
                 child: CircularProgressIndicator(
-                  value: moisturePercent,
+                  value: avg != null ? moisturePercent : 0.0,
                   strokeWidth: 10,
                   backgroundColor: FamingaBrandColors.borderColor,
-                  valueColor: const AlwaysStoppedAnimation<Color>(
-                    FamingaBrandColors.darkGreen,
-                  ),
+                  valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.darkGreen),
                 ),
               ),
               Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     moistureText,
@@ -456,27 +451,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 2),
+                  Text(
+                    moistureLabel,
+                    style: const TextStyle(
+                      color: FamingaBrandColors.textSecondary,
+                      fontSize: 11,
+                    ),
+                  ),
                 ],
               ),
             ],
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Calculate Average',
-            style: TextStyle(
-              color: FamingaBrandColors.textSecondary,
-              fontSize: 11,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            moistureStatus,
-            style: const TextStyle(
-              color: FamingaBrandColors.textPrimary,
-              fontSize: 11,
-            ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -757,27 +744,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Row(
                         children: [
                           if (!(sched.name.toLowerCase().startsWith('manual irrigation') || sched.status == 'running'))
-                            ElevatedButton(
-                              onPressed: () async {
-                                final uid = authProvider.currentUser!.userId;
-                                final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
-                                if (!ok) {
-                                  Get.snackbar('Error', 'Failed to start cycle');
-                                }
-                              },
-                              child: const Text('Start'),
-                            ),
-                          const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: () async {
+                          final uid = authProvider.currentUser!.userId;
+                          final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
+                          if (!ok) {
+                            Get.snackbar('Error', 'Failed to start cycle');
+                          }
+                        },
+                        child: const Text('Start'),
+                      ),
+                      const SizedBox(width: 8),
                           if (sched.status == 'running')
-                            OutlinedButton(
-                              onPressed: () async {
-                                final uid = authProvider.currentUser!.userId;
-                                final ok = await dashboardProvider.stopCycle(sched.id, uid);
-                                if (!ok) {
-                                  Get.snackbar('Error', 'Failed to stop cycle');
-                                }
-                              },
-                              child: const Text('Stop'),
+                      OutlinedButton(
+                        onPressed: () async {
+                          final uid = authProvider.currentUser!.userId;
+                          final ok = await dashboardProvider.stopCycle(sched.id, uid);
+                          if (!ok) {
+                            Get.snackbar('Error', 'Failed to stop cycle');
+                          }
+                        },
+                        child: const Text('Stop'),
                             ),
                         ],
                       ),
@@ -839,9 +826,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
               selectedFieldId = fields.first['id']!;
             }
             return Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                 DropdownButtonFormField<String>(
                   value: selectedFieldId,
                   items: fields
@@ -852,13 +839,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       .toList(),
                   onChanged: (val) => setState(() => selectedFieldId = val ?? selectedFieldId),
                   decoration: const InputDecoration(labelText: 'Field'),
-                ),
+            ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: durationController,
                   decoration: const InputDecoration(labelText: 'Duration (minutes)'),
                   keyboardType: TextInputType.number,
-                ),
+              ),
               ],
             );
           },
@@ -871,7 +858,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ElevatedButton(
             onPressed: () async {
               Get.back();
-
+              
               // Show loading
               Get.dialog(
                 Center(
@@ -1198,40 +1185,48 @@ class AlertCenterBottomSheet extends StatelessWidget {
   const AlertCenterBottomSheet({required this.alerts, required this.onMarkRead});
   @override
   Widget build(BuildContext context) {
+    final mq = MediaQuery.of(context);
+    final maxHeight = mq.size.height * 0.6;
     if (alerts.isEmpty) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(child: Text('No alerts yet')),);
+      return SizedBox(
+        height: maxHeight,
+        child: const Padding(
+          padding: EdgeInsets.all(32),
+          child: Center(child: Text('No alerts yet')),),
+      );
     }
     return SafeArea(
-      child: ListView.separated(
-        padding: const EdgeInsets.all(24),
-        itemCount: alerts.length,
-        separatorBuilder: (_, __) => const Divider(),
-        itemBuilder: (context, i) {
-          final a = alerts[i];
-          Color iconColor = a.severity == 'high'
-              ? Colors.red
-              : a.severity == 'medium' ? Colors.orange : Colors.green;
-          IconData icon = a.type == 'OFFLINE'
-              ? Icons.sensor_door
-              : a.type == 'VALVE'
-                  ? Icons.water_drop
-                  : Icons.warning;
-          return ListTile(
-            leading: Icon(icon, color: iconColor),
-            title: Text(a.message,
-                style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
-            subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts)}'),
-            trailing: a.read
-                ? null
-                : IconButton(
-                    icon: const Icon(Icons.check, color: Colors.green),
-                    tooltip: 'Mark as read',
-                    onPressed: () => onMarkRead(a.id),
-                  ),
-          );
-        },
+      child: SizedBox(
+        height: maxHeight,
+        child: ListView.separated(
+          padding: const EdgeInsets.all(24),
+          itemCount: alerts.length,
+          separatorBuilder: (_, __) => const Divider(),
+          itemBuilder: (context, i) {
+            final a = alerts[i];
+            Color iconColor = a.severity == 'high'
+                ? Colors.red
+                : a.severity == 'medium' ? Colors.orange : Colors.green;
+            IconData icon = a.type == 'OFFLINE'
+                ? Icons.sensor_door
+                : a.type == 'VALVE'
+                    ? Icons.water_drop
+                    : Icons.warning;
+            return ListTile(
+              leading: Icon(icon, color: iconColor),
+              title: Text(a.message,
+                  style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
+              subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts)}'),
+              trailing: a.read
+                  ? null
+                  : IconButton(
+                      icon: const Icon(Icons.check, color: Colors.green),
+                      tooltip: 'Mark as read',
+                      onPressed: () => onMarkRead(a.id),
+                    ),
+            );
+          },
+        ),
       ),
     );
   }

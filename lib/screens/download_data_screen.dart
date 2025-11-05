@@ -76,9 +76,9 @@ List<Map<String, dynamic>> alerts = [];
     // Load real user, goals, logs for period
     final auth = Provider.of<AuthProvider>(context, listen: false);
     final goalProvider = Provider.of<WaterGoalProvider>(context, listen: false);
-    if (auth.user == null) return;
-    userName = auth.user.displayName ?? auth.user.email ?? 'My Farm';
-    String userId = auth.user.uid;
+    if (auth.currentUser == null) return;
+    userName = auth.currentUser!.firstName + ' ' + auth.currentUser!.lastName;
+    String userId = auth.currentUser!.userId;
     // Goals
     await goalProvider.loadGoals(userId);
     final periodGoal = goalProvider.activeGoal(periodKey);
@@ -129,17 +129,9 @@ List<Map<String, dynamic>> alerts = [];
 
   Future<Uint8List> _generatePdfReport() async {
     final pdf = pw.Document();
-    final pwFont = await PdfGoogleFonts.openSansRegular();
-    final pwFontBold = await PdfGoogleFonts.openSansBold();
     pdf.addPage(
       pw.MultiPage(
-        pageTheme: pw.PageTheme(
-          margin: pw.EdgeInsets.all(28),
-          theme: pw.ThemeData.withFont(
-            base: pwFont,
-            bold: pwFontBold,
-          ),
-        ),
+        pageTheme: const pw.PageTheme(margin: pw.EdgeInsets.all(28)),
         build: (pw.Context context) => [
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -240,7 +232,7 @@ List<Map<String, dynamic>> alerts = [];
                   style: pw.TextStyle(fontSize: 17, fontWeight: pw.FontWeight.bold)),
               pw.Bullet(text: 'Total Water Used: '
                   '${waterUsageByDate.fold<int>(0, (sum, e) => sum + (e['usage'] as int))} L.'),
-              pw.Bullet(text: 'System Efficiency: ${(usageGoals['efficiency'])}.'),
+              pw.Bullet(text: 'System Efficiency: $efficiency%.'),
               pw.Bullet(text: 'Recommendation: Optimize timings for East Plot.'),
 
               pw.SizedBox(height: 32),

@@ -7,8 +7,14 @@ class WaterGoalProvider with ChangeNotifier {
   bool _isLoading = false;
   List<WaterGoal> get goals => _goals;
   bool get isLoading => _isLoading;
-  WaterGoal? activeGoal(String period) =>
-      _goals.firstWhere((g) => g.active && g.period == period, orElse: () => null);
+  WaterGoal? activeGoal(String period) {
+    for (final goal in _goals) {
+      if (goal.active && goal.period == period) {
+        return goal;
+      }
+    }
+    return null;
+  }
   Future<void> loadGoals(String userId) async {
     _isLoading = true;
     notifyListeners();

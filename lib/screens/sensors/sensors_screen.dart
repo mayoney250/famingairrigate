@@ -57,18 +57,18 @@ class _SensorsScreenState extends State<SensorsScreen> {
           ? Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [
+        children: [
                   Icon(Icons.sensors, size: 48, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 12),
                   Text('No sensors yet. Tap + to add.', style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
-                ],
-              ),
+              ],
+            ),
             )
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: _sensors.length,
               itemBuilder: (context, i) => _SensorCard(sensor: _sensors[i]),
-            ),
+      ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
     );
   }
@@ -152,7 +152,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Pairing Method'),
                     value: pairingMethod,
-                    items: const [
+      items: const [
                       DropdownMenuItem(value: 'BLE', child: Text('Bluetooth (BLE)')),
                       DropdownMenuItem(value: 'WiFi', child: Text('WiFi')),
                       DropdownMenuItem(value: 'LoRaWAN', child: Text('LoRaWAN Gateway')),
@@ -304,8 +304,8 @@ class _SensorCard extends StatelessWidget {
                 Text(sensor.hardwareId, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                 Text(sensor.pairing['method'] ?? '', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant.withOpacity(0.65))),
               ],
-            ),
-          ],
+        ),
+      ],
         ),
       ),
     );

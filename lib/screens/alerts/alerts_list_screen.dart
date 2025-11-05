@@ -105,38 +105,38 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                     )
                   : ListView.separated(
                       itemCount: _alerts.length,
-                      separatorBuilder: (_, __) => Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.3)),
-                      itemBuilder: (context, index) {
+            separatorBuilder: (_, __) => Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.3)),
+            itemBuilder: (context, index) {
                         final a = _alerts[index];
-                        final color = _severityColor(context, a.severity);
-                        final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? scheme.onSurface;
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          child: ListTile(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            tileColor: scheme.surface,
-                            leading: Icon(_severityIcon(a.severity), color: color),
+              final color = _severityColor(context, a.severity);
+              final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? scheme.onSurface;
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ListTile(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  tileColor: scheme.surface,
+                  leading: Icon(_severityIcon(a.severity), color: color),
                             title: Text(a.message, style: TextStyle(color: textColor)),
                             subtitle: Text(a.type, style: TextStyle(color: scheme.onSurfaceVariant)),
                             trailing: a.read
-                                ? Icon(Icons.check, color: scheme.primary)
+                      ? Icon(Icons.check, color: scheme.primary)
                                 : Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: color.withOpacity(0.12),
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color.withOpacity(0.12),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
                                       a.severity.toUpperCase(),
-                                      style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
-                                    ),
-                                  ),
-                            onTap: () => Get.toNamed('/alert-detail', arguments: a),
+                              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                            ),
                           ),
-                        );
-                      },
+                  onTap: () => Get.toNamed('/alert-detail', arguments: a),
+                ),
+              );
+            },
                     ),
-            ),
+      ),
     );
   }
 }

@@ -81,6 +81,7 @@ dependencies:
   
   # PDF & Documents
   pdf: ^3.10.7
+  printing: ^5.12.0
   
   # Other
   uuid: ^4.2.2

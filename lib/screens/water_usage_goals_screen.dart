@@ -20,7 +20,7 @@ class _WaterUsageGoalsScreenState extends State<WaterUsageGoalsScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      userId = Provider.of<AuthProvider>(context, listen: false).user?.uid ?? '';
+      userId = Provider.of<AuthProvider>(context, listen: false).currentUser?.userId ?? '';
       await Provider.of<WaterGoalProvider>(context, listen: false).loadGoals(userId);
     });
   }
@@ -146,7 +146,7 @@ class _WaterUsageGoalsScreenState extends State<WaterUsageGoalsScreen> {
                     const SnackBar(content: Text('Enter a valid amount')));
                 return;
               }
-              final userId = Provider.of<AuthProvider>(context, listen: false).user?.uid ?? '';
+              final userId = Provider.of<AuthProvider>(context, listen: false).currentUser?.userId ?? '';
               final goalProvider =
                   Provider.of<WaterGoalProvider>(context, listen: false);
               if (editGoal == null) {
