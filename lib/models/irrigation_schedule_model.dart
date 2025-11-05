@@ -16,6 +16,7 @@ class IrrigationScheduleModel {
   final DateTime? nextRun;
   final DateTime? stoppedAt;
   final String? stoppedBy; // 'manual' or 'automatic'
+  final bool isManual; // true if this is a manual irrigation cycle
 
   IrrigationScheduleModel({
     required this.id,
@@ -33,6 +34,7 @@ class IrrigationScheduleModel {
     this.nextRun,
     this.stoppedAt,
     this.stoppedBy,
+    this.isManual = false,
   });
 
   Map<String, dynamic> toMap() {
@@ -52,6 +54,7 @@ class IrrigationScheduleModel {
       'nextRun': nextRun != null ? Timestamp.fromDate(nextRun!) : null,
       'stoppedAt': stoppedAt != null ? Timestamp.fromDate(stoppedAt!) : null,
       'stoppedBy': stoppedBy,
+      'isManual': isManual,
     };
   }
 
@@ -102,6 +105,7 @@ class IrrigationScheduleModel {
         nextRun: map['nextRun'] != null ? parseDate(map['nextRun']) : null,
         stoppedAt: map['stoppedAt'] != null ? parseDate(map['stoppedAt']) : null,
         stoppedBy: map['stoppedBy'],
+        isManual: map['isManual'] is bool ? map['isManual'] as bool : (map['isManual'] == true),
       );
     } catch (e) {
       // If there's an error, create a minimal valid model
@@ -133,6 +137,7 @@ class IrrigationScheduleModel {
     DateTime? nextRun,
     DateTime? stoppedAt,
     String? stoppedBy,
+    bool? isManual,
   }) {
     return IrrigationScheduleModel(
       id: id ?? this.id,
@@ -150,6 +155,7 @@ class IrrigationScheduleModel {
       nextRun: nextRun ?? this.nextRun,
       stoppedAt: stoppedAt ?? this.stoppedAt,
       stoppedBy: stoppedBy ?? this.stoppedBy,
+      isManual: isManual ?? this.isManual,
     );
   }
 

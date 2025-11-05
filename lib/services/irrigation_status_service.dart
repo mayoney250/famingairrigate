@@ -38,22 +38,22 @@ class IrrigationStatusService {
   }) async {
     try {
       final now = DateTime.now();
-      final schedule = IrrigationScheduleModel(
-        id: '',
-        userId: userId,
-        name: 'Manual Irrigation - $fieldName',
-        zoneId: fieldId,
-        zoneName: fieldName,
-        startTime: now,
-        durationMinutes: durationMinutes,
-        repeatDays: const [],
-        isActive: true,
-        status: 'running',
-        createdAt: now,
-      );
+      final scheduleData = {
+        'userId': userId,
+        'name': 'Manual Irrigation - $fieldName',
+        'zoneId': fieldId,
+        'zoneName': fieldName,
+        'startTime': Timestamp.fromDate(now),
+        'durationMinutes': durationMinutes,
+        'repeatDays': [],
+        'isActive': true,
+        'status': 'running',
+        'createdAt': Timestamp.fromDate(now),
+        'isManual': true,
+      };
       await _firestore
           .collection('irrigationSchedules')
-          .add(schedule.toMap());
+          .add(scheduleData);
       log('Irrigation started manually');
       return true;
     } catch (e) {
@@ -135,7 +135,8 @@ class IrrigationStatusService {
     }
   }
 
-  // Patch: Mark all running, scheduled, or stopped irrigations whose duration is finished as completed
+  // Mark all running irrigations whose duration is finished as completed
+  // Only marks scheduled (non-manual) irrigations; manual cycles remain 'stopped'
   Future<int> markDueIrrigationsCompleted() async {
     final now = DateTime.now();
     final querySnapshot = await _firestore
@@ -149,7 +150,13 @@ class IrrigationStatusService {
       // Only consider items that are currently running
       final status = (data['status'] ?? '').toString();
       if (status != 'running') {
-        continue; // skip scheduled/stopped; they are handled elsewhere
+        continue;
+      }
+
+      // Skip manual irrigations - they should not be auto-completed
+      final isManual = data['isManual'] == true;
+      if (isManual) {
+        continue;
       }
 
       // Determine actual start: prefer startedAt if present, else startTime
