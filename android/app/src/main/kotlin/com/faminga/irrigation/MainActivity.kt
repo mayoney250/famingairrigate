@@ -1,4 +1,4 @@
-package com.faminga.faminga_irrigation
+package com.faminga.irrigation
 
 import io.flutter.embedding.android.FlutterActivity
 
