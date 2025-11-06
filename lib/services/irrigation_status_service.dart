@@ -29,6 +29,79 @@ class IrrigationStatusService {
     }
   }
 
+  // Automatically start any scheduled cycles whose start time has arrived
+  Future<int> startDueSchedules() async {
+    try {
+      final now = DateTime.now();
+      final snap = await _firestore
+          .collection('irrigationSchedules')
+          .where('status', isEqualTo: 'scheduled')
+          .where('isActive', isEqualTo: true)
+          .get();
+
+      int started = 0;
+      for (final doc in snap.docs) {
+        final data = doc.data();
+
+        DateTime parseDate(dynamic v) {
+          if (v == null) return now;
+          if (v is Timestamp) return v.toDate();
+          if (v is DateTime) return v;
+          return DateTime.tryParse(v.toString()) ?? now;
+        }
+
+        final startTime = parseDate(data['nextRun'] ?? data['startTime']);
+        if (startTime.isAfter(now)) continue; // not due yet
+
+        // Update status to running
+        await doc.reference.update({
+          'status': 'running',
+          'isActive': true,
+          'startedAt': Timestamp.fromDate(now),
+          'updatedAt': Timestamp.fromDate(now),
+        });
+        
+        // Create start notification
+        final farmId = (data['zoneId'] ?? '').toString();
+        final zoneName = (data['zoneName'] ?? 'Field').toString();
+        try {
+          final alertId = await _alertService.createAlert(
+            AlertModel(
+              id: '',
+              farmId: farmId,
+              sensorId: null,
+              type: 'VALVE',
+              message: 'Irrigation started for $zoneName.',
+              severity: 'info',
+              ts: now,
+              read: false,
+            ),
+          );
+          await AlertLocalService.addAlert(
+            AlertModel(
+              id: alertId,
+              farmId: farmId,
+              sensorId: null,
+              type: 'VALVE',
+              message: 'Irrigation started for $zoneName.',
+              severity: 'info',
+              ts: now,
+              read: false,
+            ),
+          );
+        } catch (e) {
+          log('Warning: failed creating start alert: $e');
+        }
+        
+        started++;
+      }
+      return started;
+    } catch (e) {
+      log('Error auto-starting due schedules: $e');
+      return 0;
+    }
+  }
+
   Future<bool> startIrrigationManually({
     required String userId,
     required String farmId,
@@ -135,13 +208,14 @@ class IrrigationStatusService {
     }
   }
 
-  // Mark all running irrigations whose duration is finished as completed
-  // Only marks scheduled (non-manual) irrigations; manual cycles remain 'stopped'
+  // Mark all running irrigations whose duration is finished
+  // Any cycle (manual or scheduled) that reaches its due time → 'completed'
+  // If a cycle is stopped before due time, it is set to 'stopped' via stop action
   Future<int> markDueIrrigationsCompleted() async {
     final now = DateTime.now();
     final querySnapshot = await _firestore
         .collection('irrigationSchedules')
-        .where('status', whereIn: ['running', 'scheduled', 'stopped'])
+        .where('status', whereIn: ['running'])
         .get();
     int patched = 0;
     for (final doc in querySnapshot.docs) {
@@ -150,12 +224,6 @@ class IrrigationStatusService {
       // Only consider items that are currently running
       final status = (data['status'] ?? '').toString();
       if (status != 'running') {
-        continue;
-      }
-
-      // Skip manual irrigations - they should not be auto-completed
-      final isManual = data['isManual'] == true;
-      if (isManual) {
         continue;
       }
 

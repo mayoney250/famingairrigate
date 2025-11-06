@@ -38,9 +38,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
   void initState() {
     super.initState();
     // Run once on open
+    _statusService.startDueSchedules();
     _statusService.markDueIrrigationsCompleted();
     // Poll every 60s to auto-complete any overdue cycles
     _statusTick = Timer.periodic(const Duration(seconds: 60), (_) {
+      _statusService.startDueSchedules();
       _statusService.markDueIrrigationsCompleted();
       if (mounted) setState(() {});
     });
@@ -322,7 +324,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ],
                 ],
               ),
-              // Show stop button if irrigation is running
+              // Show action buttons based on status
               if (schedule.status == 'running') ...[
                 const SizedBox(height: 16),
                 const Divider(),
@@ -335,6 +337,28 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     label: const Text('Stop Irrigation'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.statusWarning,
+                      foregroundColor: FamingaBrandColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              // Show start button for scheduled cycles
+              if (schedule.status == 'scheduled' && !schedule.isManual) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _startScheduledCycleNow(schedule),
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                    label: const Text('Start Now'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FamingaBrandColors.statusSuccess,
                       foregroundColor: FamingaBrandColors.white,
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(
@@ -490,6 +514,65 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               backgroundColor: FamingaBrandColors.statusWarning,
             ),
             child: const Text('Stop'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Start a scheduled cycle immediately (manual trigger)
+  void _startScheduledCycleNow(IrrigationScheduleModel schedule) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Start Irrigation Now'),
+        content: Text(
+          'Start irrigation for ${schedule.zoneName} immediately?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              
+              // Show loading
+              Get.dialog(
+                const Center(
+                  child: CircularProgressIndicator(
+                    color: FamingaBrandColors.primaryOrange,
+                  ),
+                ),
+                barrierDismissible: false,
+              );
+              
+              final success = await _statusService.startScheduledNow(schedule.id);
+              
+              Get.back(); // Close loading
+              
+              if (success) {
+                Get.snackbar(
+                  'Success',
+                  'Irrigation started successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusSuccess,
+                  colorText: FamingaBrandColors.white,
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Failed to start irrigation. Please try again.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FamingaBrandColors.statusSuccess,
+            ),
+            child: const Text('Start Now'),
           ),
         ],
       ),
@@ -836,6 +919,26 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                             List<Map<String,String>> options = await fieldOptionsAsync;
                             final field = options.firstWhere((f) => f['id'] == selectedFieldId, orElse: () => {'id': selectedFieldId, 'name': selectedFieldId});
 
+                            final now = DateTime.now();
+                            // Calculate nextRun based on whether it's a recurring schedule
+                            DateTime? nextRunTime;
+                            if (schedule.repeatDays.isNotEmpty) {
+                              // For recurring schedules, find next occurrence
+                              for (int i = 0; i < 7; i++) {
+                                final candidateDay = selectedStart.add(Duration(days: i));
+                                if (schedule.repeatDays.contains(candidateDay.weekday)) {
+                                  nextRunTime = DateTime(
+                                    candidateDay.year,
+                                    candidateDay.month,
+                                    candidateDay.day,
+                                    selectedStart.hour,
+                                    selectedStart.minute,
+                                  );
+                                  if (nextRunTime.isAfter(now)) break;
+                                }
+                              }
+                            }
+
                             await FirebaseFirestore.instance
                                 .collection('irrigationSchedules')
                                 .doc(schedule.id)
@@ -844,9 +947,10 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                               'zoneId': field['id'],
                               'zoneName': field['name'] ?? field['id'],
                               'startTime': Timestamp.fromDate(selectedStart),
+                              'nextRun': nextRunTime != null ? Timestamp.fromDate(nextRunTime) : null,
                               'durationMinutes': duration,
                               'status': 'scheduled',
-                              'updatedAt': Timestamp.fromDate(DateTime.now()),
+                              'updatedAt': Timestamp.fromDate(now),
                             });
                             Get.back();
                             Get.snackbar('Updated', 'Schedule updated');

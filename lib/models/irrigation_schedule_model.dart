@@ -108,9 +108,6 @@ class IrrigationScheduleModel {
         isManual: map['isManual'] is bool ? map['isManual'] as bool : (map['isManual'] == true),
       );
     } catch (e) {
-      // If there's an error, create a minimal valid model
-      print('Error parsing IrrigationScheduleModel: $e');
-      print('Map data: $map');
       rethrow;
     }
   }

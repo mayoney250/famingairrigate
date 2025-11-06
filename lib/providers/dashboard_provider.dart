@@ -78,7 +78,7 @@ class DashboardProvider with ChangeNotifier {
         await fetchAndSetLiveWeather();
       }
     } catch (e) {
-      print('Failed to geocode address: $e');
+      log('Failed to geocode address: $e');
     }
   }
 
@@ -153,6 +153,15 @@ class DashboardProvider with ChangeNotifier {
 
       // Load data in parallel, but don't let one failure stop the others
       final results = await Future.wait([
+        // Sync irrigation statuses before reading
+        _statusService.startDueSchedules().catchError((e) {
+          log('Error in startDueSchedules: $e');
+          return 0;
+        }),
+        _statusService.markDueIrrigationsCompleted().catchError((e) {
+          log('Error in markDueIrrigationsCompleted: $e');
+          return 0;
+        }),
         _loadUpcoming(userId).catchError((e) {
           log('Error in _loadUpcoming: $e');
           return null;
@@ -179,6 +188,13 @@ class DashboardProvider with ChangeNotifier {
       }
       await _refreshDailySoilAverage();
       await _refreshWeeklyWaterUsage();
+      // Start background status sync every 60s (auto-start due + auto-complete)
+      _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
+        try {
+          await _statusService.startDueSchedules();
+          await _statusService.markDueIrrigationsCompleted();
+        } catch (_) {}
+      });
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
@@ -197,9 +213,7 @@ class DashboardProvider with ChangeNotifier {
 
         final filtered = all.where((s) {
           if (!s.isActive) return false;
-          // Scope by field/zone id; legacy data without alignment will still show globally
-          if (s.zoneId.isNotEmpty && s.zoneId != _selectedFarmId) return false;
-
+          // Show across all fields
           if (s.status == 'scheduled') return startFor(s).isAfter(now);
           if (s.status == 'running') return endFor(s).isAfter(now);
           return false; // hide stopped/completed
@@ -379,6 +393,13 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    _aggTimer?.cancel();
+    super.dispose();
+  }
+
   // Live/streamed sensor and flow meter values
   final SensorDataService _sensorDataService = SensorDataService();
   final FlowMeterService _flowMeterService = FlowMeterService();
@@ -391,6 +412,7 @@ class DashboardProvider with ChangeNotifier {
   String? get lastActionError => _lastActionError;
 
   Timer? _aggTimer;
+  Timer? _statusTimer;
 
   DateTime _startOfToday() {
     final now = DateTime.now();

@@ -9,24 +9,12 @@ class FieldService {
   // Create new field
   Future<String?> createField(FieldModel field) async {
     try {
-      print('🚀 Creating field: ${field.label} for user: ${field.userId}');
-      dev.log('🚀 Creating field: ${field.label} for user: ${field.userId}');
-      
       final fieldData = field.toMap();
-      print('📝 Field data: $fieldData');
-      dev.log('📝 Field data: $fieldData');
-      
       final docRef = await _firestore.collection(_collection).add(fieldData);
-      print('✅ Field created successfully! ID: ${docRef.id}');
-      dev.log('✅ Field created successfully! ID: ${docRef.id}');
+      dev.log('Field created: ${docRef.id}');
       return docRef.id;
-    } catch (e, stackTrace) {
-      print('❌ Error creating field: $e');
-      print('❌ Stack trace: $stackTrace');
-      print('❌ Error type: ${e.runtimeType}');
-      dev.log('❌ Error creating field: $e');
-      dev.log('❌ Stack trace: $stackTrace');
-      dev.log('❌ Error type: ${e.runtimeType}');
+    } catch (e) {
+      dev.log('Error creating field: $e');
       return null;
     }
   }
@@ -62,7 +50,6 @@ class FieldService {
       }
       return null;
     } catch (e) {
-      print('❌ Error getting field: $e');
       dev.log('Error getting field: $e');
       return null;
     }
@@ -72,11 +59,9 @@ class FieldService {
   Future<bool> updateField(String fieldId, Map<String, dynamic> data) async {
     try {
       await _firestore.collection(_collection).doc(fieldId).update(data);
-      print('✅ Field updated: $fieldId');
       dev.log('Field updated: $fieldId');
       return true;
     } catch (e) {
-      print('❌ Error updating field: $e');
       dev.log('Error updating field: $e');
       return false;
     }
@@ -86,11 +71,9 @@ class FieldService {
   Future<bool> deleteField(String fieldId) async {
     try {
       await _firestore.collection(_collection).doc(fieldId).delete();
-      print('✅ Field deleted: $fieldId');
       dev.log('Field deleted: $fieldId');
       return true;
     } catch (e) {
-      print('❌ Error deleting field: $e');
       dev.log('Error deleting field: $e');
       return false;
     }
@@ -102,11 +85,9 @@ class FieldService {
       await _firestore.collection(_collection).doc(fieldId).update({
         'isActive': isActive,
       });
-      print('✅ Field status updated: $fieldId -> $isActive');
       dev.log('Field status updated: $fieldId -> $isActive');
       return true;
     } catch (e) {
-      print('❌ Error toggling field status: $e');
       dev.log('Error toggling field status: $e');
       return false;
     }
@@ -120,7 +101,6 @@ class FieldService {
       });
       return true;
     } catch (e) {
-      print('❌ Error updating field moisture: $e');
       dev.log('Error updating field moisture: $e');
       return false;
     }
@@ -145,7 +125,6 @@ class FieldService {
 
       return totalArea;
     } catch (e) {
-      print('❌ Error getting total field area: $e');
       dev.log('Error getting total field area: $e');
       return 0;
     }
