@@ -22,12 +22,14 @@ class AddFieldModal {
     final fieldNameController = TextEditingController(text: field?.label ?? '');
     final fieldLabelController = TextEditingController(text: field?.label ?? '');
     final descriptionController = TextEditingController();
-    final latController = TextEditingController(text: (field?.borderCoordinates.isNotEmpty ?? false)
-        ? field!.borderCoordinates.first.latitude.toString()
-        : '');
-    final lngController = TextEditingController(text: (field?.borderCoordinates.isNotEmpty ?? false)
-        ? field!.borderCoordinates.first.longitude.toString()
-        : '');
+    
+    final hasCoords = (field?.borderCoordinates?.isNotEmpty ?? false);
+    final latController = TextEditingController(
+      text: hasCoords ? field!.borderCoordinates.first.latitude.toString() : '',
+    );
+    final lngController = TextEditingController(
+      text: hasCoords ? field!.borderCoordinates.first.longitude.toString() : '',
+    );
     String soilType = 'Unknown';
     String growthStage = 'Germination';
     String cropType = 'Unknown';
@@ -253,7 +255,7 @@ class AddFieldModal {
                                 'cropType': effectiveCropType,
                                 'description': descriptionController.text.trim(),
                                 if (lat != null && lng != null) 'borderCoordinates': [
-                                  {'latitude': lat, 'longitude': lng}
+                                  GeoPoint(lat, lng)
                                 ],
                               };
                               success = await fieldService.updateField(field!.id, updatedData);

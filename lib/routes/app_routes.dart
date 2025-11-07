@@ -5,10 +5,13 @@ import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/fields/add_field_screen.dart';
+import '../screens/fields/add_field_with_map_screen.dart';
 import '../screens/fields/fields_screen.dart';
 import '../screens/irrigation/irrigation_list_screen.dart';
 import '../screens/irrigation/irrigation_control_screen.dart';
+import '../screens/irrigation/irrigation_planning_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../models/field_model.dart';
 import '../screens/sensors/sensors_screen.dart';
 import '../screens/sensors/sensor_detail_screen.dart';
 import '../screens/alerts/alerts_list_screen.dart';
@@ -30,6 +33,7 @@ class AppRoutes {
   static const String irrigationList = '/irrigation-list';
   static const String irrigationControl = '/irrigation-control';
   static const String irrigationDetail = '/irrigation-detail';
+  static const String irrigationPlanning = '/irrigation-planning';
   static const String addIrrigation = '/add-irrigation';
   static const String fields = '/fields';
   static const String addField = '/add-field';
@@ -83,13 +87,21 @@ class AppRoutes {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+      name: irrigationPlanning,
+      page: () {
+        final field = Get.arguments as FieldModel;
+        return IrrigationPlanningScreen(field: field);
+      },
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
       name: fields,
       page: () => const FieldsScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
       name: addField,
-      page: () => const AddFieldScreen(),
+      page: () => const AddFieldWithMapScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

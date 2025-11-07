@@ -13,7 +13,7 @@ import '../../routes/app_routes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
-import '../../widgets/modals/add_field_modal.dart';
+
 // dev-only simulation imports removed
 
 class DashboardScreen extends StatefulWidget {
@@ -1026,15 +1026,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () async {
-                        final fieldCreated = await AddFieldModal.show(context, userId: userId);
-                        
-                        if (fieldCreated) {
-                          Get.back();
-                        }
+                      onPressed: () {
+                        Get.back();
+                        Get.offAllNamed(AppRoutes.fields);
                       },
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Add Field'),
+                      label: const Text('Go to Fields'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: FamingaBrandColors.primaryOrange,
                         foregroundColor: FamingaBrandColors.white,

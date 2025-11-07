@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -545,10 +546,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (userId != null) {
           // Upload to Firebase Storage
           final AuthService authService = AuthService();
-          final imageUrl = await authService.uploadProfilePicture(
-            userId,
-            File(image.path),
-          );
+          String imageUrl;
+          
+          if (kIsWeb) {
+            // For web, read bytes and upload
+            final bytes = await image.readAsBytes();
+            imageUrl = await authService.uploadProfilePictureBytes(
+              userId,
+              bytes,
+              image.name,
+            );
+          } else {
+            // For mobile, use File
+            imageUrl = await authService.uploadProfilePicture(
+              userId,
+              File(image.path),
+            );
+          }
 
           // Update Firestore
           await FirebaseFirestore.instance

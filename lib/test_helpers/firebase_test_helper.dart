@@ -7,6 +7,7 @@ import '../services/alert_service.dart';
 import '../services/weather_service.dart';
 import '../services/irrigation_log_service.dart';
 import '../models/irrigation_zone_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/irrigation_schedule_model.dart';
 import '../models/sensor_data_model.dart';
 import '../models/weather_data_model.dart';
@@ -90,19 +91,24 @@ class FirebaseTestHelper {
   
   static Future<String> _testCreateZone() async {
     final zoneService = IrrigationZoneService();
-    final zone = IrrigationZoneModel(
+    final zone = IrrigationZone(
       id: '',
       userId: userId,
       fieldId: 'test_field_1',
       name: 'Test Zone A',
-      areaHectares: 2.5,
-      cropType: 'Maize',
+      zoneType: IrrigationZoneType.sprinkler,
+      drawingType: DrawingType.polygon,
+      coordinates: [
+        GeoPoint(-1.286389, 36.817223),
+        GeoPoint(-1.286489, 36.817323),
+        GeoPoint(-1.286589, 36.817223),
+      ],
+      color: '#4CAF50',
       isActive: true,
-      waterUsageToday: 0,
-      waterUsageThisWeek: 0,
       createdAt: DateTime.now(),
     );
-    return await zoneService.createZone(zone);
+    final id = await zoneService.createZone(zone);
+    return id ?? 'error';
   }
   
   static Future<String> _testCreateSchedule(String zoneId) async {

@@ -12,7 +12,6 @@ import '../../services/irrigation_service.dart';
 import '../../services/irrigation_status_service.dart';
 import '../../routes/app_routes.dart';
 import '../../services/field_service.dart';
-import '../../widgets/modals/add_field_modal.dart';
 
 class IrrigationListScreen extends StatefulWidget {
   const IrrigationListScreen({super.key});
@@ -1152,21 +1151,12 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton.icon(
-                      onPressed: () async {
-                        // Open the shared Add Field modal
-                        final fieldCreated = await AddFieldModal.show(context, userId: userId);
-                        
-                        // If field was created successfully
-                        if (fieldCreated) {
-                          // Close the "no fields" modal
-                          Get.back();
-                          
-                          // Reopen the Add Schedule modal
-                          _openCreateSchedule(context, userId);
-                        }
+                      onPressed: () {
+                        Get.back();
+                        Get.offAllNamed(AppRoutes.fields);
                       },
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Create Field'),
+                      label: const Text('Go to Fields'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: FamingaBrandColors.primaryOrange,
                         foregroundColor: Colors.white,
