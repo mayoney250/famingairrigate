@@ -5,8 +5,7 @@ import '../../config/colors.dart';
 import '../../providers/theme_provider.dart';
 import 'terms_and_services_screen.dart';
 import 'privacy_policy_screen.dart';
-import 'download_data_screen.dart';
-import 'water_usage_goals_screen.dart';
+import 'reports_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -82,17 +81,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   setState(() => _autoIrrigation = value);
                 },
               ),
-              _buildListTile(
-                Icons.water,
-                'Water Usage Goals',
-                'Set water conservation targets',
-                () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const WaterUsageGoalsScreen()),
-                  );
-                },
-              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -140,13 +128,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
             'Data & Storage',
             [
               _buildListTile(
-                Icons.cloud_download_outlined,
-                'Download Data',
-                'Export your irrigation data',
+                Icons.assessment_outlined,
+                'Reports',
+                'View irrigation statistics and insights',
                 () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const DownloadDataScreen()),
+                    MaterialPageRoute(builder: (context) => const ReportsScreen()),
                   );
                 },
               ),

@@ -107,6 +107,20 @@
       ]
     },
     {
+      "collectionGroup": "irrigationLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "irrigationZones",
       "queryScope": "COLLECTION",
       "fields": [
