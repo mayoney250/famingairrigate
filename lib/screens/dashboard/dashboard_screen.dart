@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
@@ -25,6 +26,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int _selectedIndex = 0;
   int unreadCount = 0;
   List<AlertModel> allAlerts = [];
+  Timer? _refreshTimer;
 
   @override
   void initState() {
@@ -38,7 +40,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
       }
       _loadAlerts();
+      _startAutoRefresh();
     });
+  }
+
+  void _startAutoRefresh() {
+    // Refresh dashboard every 5 seconds to ensure UI stays in sync
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadAlerts() async {
