@@ -28,6 +28,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int unreadCount = 0;
   List<AlertModel> allAlerts = [];
   Timer? _refreshTimer;
+  final ScrollController _scrollController = ScrollController();
+  final GlobalKey _manualStartButtonKey = GlobalKey();
+  bool _isManualStartHighlighted = false;
+  Timer? _highlightTimer;
 
   @override
   void initState() {
@@ -57,6 +61,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _highlightTimer?.cancel();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -183,6 +189,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
             },
             child: SingleChildScrollView(
+              controller: _scrollController,
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -341,6 +348,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  void _scrollToManualStartButton() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final context = _manualStartButtonKey.currentContext;
+      if (context != null) {
+        Scrollable.ensureVisible(
+          context,
+          duration: const Duration(milliseconds: 600),
+          curve: Curves.easeInOut,
+        );
+        
+        setState(() {
+          _isManualStartHighlighted = true;
+        });
+        
+        _highlightTimer?.cancel();
+        _highlightTimer = Timer(const Duration(seconds: 2), () {
+          if (mounted) {
+            setState(() {
+              _isManualStartHighlighted = false;
+            });
+          }
+        });
+      }
+    });
+  }
+
   Widget _buildQuickActions() {
     return Row(
       children: [
@@ -349,13 +382,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Icons.play_circle_outline,
             'Manual Start',
             FamingaBrandColors.primaryOrange,
-            () {
-              Get.snackbar(
-                'Manual Start',
-                'Start irrigation manually',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
+            _scrollToManualStartButton,
           ),
         ),
         const SizedBox(width: 12),
@@ -793,38 +820,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: () async {
-                // Check if fields exist before opening manual irrigation
-                if (dashboardProvider.fields.isEmpty) {
-                  _showNoFieldsModal(context, authProvider.currentUser!.userId);
-                } else {
-                  _showManualStartDialog(dashboardProvider, authProvider);
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: FamingaBrandColors.darkGreen,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
+          AnimatedContainer(
+            key: _manualStartButtonKey,
+            duration: const Duration(milliseconds: 300),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: _isManualStartHighlighted
+                  ? [
+                      BoxShadow(
+                        color: FamingaBrandColors.primaryOrange.withOpacity(0.7),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ]
+                  : [],
+            ),
+            child: SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  // Check if fields exist before opening manual irrigation
+                  if (dashboardProvider.fields.isEmpty) {
+                    _showNoFieldsModal(context, authProvider.currentUser!.userId);
+                  } else {
+                    _showManualStartDialog(dashboardProvider, authProvider);
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _isManualStartHighlighted 
+                      ? FamingaBrandColors.primaryOrange 
+                      : FamingaBrandColors.darkGreen,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
                 ),
-              ),
-              child: const Row(
+                child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.play_arrow, color: FamingaBrandColors.white),
-                  SizedBox(width: 8),
-                  Text(
-                    'START CYCLE MANUALLY',
-                    style: TextStyle(
-                      color: FamingaBrandColors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
-                  ),
+                Icon(
+                Icons.play_arrow,
+                color: FamingaBrandColors.white,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'START CYCLE MANUALLY',
+                  style: TextStyle(
+                  color: FamingaBrandColors.white,
+                  fontWeight: FontWeight.bold,
+                fontSize: 13,
+                ),
+                ),
                 ],
+                ),
               ),
             ),
           ),
