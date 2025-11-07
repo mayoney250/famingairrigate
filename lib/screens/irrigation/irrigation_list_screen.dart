@@ -12,6 +12,7 @@ import '../../services/irrigation_service.dart';
 import '../../services/irrigation_status_service.dart';
 import '../../routes/app_routes.dart';
 import '../../services/field_service.dart';
+import '../../widgets/modals/add_field_modal.dart';
 
 class IrrigationListScreen extends StatefulWidget {
   const IrrigationListScreen({super.key});
@@ -630,7 +631,16 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     );
   }
 
-  void _openCreateSchedule(BuildContext context, String userId) {
+  Future<void> _openCreateSchedule(BuildContext context, String userId) async {
+    // First check if user has any fields
+    final fields = await _fetchFieldOptions(context);
+    
+    if (fields.isEmpty) {
+      _showNoFieldsModal(context, userId);
+      return;
+    }
+
+    // User has fields, proceed with schedule creation
     final nameController = TextEditingController();
     final durationController = TextEditingController(text: '60');
     DateTime selectedStart = DateTime.now().add(const Duration(minutes: 5));
@@ -638,7 +648,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     final dash = Provider.of<DashboardProvider>(context, listen: false);
     String selectedFieldId = dash.selectedFarmId;
     final scheme = Theme.of(context).colorScheme;
-    final fieldsFuture = _fetchFieldOptions(context); // fetch once when modal opens
+    final fieldsFuture = Future.value(fields); // Use already fetched fields
 
     Get.dialog(
       Dialog(
@@ -1052,6 +1062,129 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
           label: 'Profile',
         ),
       ],
+    );
+  }
+
+  void _showNoFieldsModal(BuildContext context, String userId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.landscape_outlined,
+                  size: 40,
+                  color: FamingaBrandColors.primaryOrange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Title
+              Text(
+                'No Fields Found',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Message
+              Text(
+                'You don\'t have any fields registered. Please create a field first to add an irrigation schedule.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 28),
+              
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: isDark 
+                              ? Colors.white.withOpacity(0.3)
+                              : FamingaBrandColors.darkGreen.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        // Open the shared Add Field modal
+                        final fieldCreated = await AddFieldModal.show(context, userId: userId);
+                        
+                        // If field was created successfully
+                        if (fieldCreated) {
+                          // Close the "no fields" modal
+                          Get.back();
+                          
+                          // Reopen the Add Schedule modal
+                          _openCreateSchedule(context, userId);
+                        }
+                      },
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Create Field'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FamingaBrandColors.primaryOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
     );
   }
 }

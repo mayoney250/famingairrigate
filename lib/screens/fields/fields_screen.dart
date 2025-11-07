@@ -14,6 +14,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/field_service.dart';
 import '../../services/irrigation_service.dart';
+import '../../widgets/modals/add_field_modal.dart';
 
 class FieldsScreen extends StatefulWidget {
   const FieldsScreen({super.key});
@@ -67,7 +68,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
         title: const Text('My Fields'),
         actions: [
           TextButton.icon(
-            onPressed: () => _showAddEditFieldModal(context, userId: userId),
+            onPressed: () => AddFieldModal.show(context, userId: userId),
             icon: const Icon(Icons.add),
             label: const Text('Add Field'),
             style: TextButton.styleFrom(
@@ -110,7 +111,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                     final field = filteredFields[index];
                     return _FieldCard(
                       field: field,
-                      onEdit: () => _showAddEditFieldModal(context, field: field, userId: userId),
+                      onEdit: () => AddFieldModal.show(context, userId: userId, field: field),
                       onDelete: () => _confirmDeleteField(context, field),
                       onViewDetails: () => _showFieldDetailsModal(context, field),
                     );
@@ -157,7 +158,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
           Text('Add your first field to get started!', style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: () => _showAddEditFieldModal(context, userId: userId),
+            onPressed: () => AddFieldModal.show(context, userId: userId),
             icon: const Icon(Icons.add),
             label: const Text('Add Field'),
             style: ElevatedButton.styleFrom(
