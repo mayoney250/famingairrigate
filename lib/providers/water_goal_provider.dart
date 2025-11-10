@@ -44,10 +44,3 @@ class WaterGoalProvider with ChangeNotifier {
 
 
 
-
-
-
-<<<<<<< HEAD
-=======
-
->>>>>>> hyacinthe
