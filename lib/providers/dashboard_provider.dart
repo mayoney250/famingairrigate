@@ -9,6 +9,8 @@ import '../services/weather_service.dart';
 import '../services/error_service.dart';
 import '../services/irrigation_status_service.dart';
 import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/sensor_data_model.dart';
 import '../services/sensor_data_service.dart';
 import '../models/flow_meter_model.dart';
@@ -38,33 +40,130 @@ class DashboardProvider with ChangeNotifier {
   // Add location fields to DashboardProvider
   double? _latitude;
   double? _longitude;
+  Box? _weatherBox;
 
   setLocation(double lat, double lon) {
     _latitude = lat;
     _longitude = lon;
     notifyListeners();
   }
+  
+  Future<void> initWeatherCache() async {
+    try {
+      _weatherBox ??= await Hive.openBox('weather');
+      await _loadCachedWeather();
+    } catch (e) {
+      log('Error opening weather cache: $e');
+    }
+  }
+  
+  Future<void> _loadCachedWeather() async {
+    try {
+      final cached = _weatherBox?.get('current_weather') as Map?;
+      if (cached != null) {
+        final ts = DateTime.fromMillisecondsSinceEpoch(cached['ts'] as int);
+        if (DateTime.now().difference(ts) <= const Duration(hours: 3)) {
+          _weatherData = WeatherData.fromMap(Map<String, dynamic>.from(cached['data'] as Map));
+          _latitude = cached['lat'] as double?;
+          _longitude = cached['lon'] as double?;
+          notifyListeners();
+          log('Loaded cached weather: ${_weatherData?.location}');
+        }
+      }
+    } catch (e) {
+      log('Error loading cached weather: $e');
+    }
+  }
+  
+  Future<void> setLocationFromDevice() async {
+    try {
+      final servicesOn = await Geolocator.isLocationServiceEnabled();
+      if (!servicesOn) {
+        log('Location services disabled');
+        return;
+      }
+      
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          log('Location permission denied');
+          return;
+        }
+      }
+      
+      if (perm == LocationPermission.deniedForever) {
+        log('Location permission permanently denied');
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      );
+      
+      setLocation(pos.latitude, pos.longitude);
+      await fetchAndSetLiveWeather();
+    } catch (e) {
+      log('GPS error: $e');
+    }
+  }
 
   Future<void> fetchAndSetLiveWeather() async {
     if (_latitude != null && _longitude != null) {
-      final weather = await _weatherService.fetchCurrentWeatherFromOpenWeather(
-        lat: _latitude!,
-        lon: _longitude!,
-        apiKey: '1bbb141391cf468601f7de322cecb11e', // User-provided key
-      );
-      if (weather != null) {
-        _weatherData = WeatherData(
-          temperature: weather.temperature,
-          feelsLike: weather.temperature,
-          humidity: weather.humidity.toInt(),
-          condition: weather.condition.toLowerCase(),
-          description: weather.description,
-          windSpeed: 3.5,
-          pressure: 1013,
-          timestamp: weather.timestamp,
-          location: weather.location,
-        );
-        notifyListeners();
+      try {
+        final weather = await _weatherService.fetchCurrentWeatherFromOpenWeather(
+          lat: _latitude!,
+          lon: _longitude!,
+          apiKey: '1bbb141391cf468601f7de322cecb11e',
+        ).timeout(const Duration(seconds: 10));
+        
+        if (weather != null) {
+          String mappedCondition;
+          switch (weather.condition.toLowerCase()) {
+            case 'clear':
+              mappedCondition = 'sunny';
+              break;
+            case 'clouds':
+              mappedCondition = 'cloudy';
+              break;
+            case 'rain':
+            case 'drizzle':
+              mappedCondition = 'rainy';
+              break;
+            case 'thunderstorm':
+              mappedCondition = 'stormy';
+              break;
+            case 'snow':
+              mappedCondition = 'snowy';
+              break;
+            default:
+              mappedCondition = 'unknown';
+          }
+          
+          _weatherData = WeatherData(
+            temperature: weather.temperature,
+            feelsLike: weather.temperature,
+            humidity: weather.humidity.toInt(),
+            condition: mappedCondition,
+            description: weather.description,
+            windSpeed: 3.5,
+            pressure: 1013,
+            timestamp: weather.timestamp,
+            location: weather.location,
+          );
+          
+          await _weatherBox?.put('current_weather', {
+            'ts': DateTime.now().millisecondsSinceEpoch,
+            'lat': _latitude,
+            'lon': _longitude,
+            'data': _weatherData!.toMap(),
+          });
+          
+          notifyListeners();
+          log('Weather updated and cached: ${weather.location}');
+        }
+      } catch (e) {
+        log('Error fetching weather: $e - Using cached data');
       }
     }
   }
@@ -150,6 +249,8 @@ class DashboardProvider with ChangeNotifier {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+      
+      await initWeatherCache();
 
       // Load data in parallel, but don't let one failure stop the others
       final results = await Future.wait([
@@ -180,6 +281,8 @@ class DashboardProvider with ChangeNotifier {
           return null;
         }),
       ]);
+      
+      await setLocationFromDevice();
 
       _isLoading = false;
       notifyListeners();

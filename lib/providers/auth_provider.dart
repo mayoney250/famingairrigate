@@ -5,9 +5,11 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
 import '../services/user_local_service.dart';
+import '../services/fcm_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final FCMService _fcmService = FCMService();
   
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -28,8 +30,10 @@ class AuthProvider with ChangeNotifier {
     _authService.authStateChanges.listen((User? user) async {
       if (user != null) {
         await loadUserData(user.uid);
+        await _fcmService.initialize();
       } else {
         _currentUser = null;
+        await _fcmService.deleteToken();
         notifyListeners();
       }
       _hasAuthChecked = true;

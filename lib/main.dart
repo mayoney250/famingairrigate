@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'models/alert_model.dart';
 import 'models/sensor_model.dart';
 import 'models/sensor_reading_model.dart';
@@ -12,12 +13,23 @@ import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
 import 'routes/app_routes.dart';
+import 'services/fcm_service.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  await FirebaseConfig.initialize();
+  await firebaseMessagingBackgroundHandler(message);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Initialize Firebase
   await FirebaseConfig.initialize();
+  
+  // Initialize FCM background handler
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  
   await Hive.initFlutter();
   Hive.registerAdapter(AlertModelAdapter());
   Hive.registerAdapter(SensorModelAdapter());

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_cancellable_tile_provider/flutter_map_cancellable_tile_provider.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:geocoding/geocoding.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'dart:async';
 
 enum DrawingMode {
@@ -54,8 +56,16 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
     _drawingMode = widget.initialDrawingMode;
     if (widget.initialPoints != null && widget.initialPoints!.isNotEmpty) {
       _points.addAll(widget.initialPoints!);
+      // If we have initial points, center on them instead of current location
+      if (_points.isNotEmpty) {
+        _currentCenter = _points.first;
+      } else {
+        _getCurrentLocation();
+      }
+    } else {
+      // Request user's location
+      _getCurrentLocation();
     }
-    _getCurrentLocation();
   }
 
   @override
@@ -72,6 +82,14 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
       
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location services disabled. Using default location.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
         _setDefaultLocation();
         return;
       }
@@ -80,12 +98,28 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Location permission denied. Using default location.'),
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
           _setDefaultLocation();
           return;
         }
       }
 
       if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location permission permanently denied. Using default location.'),
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
         _setDefaultLocation();
         return;
       }
@@ -96,7 +130,24 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
       });
       
       _mapController.move(_currentCenter, 15);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Centered on your location: ${position.latitude.toStringAsFixed(4)}, ${position.longitude.toStringAsFixed(4)}'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
     } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not get location. Using default location.'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
       _setDefaultLocation();
     } finally {
       setState(() => _isLoading = false);
@@ -117,21 +168,55 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
     try {
       setState(() => _isLoading = true);
       
-      List<Location> locations = await locationFromAddress(query);
-      if (locations.isNotEmpty) {
-        final location = locations.first;
-        final newPosition = LatLng(location.latitude, location.longitude);
+      // Use Nominatim (OpenStreetMap's free geocoding service)
+      final url = Uri.parse(
+        'https://nominatim.openstreetmap.org/search?q=${Uri.encodeComponent(query)}&format=json&limit=1'
+      );
+      
+      final response = await http.get(
+        url,
+        headers: {
+          'User-Agent': 'FamingaIrrigation/1.0', // Required by Nominatim
+        },
+      );
+      
+      if (response.statusCode == 200) {
+        final List results = json.decode(response.body);
         
-        setState(() {
-          _currentCenter = newPosition;
-        });
-        
-        _mapController.move(newPosition, 15);
+        if (results.isNotEmpty) {
+          final result = results.first;
+          final lat = double.parse(result['lat']);
+          final lon = double.parse(result['lon']);
+          final newPosition = LatLng(lat, lon);
+          
+          setState(() {
+            _currentCenter = newPosition;
+          });
+          
+          _mapController.move(newPosition, 15);
+          
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Found: ${result['display_name']}'),
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Location not found. Try a different search term.')),
+            );
+          }
+        }
+      } else {
+        throw Exception('Search service unavailable');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Location not found: $e')),
+          SnackBar(content: Text('Search error: Unable to find location')),
         );
       }
     } finally {
@@ -243,6 +328,7 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
                   ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                   : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
               userAgentPackageName: 'com.faminga.irrigation',
+              tileProvider: CancellableNetworkTileProvider(),
             ),
             
             if (_points.isNotEmpty && _drawingMode == DrawingMode.polygon && _points.length >= 3)
