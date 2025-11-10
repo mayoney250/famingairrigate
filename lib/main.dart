@@ -15,10 +15,6 @@ import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
 import 'routes/app_routes.dart';
 
-import 'l10n/app_localizations.dart';
-import 'providers/locale_provider.dart';
-import 'screens/settings_screen.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -36,17 +32,11 @@ void main() async {
   await Hive.openBox<SensorReadingModel>('readingsBox');
   await Hive.openBox<UserModel>('userBox');
 
-  // Load persisted locale before starting the app to avoid UI flash
-  final localeProvider = LocaleProvider();
-  await localeProvider.loadLocale();
-
-  // Pass the pre-loaded provider instance into the app so it can be provided to the tree
-  runApp(FamingaIrrigationApp(localeProvider: localeProvider));
+  runApp(const FamingaIrrigationApp());
 }
 
 class FamingaIrrigationApp extends StatelessWidget {
-  final LocaleProvider localeProvider;
-  const FamingaIrrigationApp({super.key, required this.localeProvider});
+  const FamingaIrrigationApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -55,11 +45,9 @@ class FamingaIrrigationApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
-        // Provide the pre-loaded LocaleProvider instance
-        ChangeNotifierProvider<LocaleProvider>.value(value: localeProvider),
       ],
-      child: Consumer2<ThemeProvider, LocaleProvider>(
-        builder: (context, themeProvider, localeProvider, _) {
+      child: Consumer<ThemeProvider>(
+        builder: (context, themeProvider, _) {
           return GetMaterialApp(
             title: 'Faminga Irrigation',
             debugShowCheckedModeBanner: false,
@@ -72,27 +60,6 @@ class FamingaIrrigationApp extends StatelessWidget {
             // Routing
             initialRoute: AppRoutes.splash,
             getPages: AppRoutes.routes,
-
-            // Localization wiring
-            locale: localeProvider.locale,
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            localeResolutionCallback: (deviceLocale, supportedLocales) {
-              if (localeProvider.locale != null) return localeProvider.locale;
-              if (deviceLocale == null) return supportedLocales.first;
-              for (final locale in supportedLocales) {
-                if (locale.languageCode == deviceLocale.languageCode) return locale;
-              }
-              return supportedLocales.first;
-            }, 
-            // locale: languageProvider.currentLocale,
-            // localizationsDelegates: AppLocalizations.localizationsDelegates,
-            // supportedLocales: AppLocalizations.supportedLocales,
           );
         },
       ),

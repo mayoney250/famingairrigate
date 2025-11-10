@@ -28,10 +28,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int unreadCount = 0;
   List<AlertModel> allAlerts = [];
   Timer? _refreshTimer;
-<<<<<<< HEAD
-=======
   String _selectedLanguage = 'English';
->>>>>>> hyacinthe
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _manualStartButtonKey = GlobalKey();
   bool _isManualStartHighlighted = false;
@@ -971,9 +968,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isManualStartHighlighted 
                       ? FamingaBrandColors.primaryOrange 
-<<<<<<< HEAD
-                      : FamingaBrandColors.darkGreen,
-=======
                       : (Theme.of(context).brightness == Brightness.dark
                           ? Theme.of(context).colorScheme.primaryContainer
                           : FamingaBrandColors.darkGreen),
@@ -982,7 +976,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       : (Theme.of(context).brightness == Brightness.dark
                           ? Theme.of(context).colorScheme.onPrimaryContainer
                           : Colors.white),
->>>>>>> hyacinthe
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
