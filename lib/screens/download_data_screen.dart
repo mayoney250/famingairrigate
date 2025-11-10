@@ -256,9 +256,11 @@ List<Map<String, dynamic>> alerts = [];
       await Printing.sharePdf(bytes: pdfBytes, filename: 'irrigation_report.pdf');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('PDF Report exported successfully!'),
-          backgroundColor: Colors.green,
+        SnackBar(
+          content: const Text('PDF Report exported successfully!'),
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Colors.green,
         ),
       );
     } catch (e) {
@@ -326,7 +328,9 @@ List<Map<String, dynamic>> alerts = [];
           child: LinearProgressIndicator(
             value: goalAmount > 0 ? (actualUsage/clamp(goalAmount, 1, double.infinity)) : 0,
             backgroundColor: Colors.grey[300],
-            valueColor: AlwaysStoppedAnimation(Colors.green),
+            valueColor: AlwaysStoppedAnimation(
+              Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.green,
+            ),
             minHeight: 12,
           ),
         ) : const Text('No goal set for this period.'),

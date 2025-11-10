@@ -141,8 +141,12 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
         Get.snackbar(
           'Success',
           'Field "${field.label}" ${widget.existingField != null ? "updated" : "created"} successfully!',
-          backgroundColor: Colors.green,
-          colorText: Colors.white,
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.primaryContainer
+              : Colors.green,
+          colorText: Theme.of(context).brightness == Brightness.dark
+              ? Theme.of(context).colorScheme.onPrimaryContainer
+              : Colors.white,
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 3),
         );
@@ -477,8 +481,12 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
               Get.snackbar(
                 'Success',
                 'Field boundary saved with ${points.length} points',
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
+                backgroundColor: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.primaryContainer
+                    : Colors.green,
+                colorText: Theme.of(context).brightness == Brightness.dark
+                    ? Theme.of(context).colorScheme.onPrimaryContainer
+                    : Colors.white,
               );
             },
           ),
