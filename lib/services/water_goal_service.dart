@@ -93,14 +93,3 @@ class WaterGoalService {
 
 
 
-
-
-
-
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-
-=======
->>>>>>> main
->>>>>>> hyacinthe

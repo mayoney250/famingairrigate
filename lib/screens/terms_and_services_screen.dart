@@ -15,14 +15,3 @@ class TermsAndServicesScreen extends StatelessWidget {
 
 
 
-
-
-
-
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-
-=======
->>>>>>> main
->>>>>>> hyacinthe

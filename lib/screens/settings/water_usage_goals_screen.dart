@@ -307,10 +307,6 @@ class _WaterUsageGoalsScreenState extends State<WaterUsageGoalsScreen> {
   }
 }
 
-=======
->>>>>>> main
->>>>>>> hyacinthe
-
 
 
 

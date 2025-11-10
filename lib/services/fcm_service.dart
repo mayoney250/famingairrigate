@@ -214,16 +214,16 @@ class FCMService {
     );
   }
 
-  int _getNotificationColor(String type) {
+  Color _getNotificationColor(String type) {
     switch (type) {
       case 'irrigation_needed':
-        return 0xFF2196F3; // Blue
+        return const Color(0xFF2196F3); // Blue
       case 'water_low':
-        return 0xFFFF9800; // Orange
+        return const Color(0xFFFF9800); // Orange
       case 'critical':
-        return 0xFFF44336; // Red
+        return const Color(0xFFF44336); // Red
       default:
-        return 0xFF4CAF50; // Green
+        return const Color(0xFF4CAF50); // Green
     }
   }
 
