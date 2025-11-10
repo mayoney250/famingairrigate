@@ -24,3 +24,10 @@ All replacements should use:
 
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
+>>>>>>> hyacinthe

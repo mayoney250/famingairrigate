@@ -507,7 +507,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
 
                             if (success) {
                               Get.snackbar('Success', 'Field ${isEditing ? 'updated' : 'added'} successfully.',
-                                  icon: Icon(Icons.check_circle, color: Colors.green));
+                                  icon: Icon(Icons.check_circle, color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.green));
                             } else {
                               Get.snackbar('Error', 'Failed to save field.',
                                   icon: Icon(Icons.error, color: Colors.red));

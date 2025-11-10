@@ -468,8 +468,12 @@ class _IrrigationPlanningScreenState extends State<IrrigationPlanningScreen> {
                 Get.snackbar(
                   'Success',
                   'Irrigation zone created successfully',
-                  backgroundColor: Colors.green,
-                  colorText: Colors.white,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Colors.green,
+                  colorText: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Colors.white,
                 );
               } else {
                 Get.snackbar(
@@ -512,8 +516,12 @@ class _IrrigationPlanningScreenState extends State<IrrigationPlanningScreen> {
                 Get.snackbar(
                   'Success',
                   'Zone deleted successfully',
-                  backgroundColor: Colors.green,
-                  colorText: Colors.white,
+                  backgroundColor: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.primaryContainer
+                      : Colors.green,
+                  colorText: Theme.of(context).brightness == Brightness.dark
+                      ? Theme.of(context).colorScheme.onPrimaryContainer
+                      : Colors.white,
                 );
               } else {
                 Get.snackbar(

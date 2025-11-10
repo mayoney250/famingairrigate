@@ -19,3 +19,10 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
 
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+
+=======
+>>>>>>> main
+>>>>>>> hyacinthe

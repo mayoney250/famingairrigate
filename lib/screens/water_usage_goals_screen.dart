@@ -99,11 +99,12 @@ class _WaterUsageGoalsScreenState extends State<WaterUsageGoalsScreen> {
                               itemCount: goals.length,
                               itemBuilder: (_, idx) {
                                 final g = goals[idx];
+                                final isDark = Theme.of(context).brightness == Brightness.dark;
                                 return ListTile(
                                   title: Text('${g.goalAmount} L'),
                                   subtitle: Text(
                                       'Set: ${g.createdAt.toLocal().toString().substring(0, 16)}'),
-                                  trailing: g.active ? const Icon(Icons.check_circle, color: Colors.green) : null,
+                                  trailing: g.active ? Icon(Icons.check_circle, color: isDark ? Colors.white : Colors.green) : null,
                                 );
                               },
                             ),

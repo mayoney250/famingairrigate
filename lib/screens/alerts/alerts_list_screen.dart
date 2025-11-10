@@ -30,7 +30,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
       case 'low':
       case 'info':
       default:
-        return Colors.green;
+        return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.green;
     }
   }
 

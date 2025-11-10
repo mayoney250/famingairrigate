@@ -476,43 +476,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showImagePicker() {
+    final scheme = Theme.of(context).colorScheme;
+    
     Get.bottomSheet(
       Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        decoration: BoxDecoration(
+          color: scheme.surface,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: 20),
+              decoration: BoxDecoration(
+                color: scheme.onSurfaceVariant.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Text(
               'Change Profile Picture',
-              style: TextStyle(
-                fontSize: 18,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 20),
             ListTile(
-              leading: Icon(Icons.camera_alt, color: Theme.of(context).colorScheme.primary),
-              title: const Text('Take Photo'),
+              leading: Icon(Icons.camera_alt, color: scheme.primary),
+              title: Text('Take Photo', style: TextStyle(color: scheme.onSurface)),
               onTap: () {
                 Get.back();
                 _pickImage(ImageSource.camera);
               },
             ),
             ListTile(
-              leading: Icon(Icons.photo_library, color: Theme.of(context).colorScheme.primary),
-              title: const Text('Choose from Gallery'),
+              leading: Icon(Icons.photo_library, color: scheme.primary),
+              title: Text('Choose from Gallery', style: TextStyle(color: scheme.onSurface)),
               onTap: () {
                 Get.back();
                 _pickImage(ImageSource.gallery);
               },
             ),
             ListTile(
-              leading: Icon(Icons.delete, color: Theme.of(context).colorScheme.error),
-              title: const Text('Remove Photo'),
+              leading: Icon(Icons.delete, color: scheme.error),
+              title: Text('Remove Photo', style: TextStyle(color: scheme.error)),
               onTap: () {
                 Get.back();
                 _removeProfilePicture();
@@ -521,10 +538,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         ),
       ),
+      isDismissible: true,
+      enableDrag: true,
     );
   }
 
   Future<void> _pickImage(ImageSource source) async {
+    bool isLoadingShown = false;
     try {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
@@ -535,21 +555,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       );
 
       if (image != null) {
-        // Show loading
-          Get.dialog(Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+        if (!mounted) return;
+        
+        Get.dialog(
+          Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
           barrierDismissible: false,
         );
+        isLoadingShown = true;
 
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final userId = authProvider.currentUser?.userId;
 
         if (userId != null) {
-          // Upload to Firebase Storage
           final AuthService authService = AuthService();
           String imageUrl;
           
           if (kIsWeb) {
-            // For web, read bytes and upload
             final bytes = await image.readAsBytes();
             imageUrl = await authService.uploadProfilePictureBytes(
               userId,
@@ -557,23 +578,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
               image.name,
             );
           } else {
-            // For mobile, use File
             imageUrl = await authService.uploadProfilePicture(
               userId,
               File(image.path),
             );
           }
 
-          // Update Firestore
           await FirebaseFirestore.instance
               .collection('users')
               .doc(userId)
               .update({'avatar': imageUrl});
 
-          // Reload user data
           await authProvider.loadUserData(userId);
 
-          Get.back(); // Close loading
+          if (isLoadingShown) {
+            Get.back();
+            isLoadingShown = false;
+          }
+
+          if (!mounted) return;
+          
           Get.snackbar(
             'Success',
             'Profile picture updated successfully!',
@@ -581,10 +605,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
             backgroundColor: Theme.of(context).colorScheme.secondary,
             colorText: Theme.of(context).colorScheme.onSecondary,
           );
+        } else {
+          if (isLoadingShown) {
+            Get.back();
+            isLoadingShown = false;
+          }
+          Get.snackbar(
+            'Error',
+            'User not found',
+            snackPosition: SnackPosition.BOTTOM,
+            backgroundColor: Theme.of(context).colorScheme.error,
+            colorText: Theme.of(context).colorScheme.onError,
+          );
         }
       }
     } catch (e) {
-      Get.back(); // Close loading if open
+      if (isLoadingShown) {
+        Get.back();
+        isLoadingShown = false;
+      }
+      if (!mounted) return;
       Get.snackbar(
         'Error',
         'Failed to update profile picture: ${e.toString()}',
@@ -596,26 +636,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _removeProfilePicture() async {
+    bool isLoadingShown = false;
     try {
-      // Show loading
-      Get.dialog(Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
+      if (!mounted) return;
+      
+      Get.dialog(
+        Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary)),
         barrierDismissible: false,
       );
+      isLoadingShown = true;
 
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final userId = authProvider.currentUser?.userId;
 
       if (userId != null) {
-        // Update Firestore
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
             .update({'avatar': null});
 
-        // Reload user data
         await authProvider.loadUserData(userId);
 
-        Get.back(); // Close loading
+        if (isLoadingShown) {
+          Get.back();
+          isLoadingShown = false;
+        }
+
+        if (!mounted) return;
+        
         Get.snackbar(
           'Success',
           'Profile picture removed!',
@@ -623,9 +671,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           backgroundColor: Theme.of(context).colorScheme.secondary,
           colorText: Theme.of(context).colorScheme.onSecondary,
         );
+      } else {
+        if (isLoadingShown) {
+          Get.back();
+          isLoadingShown = false;
+        }
+        Get.snackbar(
+          'Error',
+          'User not found',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Theme.of(context).colorScheme.error,
+          colorText: Theme.of(context).colorScheme.onError,
+        );
       }
     } catch (e) {
-      Get.back(); // Close loading if open
+      if (isLoadingShown) {
+        Get.back();
+        isLoadingShown = false;
+      }
+      if (!mounted) return;
       Get.snackbar(
         'Error',
         'Failed to remove profile picture: ${e.toString()}',

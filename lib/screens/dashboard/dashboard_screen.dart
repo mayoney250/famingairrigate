@@ -28,6 +28,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int unreadCount = 0;
   List<AlertModel> allAlerts = [];
   Timer? _refreshTimer;
+<<<<<<< HEAD
+=======
+  String _selectedLanguage = 'English';
+>>>>>>> hyacinthe
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _manualStartButtonKey = GlobalKey();
   bool _isManualStartHighlighted = false;
@@ -224,6 +228,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(height: 20),
                   // simulation buttons removed
 
+                  // Language Selector
+                  Text(
+                    'Language',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: FamingaBrandColors.textPrimary,
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLanguageSelector(),
+                  const SizedBox(height: 20),
+
                   // Next Schedule Cycle
                   Text(
                     'Next Schedule Cycle',
@@ -260,7 +276,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Widget _buildSystemStatusCard(DashboardProvider dashboardProvider) {
     final systemMsg = dashboardProvider.systemSoilStatusSummary();
-    Color cardBg = FamingaBrandColors.darkGreen;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    Color cardBg = isDark ? Theme.of(context).colorScheme.primaryContainer : FamingaBrandColors.darkGreen;
     IconData cardIcon = Icons.check_circle;
     if (systemMsg.contains('dry')) {
       cardBg = Colors.orange.shade700;
@@ -269,7 +286,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       cardBg = Colors.blue.shade700;
       cardIcon = Icons.water_drop_outlined;
     } else if (systemMsg.contains('optimal')) {
-      cardBg = Colors.green.shade700;
+      cardBg = isDark ? Theme.of(context).colorScheme.primaryContainer : Colors.green.shade700;
       cardIcon = Icons.check_circle;
     } else if (systemMsg.contains('No soil moisture data')) {
       cardBg = Colors.grey.shade600;
@@ -483,7 +500,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   value: avg != null ? moisturePercent : 0.0,
                   strokeWidth: 10,
                   backgroundColor: FamingaBrandColors.borderColor,
-                  valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.darkGreen),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.darkGreen,
+                  ),
                 ),
               ),
               Column(
@@ -491,8 +512,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     moistureText,
-                    style: const TextStyle(
-                      color: FamingaBrandColors.darkGreen,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : FamingaBrandColors.darkGreen,
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
                     ),
@@ -643,6 +666,105 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildLanguageSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final scheme = Theme.of(context).colorScheme;
+    
+    final languages = [
+      {'code': 'English', 'flag': '🇬🇧', 'name': 'English'},
+      {'code': 'Kinyarwanda', 'flag': '🇷🇼', 'name': 'Kinyarwanda'},
+      {'code': 'French', 'flag': '🇫🇷', 'name': 'Français'},
+      {'code': 'Swahili', 'flag': '🇹🇿', 'name': 'Kiswahili'},
+    ];
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: isDark ? scheme.surfaceVariant : Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? scheme.outline.withOpacity(0.2) : FamingaBrandColors.primaryOrange.withOpacity(0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isDark ? scheme.primary : FamingaBrandColors.primaryOrange,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.language,
+              size: 20,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: DropdownButtonFormField<String>(
+              value: _selectedLanguage,
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.zero,
+                isDense: true,
+              ),
+              isExpanded: true,
+              icon: Icon(
+                Icons.arrow_drop_down,
+                color: isDark ? scheme.onSurface : FamingaBrandColors.textPrimary,
+              ),
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: isDark ? scheme.onSurface : FamingaBrandColors.textPrimary,
+              ),
+              dropdownColor: isDark ? scheme.surface : Colors.white,
+              menuMaxHeight: 300,
+              items: languages.map((lang) {
+                return DropdownMenuItem<String>(
+                  value: lang['code'],
+                  child: Row(
+                    children: [
+                      Text(
+                        lang['flag']!,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        lang['name']!,
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? scheme.onSurface : FamingaBrandColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _selectedLanguage = value;
+                  });
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -849,7 +971,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _isManualStartHighlighted 
                       ? FamingaBrandColors.primaryOrange 
+<<<<<<< HEAD
                       : FamingaBrandColors.darkGreen,
+=======
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.primaryContainer
+                          : FamingaBrandColors.darkGreen),
+                  foregroundColor: _isManualStartHighlighted
+                      ? Colors.white
+                      : (Theme.of(context).brightness == Brightness.dark
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Colors.white),
+>>>>>>> hyacinthe
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
@@ -982,7 +1115,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: FamingaBrandColors.darkGreen,
+              backgroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.primaryContainer
+                  : FamingaBrandColors.darkGreen,
+              foregroundColor: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).colorScheme.onPrimaryContainer
+                  : Colors.white,
             ),
             child: const Text('Start Now'),
           ),
@@ -1178,15 +1316,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
+                Row(
                   children: [
                     Icon(
                       Icons.savings,
-                      color: FamingaBrandColors.darkGreen,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : FamingaBrandColors.darkGreen,
                       size: 20,
                     ),
-                    SizedBox(width: 8),
-                    Text(
+                    const SizedBox(width: 8),
+                    const Text(
                       'KSh Saved',
                       style: TextStyle(
                         color: FamingaBrandColors.textSecondary,
@@ -1216,13 +1356,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 Container(
                   height: 40,
                   decoration: BoxDecoration(
-                    color: FamingaBrandColors.darkGreen.withOpacity(0.1),
+                    color: (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.darkGreen)
+                        .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Center(
+                  child: Center(
                     child: Icon(
                       Icons.trending_up,
-                      color: FamingaBrandColors.darkGreen,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : FamingaBrandColors.darkGreen,
                     ),
                   ),
                 ),
