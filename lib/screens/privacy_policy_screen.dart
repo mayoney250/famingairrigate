@@ -19,4 +19,7 @@ class PrivacyPolicyScreen extends StatelessWidget {
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main

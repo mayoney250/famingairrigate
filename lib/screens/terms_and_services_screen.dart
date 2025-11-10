@@ -19,4 +19,7 @@ class TermsAndServicesScreen extends StatelessWidget {
 
 
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
