@@ -13,6 +13,7 @@ import '../../routes/app_routes.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
+
 // dev-only simulation imports removed
 
 class DashboardScreen extends StatefulWidget {
@@ -796,7 +797,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: double.infinity,
             child: ElevatedButton(
               onPressed: () async {
-                _showManualStartDialog(dashboardProvider, authProvider);
+                // Check if fields exist before opening manual irrigation
+                if (dashboardProvider.fields.isEmpty) {
+                  _showNoFieldsModal(context, authProvider.currentUser!.userId);
+                } else {
+                  _showManualStartDialog(dashboardProvider, authProvider);
+                }
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: FamingaBrandColors.darkGreen,
@@ -933,6 +939,115 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: const Text('Start Now'),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showNoFieldsModal(BuildContext context, String userId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.landscape_outlined,
+                  size: 40,
+                  color: FamingaBrandColors.primaryOrange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              Text(
+                'No Fields Found',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              Text(
+                'You don\'t have any fields registered. Please create a field first to start manual irrigation.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 28),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: isDark 
+                              ? Colors.white.withOpacity(0.3)
+                              : FamingaBrandColors.darkGreen.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.back();
+                        Get.offAllNamed(AppRoutes.fields);
+                      },
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Go to Fields'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FamingaBrandColors.primaryOrange,
+                        foregroundColor: FamingaBrandColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        elevation: 0,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

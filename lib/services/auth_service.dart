@@ -1,5 +1,6 @@
 import 'dart:developer';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -352,6 +353,39 @@ class AuthService {
 
       // Upload the file
       final uploadTask = storageRef.putFile(imageFile);
+
+      // Wait for upload to complete
+      final snapshot = await uploadTask;
+
+      // Get the download URL
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      log('Profile picture uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      log('Error uploading profile picture: $e');
+      rethrow;
+    }
+  }
+
+  // Upload profile picture for web (using bytes instead of File)
+  Future<String> uploadProfilePictureBytes(
+    String userId,
+    Uint8List imageBytes,
+    String fileName,
+  ) async {
+    try {
+      // Create a reference to the profile pictures directory
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child('$userId.jpg');
+
+      // Upload the bytes
+      final uploadTask = storageRef.putData(
+        imageBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
 
       // Wait for upload to complete
       final snapshot = await uploadTask;
