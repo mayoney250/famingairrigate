@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
-import '../providers/water_goal_provider.dart';
-import '../services/water_goal_service.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/water_goal_provider.dart';
+import '../../services/water_goal_service.dart';
 
 class WaterUsageGoalsScreen extends StatefulWidget {
   const WaterUsageGoalsScreen({Key? key}) : super(key: key);

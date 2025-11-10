@@ -159,8 +159,8 @@ class _DownloadDataScreenState extends State<DownloadDataScreen> {
             ),
             pw.SizedBox(height: 20),
             pw.Text(
-              'Summary: Total water used: ${filteredLogs.fold<int>(0, (sum, log) => sum + log['waterUsed'])} L',
-              style: const pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
+              'Summary: Total water used: ${filteredLogs.fold<num>(0, (sum, log) => sum + (log['waterUsed'] ?? 0)).toInt()} L',
+              style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold),
             ),
           ],
         ),
