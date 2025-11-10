@@ -1079,10 +1079,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.green.withOpacity(0.1),
+                color: (isDark ? Colors.white : Colors.green).withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: Colors.green.withOpacity(0.3),
+                  color: (isDark ? Colors.white : Colors.green).withOpacity(0.3),
                   width: 1,
                 ),
               ),
@@ -1095,14 +1095,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     Icons.water_drop,
                     isDark,
                   ),
-                  Container(width: 1, height: 40, color: Colors.green.withOpacity(0.3)),
+                  Container(width: 1, height: 40, color: (isDark ? Colors.white : Colors.green).withOpacity(0.3)),
                   _buildCompletedStat(
                     'Water Used',
                     '${filteredCompleted.fold<double>(0.0, (sum, log) => sum + (log.waterUsed ?? 0.0)).toStringAsFixed(1)}L',
                     Icons.opacity,
                     isDark,
                   ),
-                  Container(width: 1, height: 40, color: Colors.green.withOpacity(0.3)),
+                  Container(width: 1, height: 40, color: (isDark ? Colors.white : Colors.green).withOpacity(0.3)),
                   _buildCompletedStat(
                     'Avg Duration',
                     filteredCompleted.isNotEmpty 
@@ -1150,14 +1150,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildCompletedStat(String label, String value, IconData icon, bool isDark) {
     return Column(
       children: [
-        Icon(icon, size: 18, color: Colors.green),
+        Icon(icon, size: 18, color: isDark ? Colors.white : Colors.green),
         const SizedBox(height: 4),
         Text(
           value,
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
-            color: Colors.green,
+            color: isDark ? Colors.white : Colors.green,
           ),
         ),
         const SizedBox(height: 2),
@@ -1173,6 +1173,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildCompletedIrrigationItem(IrrigationLogModel log, bool isDark) {
+    final iconColor = isDark ? Colors.white : Colors.green;
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(12),
@@ -1180,7 +1181,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.green.withOpacity(0.2),
+          color: iconColor.withOpacity(0.2),
           width: 1,
         ),
       ),
@@ -1190,12 +1191,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: iconColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.check_circle,
-              color: Colors.green,
+              color: iconColor,
               size: 20,
             ),
           ),

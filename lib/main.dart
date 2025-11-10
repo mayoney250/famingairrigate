@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:get/get.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -23,13 +24,14 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   await FirebaseConfig.initialize();
   
   // Initialize FCM background handler
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   
+  // Initialize Hive
   await Hive.initFlutter();
   Hive.registerAdapter(AlertModelAdapter());
   Hive.registerAdapter(SensorModelAdapter());
@@ -39,7 +41,7 @@ void main() async {
   await Hive.openBox<SensorModel>('sensorsBox');
   await Hive.openBox<SensorReadingModel>('readingsBox');
   await Hive.openBox<UserModel>('userBox');
-  
+
   runApp(const FamingaIrrigationApp());
 }
 
@@ -59,20 +61,15 @@ class FamingaIrrigationApp extends StatelessWidget {
           return GetMaterialApp(
             title: 'Faminga Irrigation',
             debugShowCheckedModeBanner: false,
-            
+
             // Theme Configuration
             theme: ThemeConfig.lightTheme,
             darkTheme: ThemeConfig.darkTheme,
             themeMode: themeProvider.themeMode,
-            
+
             // Routing
             initialRoute: AppRoutes.splash,
             getPages: AppRoutes.routes,
-            
-            // Localization (will be implemented)
-            // locale: languageProvider.currentLocale,
-            // localizationsDelegates: AppLocalizations.localizationsDelegates,
-            // supportedLocales: AppLocalizations.supportedLocales,
           );
         },
       ),
