@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../providers/water_goal_provider.dart';
 import '../services/water_goal_service.dart';
+import '../widgets/shimmer/shimmer_widgets.dart';
 
 class WaterUsageGoalsScreen extends StatefulWidget {
   const WaterUsageGoalsScreen({Key? key}) : super(key: key);
@@ -33,7 +34,9 @@ class _WaterUsageGoalsScreenState extends State<WaterUsageGoalsScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Water Usage Goals')),
       body: goalProvider.isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+                  child: ShimmerCenter(size: 48),
+                )
           : Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(

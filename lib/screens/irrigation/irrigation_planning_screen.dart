@@ -8,6 +8,7 @@ import '../../models/irrigation_zone_model.dart';
 import '../../services/irrigation_zone_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/map/map_drawing_widget.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
 
@@ -49,7 +50,9 @@ class _IrrigationPlanningScreenState extends State<IrrigationPlanningScreen> {
         stream: _zoneService.getFieldZones(widget.field.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return const Center(
+              child: ShimmerCenter(size: 48),
+            );
           }
           
           final zones = snapshot.data ?? [];

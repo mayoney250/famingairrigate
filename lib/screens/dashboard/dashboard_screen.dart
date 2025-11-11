@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 // Removed temporary DB test screen import
@@ -166,18 +167,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: Consumer<DashboardProvider>(
         builder: (context, dashboardProvider, _) {
           if (dashboardProvider.isLoading) {
-            return const Center(
+            return const SingleChildScrollView(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
-                    color: FamingaBrandColors.primaryOrange,
-                  ),
                   SizedBox(height: 16),
-                  Text(
-                    'Loading dashboard...',
-                    style: TextStyle(color: FamingaBrandColors.textSecondary),
-                  ),
+                  ShimmerDashboardStats(),
+                  SizedBox(height: 24),
+                  ShimmerFieldCard(),
+                  ShimmerFieldCard(),
                 ],
               ),
             );

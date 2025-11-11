@@ -8,6 +8,7 @@ import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/irrigation_schedule_model.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../services/irrigation_service.dart';
 import '../../services/irrigation_status_service.dart';
 import '../../routes/app_routes.dart';
@@ -94,10 +95,10 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         stream: _irrigationService.getUserSchedules(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(
-                color: FamingaBrandColors.primaryOrange,
-              ),
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              itemBuilder: (context, index) => const ShimmerIrrigationCard(),
             );
           }
 

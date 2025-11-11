@@ -8,6 +8,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../models/field_model.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../providers/auth_provider.dart';
@@ -86,7 +87,11 @@ class _FieldsScreenState extends State<FieldsScreen> {
               stream: _fieldService.getUserFields(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator(color: Theme.of(context).colorScheme.primary));
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: 3,
+                    itemBuilder: (context, index) => const ShimmerFieldCard(),
+                  );
                 }
                 if (snapshot.hasError) {
                   return const Center(child: Text('Error loading fields.'));
