@@ -13,8 +13,10 @@ import 'config/theme_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
+import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/fcm_service.dart';
+import 'l10n/app_localizations.dart';
 
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
@@ -55,9 +57,10 @@ class FamingaIrrigationApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
+        ChangeNotifierProvider(create: (_) => LanguageProvider()),
       ],
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
+      child: Consumer2<ThemeProvider, LanguageProvider>(
+        builder: (context, themeProvider, languageProvider, _) {
           return GetMaterialApp(
             title: 'Faminga Irrigation',
             debugShowCheckedModeBanner: false,
@@ -66,6 +69,22 @@ class FamingaIrrigationApp extends StatelessWidget {
             theme: ThemeConfig.lightTheme,
             darkTheme: ThemeConfig.darkTheme,
             themeMode: themeProvider.themeMode,
+
+            // Localization
+            locale: languageProvider.currentLocale,
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: const [
+              Locale('en'),
+              Locale('fr'),
+              Locale('rw'),
+              Locale('sw'),
+            ],
+            fallbackLocale: const Locale('en'),
 
             // Routing
             initialRoute: AppRoutes.splash,

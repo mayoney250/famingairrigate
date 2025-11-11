@@ -60,6 +60,59 @@
   "accountCreatedSuccess": "Compte créé avec succès. Veuillez vérifier votre email pour vérifier votre compte.",
   "emailSent": "Email envoyé",
   "passwordResetSent": "Le lien de réinitialisation du mot de passe a été envoyé à votre email. Veuillez vérifier votre boîte de réception.",
-  "ok": "OK"
+  "ok": "OK",
+  "cancel": "Annuler",
+  "save": "Enregistrer",
+  "delete": "Supprimer",
+  "update": "Mettre à jour",
+  "language": "Langue",
+  "startNow": "Commencer maintenant",
+  "goToFields": "Aller aux champs",
+  "noFieldsFound": "Aucun champ trouvé.",
+  "systemStatus": "État du système",
+  "nextScheduleCycle": "Prochain cycle programmé",
+  "weeklyPerformance": "Performance hebdomadaire",
+  "soilMoisture": "Humidité du sol",
+  "averageToday": "Moyenne aujourd'hui",
+  "noScheduledIrrigations": "Aucune irrigation programmée",
+  "startIrrigationManually": "Démarrer l'irrigation manuellement ou créer un calendrier",
+  "startCycleManually": "DÉMARRER LE CYCLE MANUELLEMENT",
+  "waterUsage": "Utilisation d'eau",
+  "litersThisWeek": "Litres cette semaine",
+  "kshSaved": "KSh économisés",
+  "thisWeek": "Cette semaine",
+  "noFieldsTitle": "Aucun champ trouvé",
+  "noFieldsMessage": "Vous n'avez aucun champ enregistré. Veuillez d'abord créer un champ pour démarrer l'irrigation manuelle.",
+  "alerts": "Alertes",
+  "markAsRead": "Marquer comme lu",
+  "noAlertsYet": "Aucune alerte pour le moment",
+  "justNow": "À l'instant",
+  "minutesAgo": "Il y a {minutes}min",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "Il y a {hours}h",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "Il y a {days}j",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "manualStart": "Démarrage manuel",
+  "farmInfo": "Info de la ferme",
+  "scheduled": "Programmé"
 }
 

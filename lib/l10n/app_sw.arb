@@ -60,6 +60,59 @@
   "accountCreatedSuccess": "Akaunti imeundwa. Tafadhali angalia barua pepe yako ili uthibitishe akaunti yako.",
   "emailSent": "Barua pepe imetumwa",
   "passwordResetSent": "Kiungo cha kuweka upya nenosiri kimetumwa kwenye barua pepe yako. Tafadhali angalia sanduku lako.",
-  "ok": "Sawa"
+  "ok": "Sawa",
+  "cancel": "Ghairi",
+  "save": "Hifadhi",
+  "delete": "Futa",
+  "update": "Sasisha",
+  "language": "Lugha",
+  "startNow": "Anza sasa",
+  "goToFields": "Nenda kwenye mashamba",
+  "noFieldsFound": "Hakuna mashamba yaliyopatikana.",
+  "systemStatus": "Hali ya mfumo",
+  "nextScheduleCycle": "Mzunguko unaofuata wa ratiba",
+  "weeklyPerformance": "Utendaji wa wiki",
+  "soilMoisture": "Unyevunyevu wa udongo",
+  "averageToday": "Wastani leo",
+  "noScheduledIrrigations": "Hakuna umwagiliaji uliowekwa ratiba",
+  "startIrrigationManually": "Anza umwagiliaji kwa mkono au unda ratiba",
+  "startCycleManually": "ANZA MZUNGUKO KWA MKONO",
+  "waterUsage": "Matumizi ya maji",
+  "litersThisWeek": "Lita wiki hii",
+  "kshSaved": "KSh Zilizohifadhiwa",
+  "thisWeek": "Wiki hii",
+  "noFieldsTitle": "Hakuna mashamba yaliyopatikana",
+  "noFieldsMessage": "Huna mashamba yaliyosajiliwa. Tafadhali unda shamba kwanza ili kuanza umwagiliaji kwa mkono.",
+  "alerts": "Arifa",
+  "markAsRead": "Weka alama kama imesomwa",
+  "noAlertsYet": "Hakuna arifa bado",
+  "justNow": "Sasa hivi",
+  "minutesAgo": "Dakika {minutes} zilizopita",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "Saa {hours} zilizopita",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "Siku {days} zilizopita",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "manualStart": "Anza kwa mkono",
+  "farmInfo": "Habari za shamba",
+  "scheduled": "Imewekwa ratiba"
 }
 

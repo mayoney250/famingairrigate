@@ -60,6 +60,59 @@
   "accountCreatedSuccess": "Konti yarangijwe. Genzura imeyili yawe kugirango uyemeze konti yawe.",
   "emailSent": "Imeyili Yoherejwe",
   "passwordResetSent": "Link yo guhindura ijambo ry'ibanga yoherejwe kuri imeyili yawe. Genzura imeyili yawe.",
-  "ok": "Sawa"
+  "ok": "Sawa",
+  "cancel": "Hagarika",
+  "save": "Bika",
+  "delete": "Siba",
+  "update": "Kuvugurura",
+  "language": "Ururimi",
+  "startNow": "Tangira Ubu",
+  "goToFields": "Jya ku mirima",
+  "noFieldsFound": "Nta murima wabonetse.",
+  "systemStatus": "Imiterere ya sisitemu",
+  "nextScheduleCycle": "Icyegeranyo cya nyuma",
+  "weeklyPerformance": "Imikorere y'icyumweru",
+  "soilMoisture": "Ubushuhe bw'ubutaka",
+  "averageToday": "Impuzandengo uyumunsi",
+  "noScheduledIrrigations": "Nta gahunda yo kuhira",
+  "startIrrigationManually": "Tangira kuhira mu ntoki cyangwa ukore gahunda",
+  "startCycleManually": "TANGIRA ICYEGERANYO MU NTOKI",
+  "waterUsage": "Ikoreshwa ry'amazi",
+  "litersThisWeek": "Litiro muri iki cyumweru",
+  "kshSaved": "KSh Yakijijwe",
+  "thisWeek": "Iki cyumweru",
+  "noFieldsTitle": "Nta murima wabonetse",
+  "noFieldsMessage": "Ntabwo ufite umurima wanditswe. Nyamuneka tangira uhindure umurima kugirango utangire kuhira mu ntoki.",
+  "alerts": "Imenyesha",
+  "markAsRead": "Shyira nk'ibisomwe",
+  "noAlertsYet": "Nta menyesha ubu",
+  "justNow": "Ubu",
+  "minutesAgo": "Iminota {minutes} ishize",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "Amasaha {hours} ashize",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "Iminsi {days} ishize",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "manualStart": "Gutangira mu ntoki",
+  "farmInfo": "Amakuru y'umurima",
+  "scheduled": "Byateganijwe"
 }
 

@@ -195,4 +195,108 @@ class AppLocalizationsRw extends AppLocalizations {
 
   @override
   String get ok => 'Sawa';
+
+  @override
+  String get cancel => 'Hagarika';
+
+  @override
+  String get save => 'Bika';
+
+  @override
+  String get delete => 'Siba';
+
+  @override
+  String get update => 'Kuvugurura';
+
+  @override
+  String get language => 'Ururimi';
+
+  @override
+  String get startNow => 'Tangira Ubu';
+
+  @override
+  String get goToFields => 'Jya ku mirima';
+
+  @override
+  String get noFieldsFound => 'Nta murima wabonetse.';
+
+  @override
+  String get systemStatus => 'Imiterere ya sisitemu';
+
+  @override
+  String get nextScheduleCycle => 'Icyegeranyo cya nyuma';
+
+  @override
+  String get weeklyPerformance => 'Imikorere y\'icyumweru';
+
+  @override
+  String get soilMoisture => 'Ubushuhe bw\'ubutaka';
+
+  @override
+  String get averageToday => 'Impuzandengo uyumunsi';
+
+  @override
+  String get noScheduledIrrigations => 'Nta gahunda yo kuhira';
+
+  @override
+  String get startIrrigationManually =>
+      'Tangira kuhira mu ntoki cyangwa ukore gahunda';
+
+  @override
+  String get startCycleManually => 'TANGIRA ICYEGERANYO MU NTOKI';
+
+  @override
+  String get waterUsage => 'Ikoreshwa ry\'amazi';
+
+  @override
+  String get litersThisWeek => 'Litiro muri iki cyumweru';
+
+  @override
+  String get kshSaved => 'KSh Yakijijwe';
+
+  @override
+  String get thisWeek => 'Iki cyumweru';
+
+  @override
+  String get noFieldsTitle => 'Nta murima wabonetse';
+
+  @override
+  String get noFieldsMessage =>
+      'Ntabwo ufite umurima wanditswe. Nyamuneka tangira uhindure umurima kugirango utangire kuhira mu ntoki.';
+
+  @override
+  String get alerts => 'Imenyesha';
+
+  @override
+  String get markAsRead => 'Shyira nk\'ibisomwe';
+
+  @override
+  String get noAlertsYet => 'Nta menyesha ubu';
+
+  @override
+  String get justNow => 'Ubu';
+
+  @override
+  String minutesAgo(int minutes) {
+    return 'Iminota $minutes ishize';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return 'Amasaha $hours ashize';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return 'Iminsi $days ishize';
+  }
+
+  @override
+  String get manualStart => 'Gutangira mu ntoki';
+
+  @override
+  String get farmInfo => 'Amakuru y\'umurima';
+
+  @override
+  String get scheduled => 'Byateganijwe';
 }

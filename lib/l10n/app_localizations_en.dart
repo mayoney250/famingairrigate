@@ -194,4 +194,108 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get cancel => 'Cancel';
+
+  @override
+  String get save => 'Save';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get update => 'Update';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get startNow => 'Start Now';
+
+  @override
+  String get goToFields => 'Go to Fields';
+
+  @override
+  String get noFieldsFound => 'No fields found.';
+
+  @override
+  String get systemStatus => 'System Status';
+
+  @override
+  String get nextScheduleCycle => 'Next Schedule Cycle';
+
+  @override
+  String get weeklyPerformance => 'Weekly Performance';
+
+  @override
+  String get soilMoisture => 'Soil Moisture';
+
+  @override
+  String get averageToday => 'Average Today';
+
+  @override
+  String get noScheduledIrrigations => 'No scheduled irrigations';
+
+  @override
+  String get startIrrigationManually =>
+      'Start irrigation manually or create a schedule';
+
+  @override
+  String get startCycleManually => 'START CYCLE MANUALLY';
+
+  @override
+  String get waterUsage => 'Water Usage';
+
+  @override
+  String get litersThisWeek => 'Liters this week';
+
+  @override
+  String get kshSaved => 'KSh Saved';
+
+  @override
+  String get thisWeek => 'This week';
+
+  @override
+  String get noFieldsTitle => 'No Fields Found';
+
+  @override
+  String get noFieldsMessage =>
+      'You don\'t have any fields registered. Please create a field first to start manual irrigation.';
+
+  @override
+  String get alerts => 'Alerts';
+
+  @override
+  String get markAsRead => 'Mark as read';
+
+  @override
+  String get noAlertsYet => 'No alerts yet';
+
+  @override
+  String get justNow => 'Just now';
+
+  @override
+  String minutesAgo(int minutes) {
+    return '${minutes}min ago';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return '${hours}h ago';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String get manualStart => 'Manual Start';
+
+  @override
+  String get farmInfo => 'Farm Info';
+
+  @override
+  String get scheduled => 'Scheduled';
 }

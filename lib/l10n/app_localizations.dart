@@ -467,6 +467,198 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'OK'**
   String get ok;
+
+  /// No description provided for @cancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancel;
+
+  /// No description provided for @save.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get save;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @update.
+  ///
+  /// In en, this message translates to:
+  /// **'Update'**
+  String get update;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @startNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Now'**
+  String get startNow;
+
+  /// No description provided for @goToFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Fields'**
+  String get goToFields;
+
+  /// No description provided for @noFieldsFound.
+  ///
+  /// In en, this message translates to:
+  /// **'No fields found.'**
+  String get noFieldsFound;
+
+  /// No description provided for @systemStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'System Status'**
+  String get systemStatus;
+
+  /// No description provided for @nextScheduleCycle.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Schedule Cycle'**
+  String get nextScheduleCycle;
+
+  /// No description provided for @weeklyPerformance.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly Performance'**
+  String get weeklyPerformance;
+
+  /// No description provided for @soilMoisture.
+  ///
+  /// In en, this message translates to:
+  /// **'Soil Moisture'**
+  String get soilMoisture;
+
+  /// No description provided for @averageToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Average Today'**
+  String get averageToday;
+
+  /// No description provided for @noScheduledIrrigations.
+  ///
+  /// In en, this message translates to:
+  /// **'No scheduled irrigations'**
+  String get noScheduledIrrigations;
+
+  /// No description provided for @startIrrigationManually.
+  ///
+  /// In en, this message translates to:
+  /// **'Start irrigation manually or create a schedule'**
+  String get startIrrigationManually;
+
+  /// No description provided for @startCycleManually.
+  ///
+  /// In en, this message translates to:
+  /// **'START CYCLE MANUALLY'**
+  String get startCycleManually;
+
+  /// No description provided for @waterUsage.
+  ///
+  /// In en, this message translates to:
+  /// **'Water Usage'**
+  String get waterUsage;
+
+  /// No description provided for @litersThisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'Liters this week'**
+  String get litersThisWeek;
+
+  /// No description provided for @kshSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'KSh Saved'**
+  String get kshSaved;
+
+  /// No description provided for @thisWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'This week'**
+  String get thisWeek;
+
+  /// No description provided for @noFieldsTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No Fields Found'**
+  String get noFieldsTitle;
+
+  /// No description provided for @noFieldsMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'You don\'t have any fields registered. Please create a field first to start manual irrigation.'**
+  String get noFieldsMessage;
+
+  /// No description provided for @alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get alerts;
+
+  /// No description provided for @markAsRead.
+  ///
+  /// In en, this message translates to:
+  /// **'Mark as read'**
+  String get markAsRead;
+
+  /// No description provided for @noAlertsYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No alerts yet'**
+  String get noAlertsYet;
+
+  /// No description provided for @justNow.
+  ///
+  /// In en, this message translates to:
+  /// **'Just now'**
+  String get justNow;
+
+  /// No description provided for @minutesAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes}min ago'**
+  String minutesAgo(int minutes);
+
+  /// No description provided for @hoursAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{hours}h ago'**
+  String hoursAgo(int hours);
+
+  /// No description provided for @daysAgo.
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String daysAgo(int days);
+
+  /// No description provided for @manualStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Start'**
+  String get manualStart;
+
+  /// No description provided for @farmInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Farm Info'**
+  String get farmInfo;
+
+  /// No description provided for @scheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get scheduled;
 }
 
 class _AppLocalizationsDelegate

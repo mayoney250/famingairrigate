@@ -60,6 +60,59 @@
   "accountCreatedSuccess": "Account created successfully. Please check your email to verify your account.",
   "emailSent": "Email Sent",
   "passwordResetSent": "Password reset link has been sent to your email. Please check your inbox.",
-  "ok": "OK"
+  "ok": "OK",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "update": "Update",
+  "language": "Language",
+  "startNow": "Start Now",
+  "goToFields": "Go to Fields",
+  "noFieldsFound": "No fields found.",
+  "systemStatus": "System Status",
+  "nextScheduleCycle": "Next Schedule Cycle",
+  "weeklyPerformance": "Weekly Performance",
+  "soilMoisture": "Soil Moisture",
+  "averageToday": "Average Today",
+  "noScheduledIrrigations": "No scheduled irrigations",
+  "startIrrigationManually": "Start irrigation manually or create a schedule",
+  "startCycleManually": "START CYCLE MANUALLY",
+  "waterUsage": "Water Usage",
+  "litersThisWeek": "Liters this week",
+  "kshSaved": "KSh Saved",
+  "thisWeek": "This week",
+  "noFieldsTitle": "No Fields Found",
+  "noFieldsMessage": "You don't have any fields registered. Please create a field first to start manual irrigation.",
+  "alerts": "Alerts",
+  "markAsRead": "Mark as read",
+  "noAlertsYet": "No alerts yet",
+  "justNow": "Just now",
+  "minutesAgo": "{minutes}min ago",
+  "@minutesAgo": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "hoursAgo": "{hours}h ago",
+  "@hoursAgo": {
+    "placeholders": {
+      "hours": {
+        "type": "int"
+      }
+    }
+  },
+  "daysAgo": "{days}d ago",
+  "@daysAgo": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "manualStart": "Manual Start",
+  "farmInfo": "Farm Info",
+  "scheduled": "Scheduled"
 }
 

@@ -8,11 +8,13 @@ import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 // Removed temporary DB test screen import
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
+import '../../utils/l10n_extensions.dart';
 
 // dev-only simulation imports removed
 
@@ -28,7 +30,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   int unreadCount = 0;
   List<AlertModel> allAlerts = [];
   Timer? _refreshTimer;
-  String _selectedLanguage = 'English';
   final ScrollController _scrollController = ScrollController();
   final GlobalKey _manualStartButtonKey = GlobalKey();
   bool _isManualStartHighlighted = false;
@@ -122,7 +123,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications),
-                tooltip: 'Alerts',
+                tooltip: context.l10n.alerts,
                 onPressed: _openAlertCenter,
               ),
               if (unreadCount > 0)
@@ -201,11 +202,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // Quick Actions
                   Text(
-                    'Quick Actions',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  context.l10n.quickActions,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildQuickActions(),
@@ -227,11 +228,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // Language Selector
                   Text(
-                    'Language',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  context.l10n.language,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildLanguageSelector(),
@@ -239,11 +240,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // Next Schedule Cycle
                   Text(
-                    'Next Schedule Cycle',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  context.l10n.nextScheduleCycle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildNextScheduleCard(dashboardProvider),
@@ -251,11 +252,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                   // Weekly Performance
                   Text(
-                    'Weekly Performance',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  context.l10n.weeklyPerformance,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildWeeklyPerformance(dashboardProvider),
@@ -328,12 +329,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'System Status',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                      ),
+                    context.l10n.systemStatus,
+                    style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    ),
                     ),
                   ],
                 ),
@@ -394,7 +395,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildQuickActionButton(
             Icons.play_circle_outline,
-            'Manual Start',
+            context.l10n.manualStart,
             FamingaBrandColors.primaryOrange,
             _scrollToManualStartButton,
           ),
@@ -403,7 +404,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildQuickActionButton(
             Icons.info_outline,
-            'Farm Info',
+            context.l10n.farmInfo,
             FamingaBrandColors.primaryOrange,
             () {
               Get.toNamed(AppRoutes.fields);
@@ -414,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Expanded(
           child: _buildQuickActionButton(
             Icons.calendar_today,
-            'Scheduled',
+            context.l10n.scheduled,
             FamingaBrandColors.primaryOrange,
             () {
               Get.toNamed(AppRoutes.irrigationList);
@@ -470,7 +471,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final avg = dashboardProvider.avgSoilMoisture;
     final moisturePercent = avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0;
     final moistureText = avg != null ? '${avg.round()}%' : '--';
-    final moistureLabel = "Average Today";
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -481,7 +481,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Text('Soil Moisture', style: TextStyle(
+          Text(context.l10n.soilMoisture, style: const TextStyle(
             color: FamingaBrandColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
@@ -519,7 +519,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    moistureLabel,
+                    context.l10n.averageToday,
                     style: const TextStyle(
                       color: FamingaBrandColors.textSecondary,
                       fontSize: 11,
@@ -669,6 +669,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget _buildLanguageSelector() {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final scheme = Theme.of(context).colorScheme;
+    final languageProvider = Provider.of<LanguageProvider>(context);
     
     final languages = [
       {'code': 'English', 'flag': '🇬🇧', 'name': 'English'},
@@ -711,7 +712,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: DropdownButtonFormField<String>(
-              value: _selectedLanguage,
+              value: languageProvider.currentLanguageName,
               decoration: const InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.zero,
@@ -753,9 +754,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               }).toList(),
               onChanged: (value) {
                 if (value != null) {
-                  setState(() {
-                    _selectedLanguage = value;
-                  });
+                  languageProvider.setLanguage(value);
                 }
               },
             ),
@@ -838,26 +837,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ] else ...[
-            const Column(
+            Column(
               children: [
-                Icon(
+                const Icon(
                   Icons.schedule,
                   size: 48,
                   color: FamingaBrandColors.textSecondary,
                 ),
-                SizedBox(height: 12),
+                const SizedBox(height: 12),
                 Text(
-                  'No Scheduled Irrigation',
-                  style: TextStyle(
+                  context.l10n.noScheduledIrrigations,
+                  style: const TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
-                  'Start irrigation manually or create a schedule',
-                  style: TextStyle(
+                  context.l10n.startIrrigationManually,
+                  style: const TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 11,
                   ),
@@ -984,14 +983,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                Icon(
+                const Icon(
                 Icons.play_arrow,
                 color: FamingaBrandColors.white,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'START CYCLE MANUALLY',
-                  style: TextStyle(
+                  context.l10n.startCycleManually,
+                  style: const TextStyle(
                   color: FamingaBrandColors.white,
                   fontWeight: FontWeight.bold,
                 fontSize: 13,
@@ -1155,23 +1154,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 20),
               
               Text(
-                'No Fields Found',
-                style: TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.w700,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
+              context.l10n.noFieldsTitle,
+              style: TextStyle(
+              fontSize: 22,
+              fontWeight: FontWeight.w700,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+              ),
               ),
               const SizedBox(height: 12),
               
               Text(
-                'You don\'t have any fields registered. Please create a field first to start manual irrigation.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 15,
-                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
-                  height: 1.4,
-                ),
+              context.l10n.noFieldsMessage,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+              fontSize: 15,
+              color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+              height: 1.4,
+              ),
               ),
               const SizedBox(height: 28),
               
@@ -1193,12 +1192,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       child: Text(
-                        'Cancel',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Theme.of(context).textTheme.bodyLarge?.color,
-                        ),
+                      context.l10n.cancel,
+                      style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
+                      ),
                       ),
                     ),
                   ),
@@ -1210,7 +1209,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         Get.offAllNamed(AppRoutes.fields);
                       },
                       icon: const Icon(Icons.add, size: 20),
-                      label: const Text('Go to Fields'),
+                      label: Text(context.l10n.goToFields),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: FamingaBrandColors.primaryOrange,
                         foregroundColor: FamingaBrandColors.white,
@@ -1245,22 +1244,22 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Row(
-                  children: [
-                    Icon(
-                      Icons.water_drop,
-                      color: FamingaBrandColors.primaryOrange,
-                      size: 20,
-                    ),
-                    SizedBox(width: 8),
-                    Text(
-                      'Water Usage',
-                      style: TextStyle(
-                        color: FamingaBrandColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
+                Row(
+                children: [
+                const Icon(
+                Icons.water_drop,
+                color: FamingaBrandColors.primaryOrange,
+                size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                context.l10n.waterUsage,
+                style: const TextStyle(
+                color: FamingaBrandColors.textSecondary,
+                fontSize: 12,
+                ),
+                ),
+                ],
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -1272,12 +1271,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'Liters this week',
-                  style: TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                Text(
+                context.l10n.litersThisWeek,
+                style: const TextStyle(
+                color: FamingaBrandColors.textSecondary,
+                fontSize: 11,
+                ),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -1319,12 +1318,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       size: 20,
                     ),
                     const SizedBox(width: 8),
-                    const Text(
-                      'KSh Saved',
-                      style: TextStyle(
-                        color: FamingaBrandColors.textSecondary,
-                        fontSize: 12,
-                      ),
+                    Text(
+                    context.l10n.kshSaved,
+                    style: const TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 12,
+                    ),
                     ),
                   ],
                 ),
@@ -1338,12 +1337,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Text(
-                  'This week',
-                  style: TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 11,
-                  ),
+                Text(
+                context.l10n.thisWeek,
+                style: const TextStyle(
+                color: FamingaBrandColors.textSecondary,
+                fontSize: 11,
+                ),
                 ),
                 const SizedBox(height: 12),
                 Container(
@@ -1401,27 +1400,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: FamingaBrandColors.primaryOrange,
       unselectedItemColor: FamingaBrandColors.textSecondary,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.water_drop),
-          label: 'Irrigation',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.landscape),
-          label: 'Fields',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.sensors),
-          label: 'Sensors',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
-        ),
+      items: [
+      BottomNavigationBarItem(
+      icon: const Icon(Icons.dashboard),
+      label: context.l10n.dashboard,
+      ),
+      BottomNavigationBarItem(
+      icon: const Icon(Icons.water_drop),
+      label: context.l10n.irrigation,
+      ),
+      BottomNavigationBarItem(
+      icon: const Icon(Icons.landscape),
+      label: context.l10n.fields,
+      ),
+      BottomNavigationBarItem(
+      icon: const Icon(Icons.sensors),
+      label: context.l10n.sensors,
+      ),
+      BottomNavigationBarItem(
+      icon: const Icon(Icons.person),
+      label: context.l10n.profile,
+      ),
       ],
     );
   }
@@ -1431,7 +1430,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sensors = dashboardProvider.latestSensorDataPerField;
     final flows = dashboardProvider.latestFlowDataPerField;
     if (fields.isEmpty) {
-      return const Text('No fields found.', style: TextStyle(color: Colors.grey));
+    return Text(context.l10n.noFieldsFound, style: const TextStyle(color: Colors.grey));
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1507,12 +1506,12 @@ class AlertCenterBottomSheet extends StatelessWidget {
     final mq = MediaQuery.of(context);
     final maxHeight = mq.size.height * 0.6;
     if (alerts.isEmpty) {
-      return SizedBox(
-        height: maxHeight,
-        child: const Padding(
-          padding: EdgeInsets.all(32),
-          child: Center(child: Text('No alerts yet')),),
-      );
+    return SizedBox(
+    height: maxHeight,
+    child: Padding(
+    padding: const EdgeInsets.all(32),
+    child: Center(child: Text(context.l10n.noAlertsYet)),),
+    );
     }
     return SafeArea(
       child: SizedBox(
@@ -1535,14 +1534,14 @@ class AlertCenterBottomSheet extends StatelessWidget {
               leading: Icon(icon, color: iconColor),
               title: Text(a.message,
                   style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
-              subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts)}'),
+              subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts, context)}'),
               trailing: a.read
-                  ? null
-                  : IconButton(
-                      icon: const Icon(Icons.check, color: Colors.green),
-                      tooltip: 'Mark as read',
-                      onPressed: () => onMarkRead(a.id),
-                    ),
+              ? null
+              : IconButton(
+              icon: const Icon(Icons.check, color: Colors.green),
+              tooltip: context.l10n.markAsRead,
+              onPressed: () => onMarkRead(a.id),
+              ),
             );
           },
         ),
@@ -1550,11 +1549,11 @@ class AlertCenterBottomSheet extends StatelessWidget {
     );
   }
 
-  String timeAgo(DateTime dt) {
-    final d = DateTime.now().difference(dt);
-    if (d.inMinutes < 1) return 'Just now';
-    if (d.inHours < 1) return '${d.inMinutes}min ago';
-    if (d.inDays < 1) return '${d.inHours}h ago';
-    return '${d.inDays}d ago';
+  String timeAgo(DateTime dt, BuildContext context) {
+  final d = DateTime.now().difference(dt);
+  if (d.inMinutes < 1) return context.l10n.justNow;
+  if (d.inHours < 1) return context.l10n.minutesAgo(d.inMinutes);
+  if (d.inDays < 1) return context.l10n.hoursAgo(d.inHours);
+  return context.l10n.daysAgo(d.inDays);
   }
 }

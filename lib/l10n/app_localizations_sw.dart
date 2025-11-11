@@ -194,4 +194,108 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get ok => 'Sawa';
+
+  @override
+  String get cancel => 'Ghairi';
+
+  @override
+  String get save => 'Hifadhi';
+
+  @override
+  String get delete => 'Futa';
+
+  @override
+  String get update => 'Sasisha';
+
+  @override
+  String get language => 'Lugha';
+
+  @override
+  String get startNow => 'Anza sasa';
+
+  @override
+  String get goToFields => 'Nenda kwenye mashamba';
+
+  @override
+  String get noFieldsFound => 'Hakuna mashamba yaliyopatikana.';
+
+  @override
+  String get systemStatus => 'Hali ya mfumo';
+
+  @override
+  String get nextScheduleCycle => 'Mzunguko unaofuata wa ratiba';
+
+  @override
+  String get weeklyPerformance => 'Utendaji wa wiki';
+
+  @override
+  String get soilMoisture => 'Unyevunyevu wa udongo';
+
+  @override
+  String get averageToday => 'Wastani leo';
+
+  @override
+  String get noScheduledIrrigations => 'Hakuna umwagiliaji uliowekwa ratiba';
+
+  @override
+  String get startIrrigationManually =>
+      'Anza umwagiliaji kwa mkono au unda ratiba';
+
+  @override
+  String get startCycleManually => 'ANZA MZUNGUKO KWA MKONO';
+
+  @override
+  String get waterUsage => 'Matumizi ya maji';
+
+  @override
+  String get litersThisWeek => 'Lita wiki hii';
+
+  @override
+  String get kshSaved => 'KSh Zilizohifadhiwa';
+
+  @override
+  String get thisWeek => 'Wiki hii';
+
+  @override
+  String get noFieldsTitle => 'Hakuna mashamba yaliyopatikana';
+
+  @override
+  String get noFieldsMessage =>
+      'Huna mashamba yaliyosajiliwa. Tafadhali unda shamba kwanza ili kuanza umwagiliaji kwa mkono.';
+
+  @override
+  String get alerts => 'Arifa';
+
+  @override
+  String get markAsRead => 'Weka alama kama imesomwa';
+
+  @override
+  String get noAlertsYet => 'Hakuna arifa bado';
+
+  @override
+  String get justNow => 'Sasa hivi';
+
+  @override
+  String minutesAgo(int minutes) {
+    return 'Dakika $minutes zilizopita';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return 'Saa $hours zilizopita';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return 'Siku $days zilizopita';
+  }
+
+  @override
+  String get manualStart => 'Anza kwa mkono';
+
+  @override
+  String get farmInfo => 'Habari za shamba';
+
+  @override
+  String get scheduled => 'Imewekwa ratiba';
 }

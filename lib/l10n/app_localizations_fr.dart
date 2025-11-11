@@ -196,4 +196,108 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get ok => 'OK';
+
+  @override
+  String get cancel => 'Annuler';
+
+  @override
+  String get save => 'Enregistrer';
+
+  @override
+  String get delete => 'Supprimer';
+
+  @override
+  String get update => 'Mettre à jour';
+
+  @override
+  String get language => 'Langue';
+
+  @override
+  String get startNow => 'Commencer maintenant';
+
+  @override
+  String get goToFields => 'Aller aux champs';
+
+  @override
+  String get noFieldsFound => 'Aucun champ trouvé.';
+
+  @override
+  String get systemStatus => 'État du système';
+
+  @override
+  String get nextScheduleCycle => 'Prochain cycle programmé';
+
+  @override
+  String get weeklyPerformance => 'Performance hebdomadaire';
+
+  @override
+  String get soilMoisture => 'Humidité du sol';
+
+  @override
+  String get averageToday => 'Moyenne aujourd\'hui';
+
+  @override
+  String get noScheduledIrrigations => 'Aucune irrigation programmée';
+
+  @override
+  String get startIrrigationManually =>
+      'Démarrer l\'irrigation manuellement ou créer un calendrier';
+
+  @override
+  String get startCycleManually => 'DÉMARRER LE CYCLE MANUELLEMENT';
+
+  @override
+  String get waterUsage => 'Utilisation d\'eau';
+
+  @override
+  String get litersThisWeek => 'Litres cette semaine';
+
+  @override
+  String get kshSaved => 'KSh économisés';
+
+  @override
+  String get thisWeek => 'Cette semaine';
+
+  @override
+  String get noFieldsTitle => 'Aucun champ trouvé';
+
+  @override
+  String get noFieldsMessage =>
+      'Vous n\'avez aucun champ enregistré. Veuillez d\'abord créer un champ pour démarrer l\'irrigation manuelle.';
+
+  @override
+  String get alerts => 'Alertes';
+
+  @override
+  String get markAsRead => 'Marquer comme lu';
+
+  @override
+  String get noAlertsYet => 'Aucune alerte pour le moment';
+
+  @override
+  String get justNow => 'À l\'instant';
+
+  @override
+  String minutesAgo(int minutes) {
+    return 'Il y a ${minutes}min';
+  }
+
+  @override
+  String hoursAgo(int hours) {
+    return 'Il y a ${hours}h';
+  }
+
+  @override
+  String daysAgo(int days) {
+    return 'Il y a ${days}j';
+  }
+
+  @override
+  String get manualStart => 'Démarrage manuel';
+
+  @override
+  String get farmInfo => 'Info de la ferme';
+
+  @override
+  String get scheduled => 'Programmé';
 }
