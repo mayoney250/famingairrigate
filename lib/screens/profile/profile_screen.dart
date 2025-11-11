@@ -9,6 +9,7 @@ import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
 
@@ -77,8 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               placeholder: (context, url) => CircleAvatar(
                                     radius: 50,
                                 backgroundColor: Theme.of(context).colorScheme.primary,
-                                child: CircularProgressIndicator(
-                                  color: Theme.of(context).colorScheme.onPrimary,
+                                child: const ShimmerLoader(
+                                  child: ShimmerCircle(size: 100),
                                 ),
                                   ),
                               errorWidget: (context, url, error) => CircleAvatar(

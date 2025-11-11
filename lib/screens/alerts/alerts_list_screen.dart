@@ -7,6 +7,7 @@ import '../../models/alert_model.dart';
 import '../../services/alert_service.dart';
 import '../../services/alert_local_service.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 
 class AlertsListScreen extends StatefulWidget {
   const AlertsListScreen({super.key});
@@ -92,7 +93,13 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Alerts')),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? ListView.builder(
+              itemCount: 5,
+              itemBuilder: (context, index) => const ShimmerListTile(
+                hasLeading: true,
+                hasTrailing: false,
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _refreshRemote,
               child: _alerts.isEmpty

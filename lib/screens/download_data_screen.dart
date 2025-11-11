@@ -8,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../widgets/shimmer/shimmer_widgets.dart';
 import '../providers/water_goal_provider.dart';
 import '../services/irrigation_log_service.dart';
 
@@ -413,7 +414,9 @@ List<Map<String, dynamic>> alerts = [];
     return Scaffold(
       appBar: AppBar(title: const Text('Download Data')),
       body: _generating
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+                        child: ShimmerCenter(size: 48),
+                      )
           : Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: SingleChildScrollView(

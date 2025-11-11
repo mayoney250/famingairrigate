@@ -5,6 +5,7 @@ import '../../models/irrigation_log_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/irrigation_log_service.dart';
 import '../../services/irrigation_service.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 
 class IrrigationControlScreen extends StatelessWidget {
   const IrrigationControlScreen({super.key});
@@ -93,7 +94,9 @@ class IrrigationControlScreen extends StatelessWidget {
               stream: logsService.streamUserLogs(userId),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  return const Center(
+              child: ShimmerCenter(size: 48),
+            );
                 }
                 final logs = snapshot.data ?? const <IrrigationLogModel>[];
                 if (logs.isEmpty) {
