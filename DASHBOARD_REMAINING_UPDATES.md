@@ -362,3 +362,6 @@ Your "Completed Irrigations" section now:
 - ✅ Has **debug logging** to verify data loading
 
 Check your console output when you open the report to see exactly what data was loaded! 🚀
+
+
+

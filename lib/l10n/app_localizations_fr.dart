@@ -300,4 +300,112 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get scheduled => 'Programmé';
+
+  @override
+  String get pleaseEnterFirstName => 'Please enter your first name';
+
+  @override
+  String get pleaseEnterLastName => 'Please enter your last name';
+
+  @override
+  String get pleaseEnterEmail => 'Please enter your email';
+
+  @override
+  String get pleaseEnterValidEmail => 'Please enter a valid email';
+
+  @override
+  String get pleaseEnterPassword => 'Please enter your password';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 8 characters';
+
+  @override
+  String get province => 'Province';
+
+  @override
+  String get district => 'District';
+
+  @override
+  String get chooseProvince => 'Choose a province';
+
+  @override
+  String get chooseDistrict => 'Choose a district';
+
+  @override
+  String get chooseProvinceFirst => 'Choose a province first';
+
+  @override
+  String get addressOptional => 'Address (optional)';
+
+  @override
+  String get addressHint => 'e.g., Village, Cell, Sector';
+
+  @override
+  String get addressTooShort => 'Address too short';
+
+  @override
+  String get addressTooLong => 'Address too long';
+
+  @override
+  String get pleaseConfirmPassword => 'Please confirm your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get registrationFailed => 'Registration failed';
+
+  @override
+  String get failedToSendResetEmail => 'Failed to send reset email';
+
+  @override
+  String get verifyEmail => 'Verify Email';
+
+  @override
+  String get verifyYourEmail => 'Verify Your Email';
+
+  @override
+  String get verificationEmailSentTo => 'We\'ve sent a verification email to:';
+
+  @override
+  String get nextSteps => 'Next Steps:';
+
+  @override
+  String get checkEmailInbox => '1. Check your email inbox';
+
+  @override
+  String get lookForFirebaseEmail => '2. Look for an email from Firebase';
+
+  @override
+  String get checkSpamFolder => '3. Check your spam/junk folder';
+
+  @override
+  String get clickVerificationLink => '4. Click the verification link';
+
+  @override
+  String get returnAndClickVerified =>
+      '5. Return here and click \"I\'ve Verified\"';
+
+  @override
+  String get verifiedMyEmail => 'I\'ve Verified My Email';
+
+  @override
+  String get resendVerificationEmail => 'Resend Verification Email';
+
+  @override
+  String get backToLogin => 'Back to Login';
+
+  @override
+  String get errorSendingEmail => 'Error sending email';
+
+  @override
+  String get emailNotVerifiedYet =>
+      'Email not verified yet. Please check your email and click the verification link.';
+
+  @override
+  String get errorCheckingVerification => 'Error checking verification';
+
+  @override
+  String get verificationEmailSent =>
+      'Verification email sent! Please check your inbox and spam folder.';
 }

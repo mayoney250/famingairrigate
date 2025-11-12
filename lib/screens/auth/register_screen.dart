@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+import '../../utils/l10n_extensions.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -68,7 +69,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (success && mounted) {
         _showSuccessDialog();
       } else if (mounted) {
-        _showErrorSnackBar(authProvider.errorMessage ?? 'Registration failed');
+        _showErrorSnackBar(authProvider.errorMessage ?? context.l10n.registrationFailed);
       }
     }
   }
@@ -79,7 +80,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   void _showErrorSnackBar(String message) {
     Get.snackbar(
-      'Error',
+      context.l10n.error,
       message,
       backgroundColor: FamingaBrandColors.statusWarning,
       colorText: FamingaBrandColors.white,
@@ -92,7 +93,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
-        title: const Text('Create Account'),
+        title: Text(context.l10n.createAccount),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
@@ -107,7 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
-                  'Join Faminga',
+                  context.l10n.joinFaminga,
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: FamingaBrandColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -116,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Start managing your irrigation smartly',
+                  context.l10n.startManaging,
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: FamingaBrandColors.textPrimary,
                       ),
@@ -127,13 +128,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // First name
                 CustomTextField(
                   controller: _firstNameController,
-                  label: 'First Name',
-                  hintText: 'Enter your first name',
+                  label: context.l10n.firstName,
+                  hintText: context.l10n.enterFirstName,
                   prefixIcon: Icons.person_outlined,
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your first name';
+                      return context.l10n.pleaseEnterFirstName;
                     }
                     return null;
                   },
@@ -143,13 +144,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Last name
                 CustomTextField(
                   controller: _lastNameController,
-                  label: 'Last Name',
-                  hintText: 'Enter your last name',
+                  label: context.l10n.lastName,
+                  hintText: context.l10n.enterLastName,
                   prefixIcon: Icons.person_outlined,
                   textCapitalization: TextCapitalization.words,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your last name';
+                      return context.l10n.pleaseEnterLastName;
                     }
                     return null;
                   },
@@ -159,16 +160,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Email
                 CustomTextField(
                   controller: _emailController,
-                  label: 'Email',
-                  hintText: 'Enter your email',
+                  label: context.l10n.email,
+                  hintText: context.l10n.enterEmail,
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icons.email_outlined,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return context.l10n.pleaseEnterEmail;
                     }
                     if (!GetUtils.isEmail(value)) {
-                      return 'Please enter a valid email';
+                      return context.l10n.pleaseEnterValidEmail;
                     }
                     return null;
                   },
@@ -178,8 +179,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Phone (optional)
                 CustomTextField(
                   controller: _phoneController,
-                  label: 'Phone Number (Optional)',
-                  hintText: 'Enter your phone number',
+                  label: context.l10n.phoneNumber,
+                  hintText: context.l10n.enterPhoneNumber,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
                 ),
@@ -188,7 +189,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedProvince,
                   decoration: InputDecoration(
-                    labelText: 'Province',
+                    labelText: context.l10n.province,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.map_outlined),
                   ),
@@ -198,7 +199,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: Text(province),
                           ))
                       .toList(),
-                  validator: (value) => value == null ? 'Choose a province' : null,
+                  validator: (value) => value == null ? context.l10n.chooseProvince : null,
                   onChanged: (p) {
                     setState(() {
                       _selectedProvince = p;
@@ -211,7 +212,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 DropdownButtonFormField<String>(
                   initialValue: _selectedDistrict,
                   decoration: InputDecoration(
-                    labelText: 'District',
+                    labelText: context.l10n.district,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                     prefixIcon: const Icon(Icons.location_city_outlined, color: FamingaBrandColors.iconColor),
                   ),
@@ -221,22 +222,22 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             child: Text(district),
                           ))
                       .toList(),
-                  validator: (value) => value == null ? 'Choose a district' : null,
+                  validator: (value) => value == null ? context.l10n.chooseDistrict : null,
                   onChanged: (d) => setState(() => _selectedDistrict = d),
-                  disabledHint: const Text('Choose a province first'),
+                  disabledHint: Text(context.l10n.chooseProvinceFirst),
                 ),
                 const SizedBox(height: 16),
                 // Address
                 CustomTextField(
                   controller: _addressController,
-                  label: 'Address (optional)',
-                  hintText: 'e.g., Village, Cell, Sector',
+                  label: context.l10n.addressOptional,
+                  hintText: context.l10n.addressHint,
                   prefixIcon: Icons.location_on_outlined,
                   keyboardType: TextInputType.streetAddress,
                   validator: (value) {
                     if (value != null && value.trim().isNotEmpty) {
-                      if (value.trim().length < 5) return 'Address too short';
-                      if (value.length > 100) return 'Address too long';
+                      if (value.trim().length < 5) return context.l10n.addressTooShort;
+                      if (value.length > 100) return context.l10n.addressTooLong;
                     }
                     return null;
                   },
@@ -251,8 +252,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Password
                 CustomTextField(
                   controller: _passwordController,
-                  label: 'Password',
-                  hintText: 'Enter your password',
+                  label: context.l10n.password,
+                  hintText: context.l10n.enterPassword,
                   obscureText: _obscurePassword,
                   prefixIcon: Icons.lock_outlined,
                   suffixIcon: IconButton(
@@ -269,10 +270,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your password';
+                      return context.l10n.pleaseEnterPassword;
                     }
                     if (value.length < 8) {
-                      return 'Password must be at least 8 characters';
+                      return context.l10n.passwordMinLength;
                     }
                     return null;
                   },
@@ -282,8 +283,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Confirm password
                 CustomTextField(
                   controller: _confirmPasswordController,
-                  label: 'Confirm Password',
-                  hintText: 'Re-enter your password',
+                  label: context.l10n.confirmPassword,
+                  hintText: context.l10n.reEnterPassword,
                   obscureText: _obscureConfirmPassword,
                   prefixIcon: Icons.lock_outlined,
                   suffixIcon: IconButton(
@@ -300,10 +301,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return context.l10n.pleaseConfirmPassword;
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return context.l10n.passwordsDoNotMatch;
                     }
                     return null;
                   },
@@ -314,7 +315,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 Consumer<AuthProvider>(
                   builder: (context, authProvider, _) {
                     return CustomButton(
-                      text: 'Create Account',
+                      text: context.l10n.createAccount,
                       onPressed: _handleRegister,
                       isLoading: authProvider.isLoading,
                     );
@@ -323,28 +324,28 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 24),
                 
                 // Login link
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      'Already have an account? ',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Get.back();
-                      },
-                      child: Text(
-                        'Login',
-                        style:
-                            Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                  color: FamingaBrandColors.primaryOrange,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                      ),
-                    ),
-                  ],
-                ),
+               Row(
+  mainAxisAlignment: MainAxisAlignment.center,
+  children: [
+    Text(
+      context.l10n.alreadyHaveAccount,
+      style: Theme.of(context).textTheme.bodyMedium,
+    ),
+    TextButton(
+      onPressed: () {
+        Get.back();
+      },
+      child: Text(
+        context.l10n.login,
+        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: FamingaBrandColors.primaryOrange,
+              fontWeight: FontWeight.bold,
+            ),
+      ),
+    ),
+  ],
+),
+
               ],
             ),
           ),
