@@ -31,6 +31,7 @@ class DashboardProvider with ChangeNotifier {
   // Dashboard data
   List<IrrigationScheduleModel> _upcoming = <IrrigationScheduleModel>[];
   WeatherData? _weatherData;
+  List<Map<String, dynamic>> _forecast5Day = [];
   double? _avgSoilMoisture; // Add field
   double _weeklyWaterUsage = 0.0;
   double _weeklySavings = 0.0;
@@ -146,11 +147,21 @@ class DashboardProvider with ChangeNotifier {
             humidity: weather.humidity.toInt(),
             condition: mappedCondition,
             description: weather.description,
-            windSpeed: 3.5,
+            windSpeed: 3.5, // To improve: parse wind from current API and wire here
             pressure: 1013,
             timestamp: weather.timestamp,
             location: weather.location,
           );
+
+          // Fetch 5-day forecast
+          try {
+            final forecast = await _weatherService.fetch5DayForecast(
+              lat: _latitude!,
+              lon: _longitude!,
+              apiKey: '1bbb141391cf468601f7de322cecb11e',
+            ).timeout(const Duration(seconds: 10));
+            _forecast5Day = forecast;
+          } catch (_) {}
           
           await _weatherBox?.put('current_weather', {
             'ts': DateTime.now().millisecondsSinceEpoch,
@@ -187,6 +198,7 @@ class DashboardProvider with ChangeNotifier {
   IrrigationScheduleModel? get nextSchedule => _upcoming.isNotEmpty ? _upcoming.first : null;
   List<IrrigationScheduleModel> get upcomingSchedules => _upcoming;
   WeatherData? get weatherData => _weatherData;
+  List<Map<String, dynamic>> get forecast5Day => _forecast5Day;
   double? get avgSoilMoisture => _avgSoilMoisture;
   double get weeklyWaterUsage => _weeklyWaterUsage;
   double get weeklySavings => _weeklySavings;
@@ -632,4 +644,3 @@ class DashboardProvider with ChangeNotifier {
     _startAggTimer(userId);
   }
 }
-

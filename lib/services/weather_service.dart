@@ -7,6 +7,7 @@ import 'dart:convert';
 class WeatherService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String _collection = 'weatherData';
+  static const String _forecastEndpoint = 'https://api.openweathermap.org/data/2.5/forecast';
 
   // Create or update weather data
   Future<String> saveWeatherData(WeatherDataModel weather) async {
@@ -175,5 +176,72 @@ class WeatherService {
       log('Failed to fetch OpenWeather (status: ${res.statusCode})');
       return null;
     }
+  }
+
+  // Fetch 5-day forecast (3-hour intervals) and reduce to daily summaries
+  Future<List<Map<String, dynamic>>> fetch5DayForecast({
+    required double lat,
+    required double lon,
+    required String apiKey,
+  }) async {
+    final url = Uri.parse('$_forecastEndpoint?lat=$lat&lon=$lon&appid=$apiKey&units=metric');
+    final res = await http.get(url);
+    if (res.statusCode != 200) {
+      log('Failed to fetch forecast (status: ${res.statusCode})');
+      return [];
+    }
+    final data = json.decode(res.body) as Map<String, dynamic>;
+    final list = (data['list'] as List?) ?? [];
+    final Map<DateTime, List<Map<String, dynamic>>> grouped = {};
+    for (final raw in list) {
+      final dt = DateTime.fromMillisecondsSinceEpoch(((raw['dt'] ?? 0) as int) * 1000);
+      final d0 = DateTime(dt.year, dt.month, dt.day);
+      (grouped[d0] ??= []).add(Map<String, dynamic>.from(raw));
+    }
+    final days = grouped.keys.toList()..sort();
+    final out = <Map<String, dynamic>>[];
+    for (final day in days.take(5)) {
+      final entries = grouped[day]!;
+      double minT = double.infinity, maxT = -double.infinity;
+      double windSum = 0.0; int windN = 0;
+      double rainMm = 0.0;
+      double popSum = 0.0; int popN = 0;
+      double humiditySum = 0.0; int humidityN = 0;
+      String status = '';
+      int weight = -1;
+      for (final e in entries) {
+        final main = e['main'] ?? {};
+        final tmin = (main['temp_min'] ?? main['temp'] ?? 0).toDouble();
+        final tmax = (main['temp_max'] ?? main['temp'] ?? 0).toDouble();
+        if (tmin < minT) minT = tmin;
+        if (tmax > maxT) maxT = tmax;
+        final w = (e['wind']?['speed'] ?? 0).toDouble();
+        windSum += w; windN++;
+        if (e['pop'] != null) { popSum += (e['pop'] as num).toDouble(); popN++; }
+        if (main['humidity'] != null) { 
+          humiditySum += (main['humidity'] as num).toDouble(); 
+          humidityN++; 
+        }
+        if (e['rain'] != null && e['rain']['3h'] != null) {
+          rainMm += (e['rain']['3h'] as num).toDouble();
+        }
+        final weather = (e['weather'] as List?)?.first;
+        final clouds = (e['clouds']?['all'] ?? 0) as int;
+        final wmain = (weather?['main'] ?? '').toString();
+        final wScore = wmain == 'Rain' ? 1000 : clouds; // prefer rain if present
+        if (wScore > weight) { weight = wScore; status = wmain; }
+      }
+      out.add({
+        'date': day.toIso8601String(),
+        'tempMin': minT.isFinite ? minT : 0.0,
+        'tempMax': maxT.isFinite ? maxT : 0.0,
+        'windSpeed': windN > 0 ? windSum / windN : 0.0,
+        'rainMm': rainMm,
+        'pop': popN > 0 ? popSum / popN : 0.0,
+        'humidity': humidityN > 0 ? (humiditySum / humidityN).round() : 0,
+        'status': status,
+      });
+    }
+    return out;
   }
 }

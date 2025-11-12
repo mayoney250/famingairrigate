@@ -6,10 +6,12 @@ import '../services/auth_service.dart';
 import '../services/error_service.dart';
 import '../services/user_local_service.dart';
 import '../services/notification_service.dart';
+import '../services/fcm_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
   final NotificationService _notificationService = NotificationService();
+  final FCMService _fcmService = FCMService();
   
   UserModel? _currentUser;
   bool _isLoading = false;
@@ -30,9 +32,14 @@ class AuthProvider with ChangeNotifier {
     _authService.authStateChanges.listen((User? user) async {
       if (user != null) {
         await loadUserData(user.uid);
+        // Initialize FCM for push notifications
+        await _fcmService.initialize();
+        // Initialize local notifications
         await _notificationService.initialize();
       } else {
         _currentUser = null;
+        // Clean up on logout
+        await _fcmService.deleteToken();
         _notificationService.dispose();
         notifyListeners();
       }

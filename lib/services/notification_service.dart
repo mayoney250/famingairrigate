@@ -862,7 +862,7 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final notificationId = DateTime.now().millisecondsSinceEpoch;
       
       print('[NOTIFICATION] Calling show() with ID: $notificationId, title: $title, body: $body');
       await _localNotifications.show(

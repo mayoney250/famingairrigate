@@ -204,6 +204,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         Get.toNamed(AppRoutes.settings);
                       },
                     ),
+                    if (kDebugMode)
+                      _buildMenuItem(
+                        Icons.bug_report_outlined,
+                        'Notification Test',
+                        'Test push notifications',
+                        () {
+                          Get.toNamed(AppRoutes.notificationTest);
+                        },
+                      ),
                     _buildMenuItem(
                       Icons.help_outline,
                       'Help & Support',

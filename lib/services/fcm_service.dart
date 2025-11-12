@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -318,7 +319,7 @@ class FCMService {
 
   Map<String, dynamic> _parsePayload(String payload) {
     try {
-      final decoded = const JsonDecoder().convert(payload);
+      final decoded = json.decode(payload);
       if (decoded is Map<String, dynamic>) return decoded;
       return {};
     } catch (_) {
@@ -357,6 +358,15 @@ class FCMService {
       print('✓ Unsubscribed from topic: $topic');
     } catch (e) {
       print('✗ Error unsubscribing from topic: $e');
+    }
+  }
+
+  Future<String?> getToken() async {
+    try {
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      print('✗ Error getting FCM token: $e');
+      return null;
     }
   }
 
