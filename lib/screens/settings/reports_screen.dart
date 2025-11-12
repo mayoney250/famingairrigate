@@ -13,6 +13,7 @@ import '../../models/irrigation_log_model.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../models/user_model.dart';
 import '../../models/alert_model.dart';
+import '../../widgets/shimmer/shimmer_widgets.dart';
 
 enum ReportPeriod { daily, weekly, monthly }
 enum CycleTypeFilter { all, scheduled, manual }
@@ -36,6 +37,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   CycleTypeFilter _cycleTypeFilter = CycleTypeFilter.all;
   StatusFilter _statusFilter = StatusFilter.all;
   String? _selectedFieldFilter;
+  bool _showAllSchedules = false;
   
   bool _isLoading = true;
   String? _errorMessage;
@@ -155,19 +157,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
     try {
       final allSchedules = await _scheduleService.getUserSchedules(userId);
       
-      // Filter cycles by date range and separate by status
+      debugPrint('📊 Report: Loaded ${allSchedules.length} total schedules for user $userId');
+      
       final filteredSchedules = allSchedules.where((schedule) {
-        if (!schedule.isActive) return false;
+        if (!schedule.isActive) {
+          debugPrint('  ⏭️ Skipping inactive schedule: ${schedule.zoneName}');
+          return false;
+        }
+        
         final scheduleTime = schedule.nextRun ?? schedule.startTime;
-        return scheduleTime.isAfter(start.subtract(const Duration(days: 1))) && 
+        final scheduleCreated = schedule.createdAt ?? scheduleTime;
+        
+        if (schedule.repeatDays.isNotEmpty) {
+          final shouldInclude = scheduleCreated.isBefore(end.add(const Duration(days: 1)));
+          debugPrint('  🔄 Recurring schedule "${schedule.zoneName}": ${shouldInclude ? "INCLUDED" : "EXCLUDED"}');
+          return shouldInclude;
+        }
+        
+        final shouldInclude = scheduleTime.isAfter(start.subtract(const Duration(days: 1))) && 
                scheduleTime.isBefore(end.add(const Duration(days: 1)));
+        debugPrint('  📅 One-time schedule "${schedule.zoneName}": ${shouldInclude ? "INCLUDED" : "EXCLUDED"}');
+        return shouldInclude;
       }).toList();
 
-      // Separate scheduled vs running
       _scheduledCycles = filteredSchedules.where((s) => s.status == 'scheduled').toList();
       _runningCycles = filteredSchedules.where((s) => s.status == 'running').toList();
+      
+      debugPrint('📊 Report: ${_scheduledCycles.length} scheduled, ${_runningCycles.length} running');
     } catch (e) {
-      debugPrint('Error loading scheduled cycles: $e');
+      debugPrint('❌ Error loading scheduled cycles: $e');
       _scheduledCycles = [];
       _runningCycles = [];
     }
@@ -205,12 +223,25 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _loadIrrigationLogs(String userId, DateTime start, DateTime end) async {
     try {
       _allLogs = await _loadLogsWithFallback(userId, start, end);
+      
+      debugPrint('📊 Report: Loaded ${_allLogs.length} total irrigation logs');
+      
+      final completedLogs = _allLogs.where((log) => log.action == IrrigationAction.completed).toList();
+      debugPrint('  ✅ ${completedLogs.length} completed irrigations');
+      
       _manualCycles = _allLogs.where((log) => 
         log.triggeredBy == 'manual' && 
         log.action == IrrigationAction.completed
       ).toList();
+      
+      debugPrint('  👉 ${_manualCycles.length} manual cycles');
+      debugPrint('  🤖 ${completedLogs.length - _manualCycles.length} scheduled cycles');
+      
+      if (completedLogs.isNotEmpty) {
+        debugPrint('  💧 Total water used: ${completedLogs.fold<double>(0.0, (sum, log) => sum + (log.waterUsed ?? 0.0)).toStringAsFixed(1)}L');
+      }
     } catch (e) {
-      debugPrint('Error loading irrigation logs: $e');
+      debugPrint('❌ Error loading irrigation logs: $e');
       _allLogs = [];
       _manualCycles = [];
     }
@@ -374,9 +405,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
         ],
       ),
       body: _isLoading
-          ? Center(
-              child: CircularProgressIndicator(
-                color: FamingaBrandColors.primaryOrange,
+          ? const SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  ShimmerDashboardStats(),
+                  SizedBox(height: 16),
+                  ShimmerFieldCard(),
+                  ShimmerFieldCard(),
+                  SizedBox(height: 16),
+                  ShimmerBox(height: 200, borderRadius: BorderRadius.all(Radius.circular(12))),
+                ],
               ),
             )
           : _errorMessage != null
@@ -391,6 +430,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         _buildPeriodSelector(isDark),
+                        const SizedBox(height: 20),
+                        _buildDataSummaryBanner(isDark),
                         const SizedBox(height: 20),
                         _buildMetadataSection(isDark),
                         const SizedBox(height: 20),
@@ -710,10 +751,28 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Scheduled Cycles (${filtered.length})', Icons.schedule, isDark),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildSectionTitle('Scheduled Cycles (${filtered.length})', Icons.schedule, isDark),
+              if (filtered.isEmpty && _scheduledCycles.isEmpty)
+                TextButton.icon(
+                  onPressed: () {
+                    setState(() => _showAllSchedules = !_showAllSchedules);
+                  },
+                  icon: Icon(Icons.info_outline, size: 16),
+                  label: Text('Show All', style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          ),
           const SizedBox(height: 16),
           if (filtered.isEmpty)
-            _buildEmptyState('No scheduled cycles found', isDark)
+            _buildEmptyState(
+              _scheduledCycles.isEmpty 
+                ? 'No active schedules found for this user' 
+                : 'No schedules found in selected period. Try changing the period filter.',
+              isDark,
+            )
           else
             ...filtered.take(5).map((cycle) => _buildCycleListItem(
               zoneName: cycle.zoneName,
@@ -1060,7 +1119,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
       log.action == IrrigationAction.completed
     ).toList();
 
-    // Apply field filter if selected
+    completedLogs.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
     final filteredCompleted = _selectedFieldFilter != null
         ? completedLogs.where((log) => log.zoneId == _selectedFieldFilter).toList()
         : completedLogs;
@@ -1126,8 +1186,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            ...filteredCompleted.take(10).map((log) => _buildCompletedIrrigationItem(log, isDark)),
-            if (filteredCompleted.length > 10)
+            ...filteredCompleted.map((log) => _buildCompletedIrrigationItem(log, isDark)),
+            if (filteredCompleted.length > 20 && false)
               Padding(
                 padding: const EdgeInsets.only(top: 8),
                 child: Center(
@@ -1705,5 +1765,80 @@ class _ReportsScreenState extends State<ReportsScreen> {
       default:
         return FamingaBrandColors.primaryOrange;
     }
+  }
+
+  Widget _buildDataSummaryBanner(bool isDark) {
+    final totalSchedules = _scheduledCycles.length + _runningCycles.length;
+    final totalCycles = totalSchedules + _manualCycles.length;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FamingaBrandColors.primaryOrange,
+            FamingaBrandColors.primaryOrange.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Data Loaded Successfully',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildSummaryItem('Schedules', totalSchedules.toString(), Colors.white),
+              _buildSummaryItem('Logs', _allLogs.length.toString(), Colors.white),
+              _buildSummaryItem('Fields', _fields.length.toString(), Colors.white),
+              _buildSummaryItem('Alerts', _alerts.length.toString(), Colors.white),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(String label, String value, Color color) {
+    return Column(
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: color.withOpacity(0.9),
+          ),
+        ),
+      ],
+    );
   }
 }
