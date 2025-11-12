@@ -659,6 +659,216 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Scheduled'**
   String get scheduled;
+
+  /// No description provided for @pleaseEnterFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your first name'**
+  String get pleaseEnterFirstName;
+
+  /// No description provided for @pleaseEnterLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your last name'**
+  String get pleaseEnterLastName;
+
+  /// No description provided for @pleaseEnterEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your email'**
+  String get pleaseEnterEmail;
+
+  /// No description provided for @pleaseEnterValidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get pleaseEnterValidEmail;
+
+  /// No description provided for @pleaseEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your password'**
+  String get pleaseEnterPassword;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 8 characters'**
+  String get passwordMinLength;
+
+  /// No description provided for @province.
+  ///
+  /// In en, this message translates to:
+  /// **'Province'**
+  String get province;
+
+  /// No description provided for @district.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get district;
+
+  /// No description provided for @chooseProvince.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a province'**
+  String get chooseProvince;
+
+  /// No description provided for @chooseDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a district'**
+  String get chooseDistrict;
+
+  /// No description provided for @chooseProvinceFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a province first'**
+  String get chooseProvinceFirst;
+
+  /// No description provided for @addressOptional.
+  ///
+  /// In en, this message translates to:
+  /// **'Address (optional)'**
+  String get addressOptional;
+
+  /// No description provided for @addressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'e.g., Village, Cell, Sector'**
+  String get addressHint;
+
+  /// No description provided for @addressTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Address too short'**
+  String get addressTooShort;
+
+  /// No description provided for @addressTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Address too long'**
+  String get addressTooLong;
+
+  /// No description provided for @pleaseConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get pleaseConfirmPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @registrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed'**
+  String get registrationFailed;
+
+  /// No description provided for @failedToSendResetEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Failed to send reset email'**
+  String get failedToSendResetEmail;
+
+  /// No description provided for @verifyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Email'**
+  String get verifyEmail;
+
+  /// No description provided for @verifyYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Email'**
+  String get verifyYourEmail;
+
+  /// No description provided for @verificationEmailSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve sent a verification email to:'**
+  String get verificationEmailSentTo;
+
+  /// No description provided for @nextSteps.
+  ///
+  /// In en, this message translates to:
+  /// **'Next Steps:'**
+  String get nextSteps;
+
+  /// No description provided for @checkEmailInbox.
+  ///
+  /// In en, this message translates to:
+  /// **'1. Check your email inbox'**
+  String get checkEmailInbox;
+
+  /// No description provided for @lookForFirebaseEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'2. Look for an email from Firebase'**
+  String get lookForFirebaseEmail;
+
+  /// No description provided for @checkSpamFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'3. Check your spam/junk folder'**
+  String get checkSpamFolder;
+
+  /// No description provided for @clickVerificationLink.
+  ///
+  /// In en, this message translates to:
+  /// **'4. Click the verification link'**
+  String get clickVerificationLink;
+
+  /// No description provided for @returnAndClickVerified.
+  ///
+  /// In en, this message translates to:
+  /// **'5. Return here and click \"I\'ve Verified\"'**
+  String get returnAndClickVerified;
+
+  /// No description provided for @verifiedMyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'I\'ve Verified My Email'**
+  String get verifiedMyEmail;
+
+  /// No description provided for @resendVerificationEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Resend Verification Email'**
+  String get resendVerificationEmail;
+
+  /// No description provided for @backToLogin.
+  ///
+  /// In en, this message translates to:
+  /// **'Back to Login'**
+  String get backToLogin;
+
+  /// No description provided for @errorSendingEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Error sending email'**
+  String get errorSendingEmail;
+
+  /// No description provided for @emailNotVerifiedYet.
+  ///
+  /// In en, this message translates to:
+  /// **'Email not verified yet. Please check your email and click the verification link.'**
+  String get emailNotVerifiedYet;
+
+  /// No description provided for @errorCheckingVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Error checking verification'**
+  String get errorCheckingVerification;
+
+  /// No description provided for @verificationEmailSent.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification email sent! Please check your inbox and spam folder.'**
+  String get verificationEmailSent;
 }
 
 class _AppLocalizationsDelegate

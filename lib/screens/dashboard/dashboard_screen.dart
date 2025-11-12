@@ -36,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   final GlobalKey _manualStartButtonKey = GlobalKey();
   bool _isManualStartHighlighted = false;
   Timer? _highlightTimer;
+  bool _isWeatherCardExpanded = false;
 
   @override
   void initState() {
@@ -210,12 +211,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildQuickActions(),
                   const SizedBox(height: 20),
 
-                  // Soil Moisture Card
-                  _buildSoilMoistureCard(dashboardProvider),
-                  const SizedBox(height: 20),
-
-                  // 5-Day Weather Forecast
-                  _buildWeatherCard(dashboardProvider),
+                  // Soil Moisture & Weather Cards Row
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWideScreen = constraints.maxWidth > 600;
+                      
+                      if (isWideScreen) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              flex: 1,
+                              child: _buildSoilMoistureCard(dashboardProvider),
+                            ),
+                            const SizedBox(width: 16),
+                            Flexible(
+                              flex: 2,
+                              child: _buildWeatherCard(dashboardProvider),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            _buildSoilMoistureCard(dashboardProvider),
+                            const SizedBox(height: 16),
+                            _buildWeatherCard(dashboardProvider),
+                          ],
+                        );
+                      }
+                    },
+                  ),
                   const SizedBox(height: 20),
                   _buildLiveFieldSensorSummaries(dashboardProvider),
                   const SizedBox(height: 20),
@@ -466,36 +492,55 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final avg = dashboardProvider.avgSoilMoisture;
     final moisturePercent = avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0;
     final moistureText = avg != null ? '${avg.round()}%' : '--';
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(context.l10n.soilMoisture, style: const TextStyle(
-            color: FamingaBrandColors.textPrimary,
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-          )),
-          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.water_drop,
+                color: FamingaBrandColors.primaryOrange,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                context.l10n.soilMoisture,
+                style: const TextStyle(
+                  color: FamingaBrandColors.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
           Stack(
             alignment: Alignment.center,
             children: [
               SizedBox(
-                width: 100,
-                height: 100,
+                width: 90,
+                height: 90,
                 child: CircularProgressIndicator(
                   value: avg != null ? moisturePercent : 0.0,
-                  strokeWidth: 10,
-                  backgroundColor: FamingaBrandColors.borderColor,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : FamingaBrandColors.darkGreen,
+                  strokeWidth: 8,
+                  backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(
+                    FamingaBrandColors.primaryOrange,
                   ),
                 ),
               ),
@@ -504,20 +549,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     moistureText,
-                    style: TextStyle(
-                      color: Theme.of(context).brightness == Brightness.dark
-                          ? Colors.white
-                          : FamingaBrandColors.darkGreen,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    context.l10n.averageToday,
                     style: const TextStyle(
-                      color: FamingaBrandColors.textSecondary,
-                      fontSize: 11,
+                      color: FamingaBrandColors.textPrimary,
+                      fontSize: 26,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
@@ -525,6 +560,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 12),
+          Text(
+            context.l10n.averageToday,
+            style: const TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 12,
+            ),
+          ),
         ],
       ),
     );
@@ -535,11 +577,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     if (forecast.isEmpty) {
       return Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: FamingaBrandColors.borderColor),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: const Center(
           child: Column(
@@ -555,7 +603,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 'Loading weather...',
                 style: TextStyle(
                   color: FamingaBrandColors.textSecondary,
-                  fontSize: 11,
+                  fontSize: 12,
                 ),
               ),
               SizedBox(height: 20),
@@ -567,29 +615,189 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final forecastDays = forecast.map((f) => ForecastDay.fromMap(f)).toList();
     
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isWeatherCardExpanded = true),
+      onExit: (_) => setState(() => _isWeatherCardExpanded = false),
+      child: GestureDetector(
+        onTap: () => setState(() => _isWeatherCardExpanded = !_isWeatherCardExpanded),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeInOut,
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.wb_sunny,
+                        color: FamingaBrandColors.primaryOrange,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Weather Forecast',
+                        style: TextStyle(
+                          color: FamingaBrandColors.textPrimary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (forecastDays.length > 1)
+                    AnimatedRotation(
+                      turns: _isWeatherCardExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      child: const Icon(
+                        Icons.keyboard_arrow_down,
+                        color: FamingaBrandColors.textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (forecastDays.isNotEmpty) _buildTodayForecastHighlight(forecastDays.first),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+                child: _isWeatherCardExpanded && forecastDays.length > 1
+                    ? Column(
+                        children: [
+                          const SizedBox(height: 12),
+                          const Divider(
+                            color: FamingaBrandColors.borderColor,
+                            height: 1,
+                          ),
+                          const SizedBox(height: 12),
+                          ...forecastDays.skip(1).take(4).map((day) => _buildForecastDayRow(day)),
+                        ],
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTodayForecastHighlight(ForecastDay today) {
+    final weatherIcon = _getWeatherIconForStatus(today.status);
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
+        gradient: LinearGradient(
+          colors: [
+            FamingaBrandColors.primaryOrange.withOpacity(0.1),
+            FamingaBrandColors.primaryOrange.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
         children: [
-          const Text(
-            '5-Day Forecast',
-            style: TextStyle(
-              color: FamingaBrandColors.textPrimary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
+          Icon(
+            weatherIcon,
+            color: FamingaBrandColors.primaryOrange,
+            size: 48,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  today.dayName,
+                  style: const TextStyle(
+                    color: FamingaBrandColors.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  today.status,
+                  style: const TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.thermostat,
+                      size: 16,
+                      color: FamingaBrandColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${today.tempMaxString} / ${today.tempMinString}',
+                      style: const TextStyle(
+                        color: FamingaBrandColors.textPrimary,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(
+                      Icons.water_drop_outlined,
+                      size: 14,
+                      color: FamingaBrandColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      today.humidityString,
+                      style: const TextStyle(
+                        color: FamingaBrandColors.textPrimary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 12),
-          ...forecastDays.map((day) => _buildForecastDayRow(day)),
         ],
       ),
     );
+  }
+
+  IconData _getWeatherIconForStatus(String status) {
+    switch (status.toLowerCase()) {
+      case 'clear':
+        return Icons.wb_sunny;
+      case 'clouds':
+        return Icons.cloud;
+      case 'rain':
+        return Icons.water_drop;
+      case 'thunderstorm':
+        return Icons.thunderstorm;
+      case 'snow':
+        return Icons.ac_unit;
+      default:
+        return Icons.wb_cloudy;
+    }
   }
   
   Widget _buildForecastDayRow(ForecastDay day) {
@@ -615,33 +823,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
       decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: FamingaBrandColors.borderColor.withOpacity(0.3),
-            width: 0.5,
-          ),
-        ),
+        color: FamingaBrandColors.borderColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 50,
+            width: 45,
             child: Text(
               day.dayName,
               style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Icon(
             weatherIcon,
             color: FamingaBrandColors.primaryOrange,
-            size: 20,
+            size: 22,
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -653,46 +858,46 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.thermostat, size: 12, color: FamingaBrandColors.textSecondary),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.thermostat, size: 14, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 4),
                         Text(
                           '${day.tempMaxString}/${day.tempMinString}',
                           style: const TextStyle(
                             color: FamingaBrandColors.textPrimary,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                           ),
                         ),
                       ],
                     ),
                     Row(
                       children: [
-                        const Icon(Icons.water_drop_outlined, size: 12, color: FamingaBrandColors.textSecondary),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.water_drop_outlined, size: 13, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 3),
                         Text(
                           day.humidityString,
                           style: const TextStyle(
                             color: FamingaBrandColors.textPrimary,
-                            fontSize: 10,
+                            fontSize: 11,
                           ),
                         ),
                       ],
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 6),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.umbrella, size: 12, color: FamingaBrandColors.textSecondary),
-                        const SizedBox(width: 2),
+                        const Icon(Icons.umbrella, size: 13, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 3),
                         Text(
                           day.popPercentage,
                           style: const TextStyle(
                             color: FamingaBrandColors.textPrimary,
-                            fontSize: 10,
+                            fontSize: 11,
                           ),
                         ),
                       ],

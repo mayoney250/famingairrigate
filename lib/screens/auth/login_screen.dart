@@ -6,6 +6,7 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+import '../../utils/l10n_extensions.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -40,7 +41,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Get.offAllNamed(AppRoutes.dashboard);
       } else if (mounted) {
         _showErrorSnackBar(
-          authProvider.errorMessage ?? 'Login failed',
+          authProvider.errorMessage ?? context.l10n.login,
         );
       }
     }
@@ -55,14 +56,14 @@ class _LoginScreenState extends State<LoginScreen> {
       Get.offAllNamed(AppRoutes.dashboard);
     } else if (mounted && authProvider.errorMessage != null) {
       _showErrorSnackBar(
-        authProvider.errorMessage ?? 'Google sign-in failed',
+        authProvider.errorMessage!,
       );
     }
   }
 
   void _showErrorSnackBar(String message) {
     Get.snackbar(
-      'Error',
+      context.l10n.error,
       message,
       backgroundColor: FamingaBrandColors.statusWarning,
       colorText: FamingaBrandColors.white,
@@ -102,7 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   
                   // Welcome text
                   Text(
-                    'Welcome Back!',
+                    context.l10n.welcomeBack,
                     style: Theme.of(context).textTheme.displaySmall?.copyWith(
                           color: FamingaBrandColors.textPrimary,
                           fontWeight: FontWeight.bold,
@@ -111,7 +112,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    'Sign in to manage your irrigation systems',
+                    context.l10n.signInToManage,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: FamingaBrandColors.textPrimary,
                         ),
@@ -122,16 +123,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Email field
                   CustomTextField(
                     controller: _emailController,
-                    label: 'Email',
-                    hintText: 'Enter your email',
+                    label: context.l10n.email,
+                    hintText: context.l10n.enterEmail,
                     keyboardType: TextInputType.emailAddress,
                     prefixIcon: Icons.email_outlined,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your email';
+                        return context.l10n.enterEmail;
                       }
                       if (!GetUtils.isEmail(value)) {
-                        return 'Please enter a valid email';
+                        return context.l10n.enterEmail;
                       }
                       return null;
                     },
@@ -141,8 +142,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // Password field
                   CustomTextField(
                     controller: _passwordController,
-                    label: 'Password',
-                    hintText: 'Enter your password',
+                    label: context.l10n.password,
+                    hintText: context.l10n.enterPassword,
                     obscureText: _obscurePassword,
                     prefixIcon: Icons.lock_outlined,
                     suffixIcon: IconButton(
@@ -159,10 +160,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your password';
+                        return context.l10n.enterPassword;
                       }
                       if (value.length < 8) {
-                        return 'Password must be at least 8 characters';
+                        return context.l10n.enterPassword;
                       }
                       return null;
                     },
@@ -177,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         Get.toNamed(AppRoutes.forgotPassword);
                       },
                       child: Text(
-                        'Forgot Password?',
+                        context.l10n.forgotPassword,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: FamingaBrandColors.primaryOrange,
                               fontWeight: FontWeight.w600,
@@ -191,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Consumer<AuthProvider>(
                     builder: (context, authProvider, _) {
                       return CustomButton(
-                        text: 'Login',
+                        text: context.l10n.login,
                         onPressed: _handleLogin,
                         isLoading: authProvider.isLoading,
                       );
@@ -200,17 +201,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                   
                   // Divider with OR text
-                  Row(
+                  const Row(
                     children: [
-                      const Expanded(child: Divider()),
+                      Expanded(child: Divider()),
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          'OR',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 16),
+                        child: Text('OR'),
                       ),
-                      const Expanded(child: Divider()),
+                      Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -227,12 +225,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 32,
                           color: FamingaBrandColors.primaryOrange,
                         ),
-                        label: Text(
+                        label: const Text(
                           'Sign in with Google',
-                          style:
-                              Theme.of(context).textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                          style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -255,7 +250,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        "Don't have an account? ",
+                        context.l10n.dontHaveAccount,
                         style: Theme.of(context).textTheme.bodyMedium,
                       ),
                       TextButton(
@@ -263,7 +258,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           Get.toNamed(AppRoutes.register);
                         },
                         child: Text(
-                          'Register',
+                          context.l10n.register,
                           style:
                               Theme.of(context).textTheme.bodyMedium?.copyWith(
                                     color: FamingaBrandColors.primaryOrange,
