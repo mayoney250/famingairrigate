@@ -15,14 +15,8 @@ import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'routes/app_routes.dart';
-import 'services/fcm_service.dart';
 import 'l10n/app_localizations.dart';
-
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await FirebaseConfig.initialize();
-  await firebaseMessagingBackgroundHandler(message);
-}
+import 'services/fcm_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -30,8 +24,8 @@ void main() async {
   // Initialize Firebase
   await FirebaseConfig.initialize();
   
-  // Initialize FCM background handler
-  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  // Register FCM background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
   // Initialize Hive
   await Hive.initFlutter();

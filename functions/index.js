@@ -91,7 +91,7 @@ exports.checkIrrigationNeeds = functions.pubsub
             const reading = latestReadingSnapshot.docs[0].data();
             const moistureLevel = reading.value;
 
-            const threshold = sensor.lowThreshold || 30;
+            const threshold = sensor.lowThreshold || 50;
 
             if (moistureLevel < threshold) {
               const lastAlertSnapshot = await db
@@ -342,27 +342,32 @@ exports.onIrrigationStatusChange = functions.firestore
 
       let title = '';
       let body = '';
+      let shouldSend = false;
 
       switch (newData.status) {
         case 'running':
           title = '💧 Irrigation Started';
           body = `Irrigation has started for ${field?.name || 'your field'}.`;
+          shouldSend = true;
           break;
         case 'completed':
           title = '✅ Irrigation Completed';
           body = `Irrigation completed for ${field?.name || 'your field'}. Total water used: ${newData.waterUsed || 0}L`;
+          shouldSend = true;
           break;
         case 'stopped':
           title = '⏸️ Irrigation Stopped';
           body = `Irrigation was manually stopped for ${field?.name || 'your field'}.`;
+          shouldSend = true;
           break;
         case 'failed':
           title = '❌ Irrigation Failed';
           body = `Irrigation failed for ${field?.name || 'your field'}. Please check the system.`;
+          shouldSend = true;
           break;
       }
 
-      if (title && body) {
+      if (shouldSend && title && body) {
         await sendNotificationToUser(newData.userId, {
           title: title,
           body: body,
@@ -373,6 +378,8 @@ exports.onIrrigationStatusChange = functions.firestore
             status: newData.status,
           },
         });
+
+        console.log(`✓ Irrigation status notification sent: ${newData.status} for cycle ${context.params.cycleId}`);
       }
     }
 

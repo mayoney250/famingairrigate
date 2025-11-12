@@ -16,6 +16,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
 import '../../utils/l10n_extensions.dart';
+import '../../models/forecast_day_model.dart';
 
 // dev-only simulation imports removed
 
@@ -209,15 +210,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildQuickActions(),
                   const SizedBox(height: 20),
 
-                  // Soil Moisture and Weather Row
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: _buildSoilMoistureCard(dashboardProvider)),
-                      const SizedBox(width: 12),
-                      Expanded(child: _buildWeatherCard(dashboardProvider)),
-                    ],
-                  ),
+                  // Soil Moisture Card
+                  _buildSoilMoistureCard(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // 5-Day Weather Forecast
+                  _buildWeatherCard(dashboardProvider),
                   const SizedBox(height: 20),
                   _buildLiveFieldSensorSummaries(dashboardProvider),
                   const SizedBox(height: 20),
@@ -533,9 +531,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildWeatherCard(DashboardProvider dashboardProvider) {
-    final weather = dashboardProvider.weatherData;
+    final forecast = dashboardProvider.forecast5Day;
     
-    if (weather == null) {
+    if (forecast.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -567,26 +565,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    // Get weather icon based on condition
-    IconData weatherIcon;
-    switch (weather.condition.toLowerCase()) {
-      case 'sunny':
-      case 'clear':
-        weatherIcon = Icons.wb_sunny;
-        break;
-      case 'cloudy':
-        weatherIcon = Icons.cloud;
-        break;
-      case 'rainy':
-        weatherIcon = Icons.water_drop;
-        break;
-      case 'stormy':
-        weatherIcon = Icons.thunderstorm;
-        break;
-      default:
-        weatherIcon = Icons.wb_cloudy;
-    }
-
+    final forecastDays = forecast.map((f) => ForecastDay.fromMap(f)).toList();
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -595,45 +575,159 @@ class _DashboardScreenState extends State<DashboardScreen> {
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Local Weather',
+            '5-Day Forecast',
             style: TextStyle(
               color: FamingaBrandColors.textPrimary,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+          ...forecastDays.map((day) => _buildForecastDayRow(day)),
+        ],
+      ),
+    );
+  }
+  
+  Widget _buildForecastDayRow(ForecastDay day) {
+    IconData weatherIcon;
+    switch (day.status.toLowerCase()) {
+      case 'clear':
+        weatherIcon = Icons.wb_sunny;
+        break;
+      case 'clouds':
+        weatherIcon = Icons.cloud;
+        break;
+      case 'rain':
+        weatherIcon = Icons.water_drop;
+        break;
+      case 'thunderstorm':
+        weatherIcon = Icons.thunderstorm;
+        break;
+      case 'snow':
+        weatherIcon = Icons.ac_unit;
+        break;
+      default:
+        weatherIcon = Icons.wb_cloudy;
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 4),
+      decoration: BoxDecoration(
+        border: Border(
+          bottom: BorderSide(
+            color: FamingaBrandColors.borderColor.withOpacity(0.3),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 50,
+            child: Text(
+              day.dayName,
+              style: const TextStyle(
+                color: FamingaBrandColors.textPrimary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           Icon(
             weatherIcon,
             color: FamingaBrandColors.primaryOrange,
-            size: 48,
+            size: 20,
           ),
-          const SizedBox(height: 8),
-          Text(
-            weather.temperatureString,
-            style: const TextStyle(
-              color: FamingaBrandColors.textPrimary,
-              fontSize: 32,
-              fontWeight: FontWeight.bold,
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.thermostat, size: 12, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 2),
+                        Text(
+                          '${day.tempMaxString}/${day.tempMinString}',
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textPrimary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.water_drop_outlined, size: 12, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 2),
+                        Text(
+                          day.humidityString,
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textPrimary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.umbrella, size: 12, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 2),
+                        Text(
+                          day.popPercentage,
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textPrimary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        const Icon(Icons.air, size: 12, color: FamingaBrandColors.textSecondary),
+                        const SizedBox(width: 2),
+                        Text(
+                          day.windSpeedString,
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textPrimary,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (day.rainMm > 0)
+                      Row(
+                        children: [
+                          const Icon(Icons.water, size: 12, color: FamingaBrandColors.textSecondary),
+                          const SizedBox(width: 2),
+                          Text(
+                            day.rainAmountString,
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textPrimary,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            weather.description.capitalize ?? weather.description,
-            style: const TextStyle(
-              color: FamingaBrandColors.textSecondary,
-              fontSize: 12,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildWeatherDetail('Feels Like', weather.feelsLikeString),
-              _buildWeatherDetail('Humidity', weather.humidityString),
-            ],
           ),
         ],
       ),

@@ -18,6 +18,7 @@ import '../screens/alerts/alerts_list_screen.dart';
 import '../screens/alerts/alert_detail_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/splash_screen.dart';
+import '../screens/notification_test_screen.dart';
 
 class AppRoutes {
   // Private constructor
@@ -43,6 +44,7 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String alerts = '/alerts';
   static const String alertDetail = '/alert-detail';
+  static const String notificationTest = '/notification-test';
 
   // Route definitions
   static List<GetPage> routes = [
@@ -132,6 +134,11 @@ class AppRoutes {
     GetPage(
       name: alertDetail,
       page: () => const AlertDetailScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: notificationTest,
+      page: () => const NotificationTestScreen(),
       transition: Transition.rightToLeft,
     ),
   ];

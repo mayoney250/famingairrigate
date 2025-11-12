@@ -1,5 +1,6 @@
 import 'dart:async';
-import 'dart:io';
+import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -8,7 +9,13 @@ import 'package:flutter/material.dart';
 
 @pragma('vm:entry-point')
 Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await FCMService.handleBackgroundMessage(message);
+  // Ensure plugins are initialized in background isolate
+  try {
+    await FCMService.handleBackgroundMessage(message);
+  } catch (e) {
+    // ignore: avoid_print
+    print('✗ Background handler error: $e');
+  }
 }
 
 class FCMService {
@@ -28,6 +35,11 @@ class FCMService {
   Future<void> initialize() async {
     await _requestPermissions();
     await _setupLocalNotifications();
+    await _firebaseMessaging.setForegroundNotificationPresentationOptions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
     await _setupMessageHandlers();
     await _getAndSaveToken();
   }
@@ -127,21 +139,33 @@ class FCMService {
   }
 
   Future<void> _saveTokenToFirestore(String token) async {
-    try {
-      final userId = FirebaseAuth.instance.currentUser?.uid;
-      if (userId == null) return;
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
 
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .set({
-        'fcmTokens': FieldValue.arrayUnion([token]),
-        'lastTokenUpdate': FieldValue.serverTimestamp(),
-      }, SetOptions(merge: true));
-
-      print('✓ FCM token saved to Firestore');
-    } catch (e) {
-      print('✗ Error saving FCM token to Firestore: $e');
+    const maxRetries = 5;
+    int attempt = 0;
+    while (true) {
+      try {
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .set({
+          'fcmTokens': FieldValue.arrayUnion([token]),
+          'lastTokenUpdate': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+        print('✓ FCM token saved to Firestore');
+        break;
+      } catch (e) {
+        attempt++;
+        final isTransient = e.toString().contains('UNAVAILABLE') || e.toString().contains('timeout') || e.toString().contains('network');
+        if (!isTransient || attempt >= maxRetries) {
+          print('✗ Error saving FCM token to Firestore (attempt $attempt): $e');
+          break;
+        }
+        final backoffMs = (200 * attempt * attempt).clamp(200, 5000);
+        print('⚠️ Transient error saving FCM token, retrying in ${backoffMs}ms (attempt $attempt)');
+        await Future.delayed(Duration(milliseconds: backoffMs));
+      }
     }
   }
 
@@ -153,11 +177,13 @@ class FCMService {
     final notification = message.notification;
     final data = message.data;
 
-    if (notification != null) {
+    final title = notification?.title ?? data['title'] ?? 'Faminga Irrigation';
+    final body = notification?.body ?? data['body'] ?? (data['message'] ?? '');
+    if (body != null && body.toString().isNotEmpty) {
       await _showLocalNotification(
-        title: notification.title ?? 'Faminga Irrigation',
-        body: notification.body ?? '',
-        payload: data.toString(),
+        title: title,
+        body: body.toString(),
+        payload: _encodePayload(data),
         type: data['type'] ?? 'general',
       );
     }
@@ -170,7 +196,54 @@ class FCMService {
   }
 
   static Future<void> handleBackgroundMessage(RemoteMessage message) async {
-    print('✓ Handling background message: ${message.messageId}');
+    try {
+      print('✓ Handling background message: ${message.messageId}, data: ${message.data}');
+      final notification = message.notification;
+      final data = message.data;
+      if (notification == null) {
+        final title = data['title'] ?? 'Faminga Irrigation';
+        final body = data['body'] ?? (data['message'] ?? '');
+        if (body != null && body.toString().isNotEmpty) {
+          final plugin = FlutterLocalNotificationsPlugin();
+          const init = InitializationSettings(
+            android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+            iOS: DarwinInitializationSettings(),
+          );
+          await plugin.initialize(init);
+          const channel = AndroidNotificationChannel(
+            'irrigation_alerts',
+            'Irrigation Alerts',
+            description: 'Notifications for irrigation and water level alerts',
+            importance: Importance.high,
+            enableVibration: true,
+            playSound: true,
+          );
+          await plugin
+              .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+              ?.createNotificationChannel(channel);
+          final details = NotificationDetails(
+            android: AndroidNotificationDetails(
+              'irrigation_alerts',
+              'Irrigation Alerts',
+              channelDescription: 'Notifications for irrigation and water level alerts',
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+            ),
+            iOS: const DarwinNotificationDetails(presentAlert: true, presentBadge: true, presentSound: true),
+          );
+          await plugin.show(
+            DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            title.toString(),
+            body.toString(),
+            details,
+            payload: _encodePayload(data),
+          );
+        }
+      }
+    } catch (e) {
+      print('✗ Error in background message handler: $e');
+    }
   }
 
   Future<void> _showLocalNotification({
@@ -236,18 +309,20 @@ class FCMService {
     }
   }
 
+  static String _encodePayload(Map<String, dynamic> data) {
+    try {
+      return const JsonEncoder().convert(data);
+    } catch (_) {
+      return '{}';
+    }
+  }
+
   Map<String, dynamic> _parsePayload(String payload) {
     try {
-      return Map<String, dynamic>.from(
-        payload.split(',').fold<Map<String, dynamic>>({}, (map, item) {
-          final parts = item.split(':');
-          if (parts.length == 2) {
-            map[parts[0].trim()] = parts[1].trim();
-          }
-          return map;
-        }),
-      );
-    } catch (e) {
+      final decoded = json.decode(payload);
+      if (decoded is Map<String, dynamic>) return decoded;
+      return {};
+    } catch (_) {
       return {};
     }
   }
@@ -283,6 +358,15 @@ class FCMService {
       print('✓ Unsubscribed from topic: $topic');
     } catch (e) {
       print('✗ Error unsubscribing from topic: $e');
+    }
+  }
+
+  Future<String?> getToken() async {
+    try {
+      return await _firebaseMessaging.getToken();
+    } catch (e) {
+      print('✗ Error getting FCM token: $e');
+      return null;
     }
   }
 
