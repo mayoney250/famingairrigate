@@ -279,13 +279,23 @@ class FCMService {
       iOS: iosDetails,
     );
 
+    final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    
+    print('[FCM] 🔔 SHOWING NOTIFICATION #$notificationId');
+    print('[FCM]    Title: "$title"');
+    print('[FCM]    Body: "$body"');
+    print('[FCM]    Type: $type');
+    print('[FCM]    Source: FCMService (Push Message Handler)');
+
     await _localNotifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationId,
       title,
       body,
       platformDetails,
       payload: payload,
     );
+    
+    print('[FCM] ✅ Notification #$notificationId shown successfully!');
   }
 
   Color _getNotificationColor(String type) {

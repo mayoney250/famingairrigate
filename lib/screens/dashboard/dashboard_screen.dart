@@ -108,7 +108,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Row(
           children: [
             const Text(
-              'FamingaView',
+              'Faminga Irrigation System',
               style: TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
@@ -1592,6 +1592,119 @@ class AlertCenterBottomSheet extends StatelessWidget {
   final List<AlertModel> alerts;
   final Future<void> Function(String id) onMarkRead;
   const AlertCenterBottomSheet({required this.alerts, required this.onMarkRead});
+  
+  void _showAlertDetails(BuildContext context, AlertModel alert) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(
+              _getIconForType(alert.type),
+              color: _getColorForSeverity(alert.severity),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                alert.type.toUpperCase(),
+                style: const TextStyle(fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                alert.message,
+                style: const TextStyle(fontSize: 16),
+              ),
+              const SizedBox(height: 16),
+              const Divider(),
+              const SizedBox(height: 8),
+              _buildDetailRow('Severity', alert.severity.toUpperCase()),
+              _buildDetailRow('Time', DateFormat('MMM dd, yyyy hh:mm a').format(alert.ts)),
+              _buildDetailRow('Status', alert.read ? 'Read' : 'Unread'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Close'),
+          ),
+          if (!alert.read)
+            ElevatedButton.icon(
+              onPressed: () {
+                onMarkRead(alert.id);
+                Navigator.of(context).pop();
+              },
+              icon: const Icon(Icons.check, size: 18),
+              label: const Text('Mark as Read'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: FamingaBrandColors.darkGreen,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 80,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: FamingaBrandColors.textSecondary,
+              ),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: const TextStyle(
+                color: FamingaBrandColors.textPrimary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Color _getColorForSeverity(String severity) {
+    switch (severity.toLowerCase()) {
+      case 'high':
+      case 'critical':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      default:
+        return Colors.green;
+    }
+  }
+
+  IconData _getIconForType(String type) {
+    if (type.contains('irrigation') || type.contains('VALVE')) {
+      return Icons.water_drop;
+    } else if (type.contains('sensor') || type.contains('OFFLINE')) {
+      return Icons.sensors;
+    } else if (type.contains('water')) {
+      return Icons.water;
+    } else {
+      return Icons.warning;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
@@ -1613,25 +1726,90 @@ class AlertCenterBottomSheet extends StatelessWidget {
           separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (context, i) {
             final a = alerts[i];
-            Color iconColor = a.severity == 'high'
-                ? Colors.red
-                : a.severity == 'medium' ? Colors.orange : Colors.green;
-            IconData icon = a.type == 'OFFLINE'
-                ? Icons.sensor_door
-                : a.type == 'VALVE'
-                    ? Icons.water_drop
-                    : Icons.warning;
-            return ListTile(
-              leading: Icon(icon, color: iconColor),
-              title: Text(a.message,
-                  style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
-              subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts, context)}'),
-              trailing: a.read
-              ? null
-              : IconButton(
-              icon: const Icon(Icons.check, color: Colors.green),
-              tooltip: context.l10n.markAsRead,
-              onPressed: () => onMarkRead(a.id),
+            Color iconColor = _getColorForSeverity(a.severity);
+            IconData icon = _getIconForType(a.type);
+            
+            return Dismissible(
+              key: Key(a.id),
+              direction: DismissDirection.endToStart,
+              background: Container(
+                alignment: Alignment.centerRight,
+                padding: const EdgeInsets.only(right: 20),
+                color: Colors.red,
+                child: const Icon(Icons.delete, color: Colors.white),
+              ),
+              confirmDismiss: (direction) async {
+                return await showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Delete Alert'),
+                    content: const Text('Are you sure you want to delete this alert?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pop(false),
+                        child: const Text('Cancel'),
+                      ),
+                      ElevatedButton(
+                        onPressed: () => Navigator.of(context).pop(true),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                        ),
+                        child: const Text('Delete'),
+                      ),
+                    ],
+                  ),
+                );
+              },
+              onDismissed: (direction) async {
+                await AlertLocalService.removeAlert(a.id);
+              },
+              child: ListTile(
+                leading: Icon(icon, color: iconColor),
+                title: Text(a.message,
+                    style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
+                subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts, context)}'),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (!a.read)
+                      IconButton(
+                        icon: const Icon(Icons.check, color: Colors.green),
+                        tooltip: context.l10n.markAsRead,
+                        onPressed: () => onMarkRead(a.id),
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline, color: Colors.red),
+                      tooltip: 'Delete',
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Delete Alert'),
+                            content: const Text('Are you sure you want to delete this alert?'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.of(context).pop(false),
+                                child: const Text('Cancel'),
+                              ),
+                              ElevatedButton(
+                                onPressed: () => Navigator.of(context).pop(true),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.red,
+                                ),
+                                child: const Text('Delete'),
+                              ),
+                            ],
+                          ),
+                        );
+                        
+                        if (confirm == true) {
+                          await AlertLocalService.removeAlert(a.id);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                onTap: () => _showAlertDetails(context, a),
               ),
             );
           },

@@ -203,6 +203,31 @@ class _NotificationTestScreenState extends State<NotificationTestScreen> {
             ),
             const SizedBox(height: 8),
             ElevatedButton.icon(
+              onPressed: _isLoading
+                  ? null
+                  : () async {
+                      setState(() {
+                        _isLoading = true;
+                        _logs.add('🚀 Sending DIRECT test notification...');
+                      });
+                      try {
+                        await NotificationService().sendDirectTestNotification();
+                        setState(() => _logs.add('✅ Direct test notification sent - CHECK NOTIFICATION BAR!'));
+                      } catch (e) {
+                        setState(() => _logs.add('❌ Error: $e'));
+                      } finally {
+                        setState(() => _isLoading = false);
+                      }
+                    },
+              icon: const Icon(Icons.send),
+              label: const Text('Send Direct Test (System Tray)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple,
+                padding: const EdgeInsets.all(16),
+              ),
+            ),
+            const SizedBox(height: 8),
+            ElevatedButton.icon(
               onPressed: _isLoading ? null : _reinitializeFCM,
               icon: const Icon(Icons.refresh),
               label: const Text('Reinitialize FCM'),

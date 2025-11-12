@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
-import 'package:get/get.dart';
 
 /// Enhanced Local notification service with comprehensive alert types
 /// Supports: Irrigation AI recommendations, Status changes, Sensor alerts, Weather, and more
@@ -20,7 +19,6 @@ class NotificationService {
 
   final List<StreamSubscription> _listeners = [];
   final Map<String, DateTime> _lastAlertTimes = {};
-  final Map<String, String> _lastIrrigationStatus = {}; // Track last status per cycle
   Timer? _periodicCheckTimer;
   Timer? _weatherCheckTimer;
   StreamSubscription<User?>? _authSubscription;
@@ -36,75 +34,11 @@ class NotificationService {
   }
 
   Future<void> sendTestNotification() async {
-    print('🧪 [TEST] Sending test notification...');
-    
-    // Check notification status first
-    final status = await getNotificationStatus();
-    print('🧪 [TEST] Notification status: $status');
-    
     await _showNotification(
       title: '🧪 Test Notification',
       body: 'If you see this, your notifications are working perfectly!',
       type: NotificationType.test,
     );
-    
-    print('🧪 [TEST] Test notification sent');
-  }
-
-  /// Send a direct notification bypassing all logic
-  Future<void> sendDirectTestNotification() async {
-    print('🚀 [DIRECT] Sending direct test notification...');
-    
-    try {
-      const androidDetails = AndroidNotificationDetails(
-        'irrigation_alerts',
-        'Irrigation Alerts',
-        channelDescription: 'Critical irrigation and water level alerts',
-        importance: Importance.max,
-        priority: Priority.high,
-        showWhen: true,
-        enableVibration: true,
-        playSound: true,
-        icon: '@mipmap/ic_launcher',
-        enableLights: true,
-        styleInformation: BigTextStyleInformation(''),
-      );
-
-      const iosDetails = DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-      );
-
-      const platformDetails = NotificationDetails(
-        android: androidDetails,
-        iOS: iosDetails,
-      );
-
-      final id = DateTime.now().millisecondsSinceEpoch ~/ 1000;
-      
-      print('🚀 [DIRECT] Calling show() with ID: $id');
-      await _localNotifications.show(
-        id,
-        '🚀 Direct Test',
-        'This is a direct notification test. You should see this in your notification bar!',
-        platformDetails,
-      );
-      
-      print('🚀 [DIRECT] Show completed - check notification bar!');
-      
-      // Also check active notifications
-      final active = await _localNotifications.getActiveNotifications();
-      print('🚀 [DIRECT] Active notifications: ${active?.length ?? 0}');
-      if (active != null) {
-        for (var notif in active) {
-          print('  - ID: ${notif.id}, Title: ${notif.title}');
-        }
-      }
-    } catch (e, stackTrace) {
-      print('🚀 [DIRECT] ERROR: $e');
-      print(stackTrace);
-    }
   }
 
   Future<Map<String, dynamic>> getNotificationStatus() async {
@@ -222,7 +156,9 @@ class NotificationService {
 
       await _localNotifications.initialize(
         initSettings,
-        onDidReceiveNotificationResponse: _onNotificationTapped,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          print('📱 Notification tapped: ${response.payload}');
+        },
       );
 
       const AndroidNotificationChannel channel = AndroidNotificationChannel(
@@ -262,7 +198,6 @@ class NotificationService {
       listener.cancel();
     }
     _listeners.clear();
-    _lastIrrigationStatus.clear(); // Clear status tracking when clearing listeners
     print('✓ Listeners cleared');
   }
 
@@ -465,7 +400,7 @@ class NotificationService {
     print('[IRRIGATION] Setting up listener for userId: $userId');
 
     final listener = _firestore
-        .collection('irrigationSchedules')
+        .collection('irrigation_cycles')
         .where('userId', isEqualTo: userId)
         .snapshots()
         .listen((snapshot) async {
@@ -502,53 +437,28 @@ class NotificationService {
     print('[IRRIGATION] Handler called for cycle: $cycleId');
     print('[IRRIGATION] Data: $data');
 
-    // Normalize status (handle different casings and variations)
-    final rawStatus = data['status'];
-    final status = (rawStatus is String ? rawStatus : rawStatus?.toString())?.toLowerCase().trim();
-    
-    final userId = data['userId'] as String? ?? FirebaseAuth.instance.currentUser?.uid;
+    final status = data['status'] as String?;
+    final userId = data['userId'] as String?;
 
-    if (status == null || status.isEmpty) {
-      print('[IRRIGATION] ERROR: Missing or empty status field in data!');
+    if (status == null || userId == null) {
+      print('[IRRIGATION] ERROR: Missing status or userId field in data!');
       return;
     }
 
-    if (userId == null) {
-      print('[IRRIGATION] ERROR: No userId available');
-      return;
-    }
+    final fieldId = data['fieldId'] as String?;
+    String fieldName = 'your field';
 
-    print('[IRRIGATION] Normalized status: "$status"');
-
-    // Check if status actually changed (prevent duplicate notifications)
-    final lastStatus = _lastIrrigationStatus[cycleId];
-    if (lastStatus == status) {
-      print('[IRRIGATION] ⏭️ Status unchanged ($status), skipping duplicate notification');
-      return;
-    }
-
-    // Record new status
-    _lastIrrigationStatus[cycleId] = status;
-    print('[IRRIGATION] Status changed: $lastStatus → $status');
-
-    // Get field info - check both fieldId and zoneId
-    final fieldId = data['fieldId'] as String? ?? data['zoneId'] as String?;
-    String fieldName = data['zoneName'] as String? ?? data['name'] as String? ?? 'your field';
-
-    // If we have fieldId but no name, try to fetch it
-    if (fieldId != null && fieldName == 'your field') {
+    if (fieldId != null) {
       try {
         final fieldDoc = await _firestore.collection('fields').doc(fieldId).get();
         if (fieldDoc.exists) {
           fieldName = fieldDoc.data()?['name'] ?? fieldName;
-          print('[IRRIGATION] Field name from Firestore: $fieldName');
+          print('[IRRIGATION] Field name: $fieldName');
         }
       } catch (e) {
         print('[IRRIGATION] ERROR getting field name: $e');
       }
     }
-
-    print('[IRRIGATION] Using field name: $fieldName');
 
     String title = '';
     String body = '';
@@ -558,8 +468,6 @@ class NotificationService {
 
     switch (status) {
       case 'running':
-      case 'started':
-      case 'active':
         title = '▶️ Irrigation Started';
         body = 'Irrigation has started for $fieldName.';
         alertType = 'irrigation_started';
@@ -568,20 +476,16 @@ class NotificationService {
         break;
 
       case 'completed':
-      case 'complete':
-      case 'finished':
         final waterUsed = data['waterUsed'] ?? 0;
-        final durationMinutes = data['durationMinutes'] ?? data['duration'] ?? 0;
+        final duration = data['duration'] ?? 0;
         title = '✅ Irrigation Completed';
-        body = 'Irrigation completed for $fieldName. ${durationMinutes > 0 ? 'Duration: ${durationMinutes}min' : ''}';
+        body = 'Irrigation completed for $fieldName. Water used: ${waterUsed}L in ${duration}min.';
         alertType = 'irrigation_completed';
         severity = 'low';
         notificationType = NotificationType.irrigationCompleted;
         break;
 
       case 'stopped':
-      case 'stop':
-      case 'cancelled':
         title = '⏹️ Irrigation Stopped';
         body = 'Irrigation was manually stopped for $fieldName.';
         alertType = 'irrigation_stopped';
@@ -590,7 +494,6 @@ class NotificationService {
         break;
 
       case 'failed':
-      case 'error':
         final errorMessage = data['errorMessage'] as String?;
         title = '❌ Irrigation Failed';
         body = 'Irrigation failed for $fieldName. ${errorMessage ?? "Please check the system."}';
@@ -600,11 +503,9 @@ class NotificationService {
         break;
 
       default:
-        print('[IRRIGATION] ⚠️ Unknown status value: "$rawStatus" (normalized: "$status") - skipping notification');
+        print('[IRRIGATION] Unknown status: $status');
         return;
     }
-
-    print('[IRRIGATION] ✅ Matched status, preparing notification - Title: $title');
 
     if (title.isNotEmpty) {
       // Create in-app alert
@@ -732,12 +633,6 @@ class NotificationService {
             final message = data['message'] as String?;
 
             print('[ALERTS] Type: $type, Message: $message');
-
-            // Skip irrigation alerts - they're already handled by irrigation listener
-            if (type != null && type.startsWith('irrigation_')) {
-              print('[ALERTS] ⏭️ Skipping irrigation alert - already handled by irrigation listener');
-              continue;
-            }
 
             if (type != null && message != null) {
               final notificationData = _getNotificationDataForAlertType(type, data);
@@ -1296,24 +1191,27 @@ class NotificationService {
     required String title,
     required String body,
     required NotificationType type,
-    String? payload,
   }) async {
     try {
       print('[NOTIFICATION] Attempting to show: $title (type: ${type.name})');
 
-      // Use same working config as direct test
-      const androidDetails = AndroidNotificationDetails(
+      // Get color and priority based on notification type
+      final notificationConfig = _getNotificationConfig(type);
+
+      final androidDetails = AndroidNotificationDetails(
         'irrigation_alerts',
         'Irrigation Alerts',
         channelDescription: 'Critical irrigation and water level alerts',
-        importance: Importance.max,
-        priority: Priority.high,
+        importance: notificationConfig['importance'] as Importance,
+        priority: notificationConfig['priority'] as Priority,
         showWhen: true,
         enableVibration: true,
         playSound: true,
         icon: '@mipmap/ic_launcher',
         enableLights: true,
-        styleInformation: BigTextStyleInformation(''),
+        ledColor: notificationConfig['ledColor'] as Color,
+        ledOnMs: 1000,
+        ledOffMs: 500,
       );
 
       const iosDetails = DarwinNotificationDetails(
@@ -1327,30 +1225,19 @@ class NotificationService {
         iOS: iosDetails,
       );
 
-      final notificationId = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+      final notificationId = DateTime.now().millisecondsSinceEpoch;
 
-      print('[NOTIFICATION] 🔔 SHOWING NOTIFICATION #$notificationId');
-      print('[NOTIFICATION]    Title: "$title"');
-      print('[NOTIFICATION]    Body: "$body"');
-      print('[NOTIFICATION]    Type: ${type.name}');
-      print('[NOTIFICATION]    Payload: $payload');
-      print('[NOTIFICATION]    Source: NotificationService (Local Firestore Listener)');
-      
+      print('[NOTIFICATION] Calling show() with ID: $notificationId, title: $title, body: $body');
       await _localNotifications.show(
         notificationId,
         title,
         body,
         platformDetails,
-        payload: payload ?? 'alerts', // Default to alerts page
       );
 
-      print('[NOTIFICATION] ✅ Notification #$notificationId shown successfully!');
-      
-      // Verify it was added
-      final active = await _localNotifications.getActiveNotifications();
-      print('[NOTIFICATION] Active notifications count: ${active?.length ?? 0}');
+      print('[NOTIFICATION] show() completed successfully');
     } catch (e, stackTrace) {
-      print('[NOTIFICATION] ❌ ERROR: $e');
+      print('[NOTIFICATION] ERROR: $e');
       print(stackTrace);
     }
   }
@@ -1411,25 +1298,6 @@ class NotificationService {
 
   void _recordAlert(String key) {
     _lastAlertTimes[key] = DateTime.now();
-  }
-
-  void _onNotificationTapped(NotificationResponse response) {
-    print('📱 Notification tapped: ${response.payload}');
-    
-    if (response.payload != null && response.payload!.isNotEmpty) {
-      // Navigate to alerts page
-      _navigateToAlerts();
-    }
-  }
-
-  void _navigateToAlerts() {
-    try {
-      print('📱 Navigating to dashboard (where alerts can be accessed)');
-      // Navigate to dashboard where user can tap the notification bell
-      Get.offAllNamed('/dashboard');
-    } catch (e) {
-      print('📱 Navigation error: $e');
-    }
   }
 
   void dispose() {
