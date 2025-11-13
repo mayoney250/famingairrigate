@@ -674,67 +674,205 @@ class NotificationService {
 
   /// Listen to sensor readings for moisture and water levels
   void _setupSensorReadingsListener(String userId) async {
-    final sensorsSnapshot = await _firestore
-        .collection('sensors')
+    print('🔧 [SENSOR LISTENER] Setting up listener for userId: $userId');
+    
+    // Get all fields for this user
+    final fieldsSnapshot = await _firestore
+        .collection('fields')
         .where('userId', isEqualTo: userId)
         .get();
 
-    final sensorIds = sensorsSnapshot.docs.map((doc) => doc.id).toList();
+    final fieldIds = fieldsSnapshot.docs.map((doc) => doc.id).toList();
 
-    if (sensorIds.isEmpty) {
-      print('⚠️ No sensors found for user $userId');
+    if (fieldIds.isEmpty) {
+      print('⚠️ [SENSOR LISTENER] No fields found for user $userId');
       return;
     }
 
-    print('✓ Found ${sensorIds.length} sensors for user: ${sensorIds.join(", ")}');
+    print('✓ [SENSOR LISTENER] Found ${fieldIds.length} fields for user: ${fieldIds.join(", ")}');
+    
+    // IMPORTANT: Check LATEST sensor data immediately on attach (even if before login)
+    // This ensures we notify about current conditions
+    print('🔍 [SENSOR LISTENER] Checking current sensor data on startup...');
+    for (final fieldId in fieldIds) {
+      try {
+        final latestSnapshot = await _firestore
+            .collection('sensorData')
+            .where('fieldId', isEqualTo: fieldId)
+            .orderBy('timestamp', descending: true)
+            .limit(1)
+            .get();
+        
+        if (latestSnapshot.docs.isNotEmpty) {
+          final data = latestSnapshot.docs.first.data();
+          final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
+          final ts = (data['timestamp'] as Timestamp?)?.toDate();
+          
+          print('📊 [SENSOR LISTENER] Latest data for field $fieldId: moisture=$soilMoisture%, timestamp=$ts');
+          
+          if (soilMoisture != null) {
+            // Check current moisture levels on startup
+            await _checkSensorDataMoisture(fieldId, soilMoisture, data);
+          }
+        } else {
+          print('⚠️ [SENSOR LISTENER] No sensor data found for field $fieldId');
+        }
+      } catch (e) {
+        print('❌ [SENSOR LISTENER] Error checking initial data: $e');
+      }
+    }
 
-    for (var i = 0; i < sensorIds.length; i += 10) {
-      final batch = sensorIds.skip(i).take(10).toList();
+    // Listen to sensorData collection (NOT sensor_readings)
+    for (var i = 0; i < fieldIds.length; i += 10) {
+      final batch = fieldIds.skip(i).take(10).toList();
 
-      // Use collectionGroup to handle both top-level and subcollection schemas
+      print('🔧 [SENSOR LISTENER] Setting up listener for batch: ${batch.join(", ")}');
+      
       final listener = _firestore
-          .collectionGroup('sensor_readings')
-          .where('sensorId', whereIn: batch)
+          .collection('sensorData')
+          .where('fieldId', whereIn: batch)
           .snapshots()
           .listen((snapshot) async {
-        print('📡 sensor_readings snapshot: size=${snapshot.size} changes=${snapshot.docChanges.length}');
+        print('📡 [SENSOR DATA] Snapshot received: size=${snapshot.size} changes=${snapshot.docChanges.length}');
         try {
           for (var change in snapshot.docChanges) {
+            print('📡 [SENSOR DATA] Change type: ${change.type.name}, docId: ${change.doc.id}');
+            
             if (change.type == DocumentChangeType.added) {
               final data = change.doc.data()!;
+              print('📡 [SENSOR DATA] Full data: $data');
               
-              // Skip old readings from before login (with 10 second buffer for clock skew)
+              // Skip old readings from before login
               final ts = (data['timestamp'] as Timestamp?)?.toDate();
               if (_attachCutoff != null && ts != null && ts.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
-                print('📡 ⏭️ Skipping old sensor reading (timestamp: $ts, cutoff: $_attachCutoff)');
+                print('📡 ⏭️ Skipping old sensor data (timestamp: $ts, cutoff: $_attachCutoff)');
                 continue;
               }
               
-              print('📡 ✅ Processing sensor reading (timestamp: $ts, cutoff: $_attachCutoff)');
+              print('📡 ✅ Processing NEW sensor data (timestamp: $ts, cutoff: $_attachCutoff)');
               
-              print('🔔 New sensor reading: ${change.doc.id} - sensorId: ${data['sensorId']}, value: ${data['value']}, type: ${data['type']}');
-              await _handleNewSensorReading(change.doc.id, data);
-
-              final sensorId = data['sensorId'] as String?;
-              final timestamp = ts ?? DateTime.now();
-              if (sensorId != null) {
-                await _firestore.collection('sensors').doc(sensorId).update({
-                  'lastSeen': Timestamp.fromDate(timestamp),
-                });
+              final fieldId = data['fieldId'] as String?;
+              final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
+              
+              print('📡 [SENSOR DATA] Extracted - fieldId=$fieldId, soilMoisture=$soilMoisture%');
+              
+              if (fieldId != null && soilMoisture != null) {
+                print('🔔 [SENSOR DATA] Calling moisture check for Field=$fieldId, Moisture=$soilMoisture%');
+                
+                // Check moisture levels directly
+                await _checkSensorDataMoisture(fieldId, soilMoisture, data);
+              } else {
+                print('⚠️ [SENSOR DATA] Missing fieldId or soilMoisture in data!');
               }
             }
           }
         } catch (e, stackTrace) {
-          print('❌ Sensor readings listener handler error: $e\n$stackTrace');
+          print('❌ [SENSOR DATA] Listener handler error: $e');
+          print(stackTrace);
         }
       }, onError: (e, stackTrace) {
-        print('❌ Sensor readings stream error: $e\n$stackTrace');
+        print('❌ [SENSOR DATA] Stream error: $e');
+        print(stackTrace);
       });
 
       _listeners.add(listener);
     }
 
-    print('✓ Sensor readings listener setup for ${sensorIds.length} sensors');
+    print('✅ [SENSOR LISTENER] Sensor data listener setup complete for ${fieldIds.length} fields');
+    print('📊 [SENSOR LISTENER] Monitoring fields: ${fieldIds.join(", ")}');
+    print('🔍 [SENSOR LISTENER] Will alert if moisture < 50% or >= 100%');
+  }
+
+  /// Check sensor data moisture levels
+  Future<void> _checkSensorDataMoisture(String fieldId, double moistureLevel, Map<String, dynamic> data) async {
+    print('🔍 [MOISTURE CHECK] Starting check for field=$fieldId, moisture=$moistureLevel%');
+    
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      print('❌ [MOISTURE CHECK] No user logged in, aborting');
+      return;
+    }
+
+    // Get field name
+    String fieldName = 'Unknown Field';
+    try {
+      final fieldDoc = await _firestore.collection('fields').doc(fieldId).get();
+      if (fieldDoc.exists) {
+        fieldName = fieldDoc.data()?['name'] ?? fieldName;
+        print('✓ [MOISTURE CHECK] Field name: $fieldName');
+      }
+    } catch (e) {
+      print('❌ [MOISTURE CHECK] Error getting field name: $e');
+    }
+
+    // Check for LOW moisture (irrigation needed) - threshold 50%
+    if (moistureLevel < 50.0) {
+      print('🚨 [MOISTURE CHECK] LOW moisture detected! ${moistureLevel.toStringAsFixed(1)}% < 50%');
+      final alertKey = 'moisture_low_$fieldId';
+
+      if (!_shouldAlert(alertKey, const Duration(hours: 6))) {
+        print('⏭️ [MOISTURE CHECK] Skipping low moisture alert (cooldown active)');
+        return;
+      }
+      
+      print('✅ [MOISTURE CHECK] Cooldown passed, creating alert and notification...');
+
+      await _firestore.collection('alerts').add({
+        'userId': userId,
+        'fieldId': fieldId,
+        'fieldName': fieldName,
+        'type': 'irrigation_needed',
+        'severity': 'medium',
+        'message': 'Soil moisture is low (${moistureLevel.toStringAsFixed(1)}%) in $fieldName. Irrigation recommended.',
+        'moistureLevel': moistureLevel,
+        'threshold': 50.0,
+        'timestamp': Timestamp.now(),
+        'origin': 'client',
+        'read': false,
+      });
+
+      await _showNotification(
+        title: 'Irrigation Needed',
+        body: 'Soil moisture is low (${moistureLevel.toStringAsFixed(1)}%) in $fieldName. Time to irrigate!',
+        type: NotificationType.irrigationNeeded,
+        severity: 'medium',
+      );
+
+      _recordAlert(alertKey);
+      print('✅ Irrigation needed notification sent for $fieldName (${moistureLevel.toStringAsFixed(1)}%)');
+    } 
+    // Check for HIGH moisture (drainage issue)
+    else if (moistureLevel >= 100.0) {
+      final alertKey = 'moisture_high_$fieldId';
+
+      if (!_shouldAlert(alertKey, const Duration(hours: 12))) {
+        print('⏭️ Skipping high moisture alert (cooldown active)');
+        return;
+      }
+
+      await _firestore.collection('alerts').add({
+        'userId': userId,
+        'fieldId': fieldId,
+        'fieldName': fieldName,
+        'type': 'drainage_check',
+        'severity': 'high',
+        'message': 'Soil moisture is at 100% in $fieldName. Check drainage system.',
+        'moistureLevel': moistureLevel,
+        'timestamp': Timestamp.now(),
+        'origin': 'client',
+        'read': false,
+      });
+
+      await _showNotification(
+        title: 'Check Drainage',
+        body: 'Soil moisture at 100% in $fieldName. Possible drainage issue!',
+        type: NotificationType.waterLow,
+        severity: 'high',
+      );
+
+      _recordAlert(alertKey);
+      print('✅ Drainage check notification sent for $fieldName (${moistureLevel.toStringAsFixed(1)}%)');
+    }
   }
 
   void _setupScheduleListener(String userId) {
@@ -907,17 +1045,23 @@ class NotificationService {
   }
 
   void _startPeriodicChecks() {
+    // Check schedule reminders and levels every 30 minutes
     _periodicCheckTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       _checkScheduleReminders();
       _recheckLevels();
+    });
+
+    // Check sensor offline status every 3 hours (as per requirement)
+    Timer.periodic(const Duration(hours: 3), (timer) {
       _detectOfflineSensors(const Duration(hours: 3));
     });
 
+    // Initial offline check after 1 minute
     Future.delayed(const Duration(minutes: 1), () {
       _detectOfflineSensors(const Duration(hours: 3));
     });
 
-    print('✓ Periodic checks started');
+    print('✓ Periodic checks started (schedule/levels: 30min, sensor offline: 3hrs)');
   }
 
   void _startWeatherChecks() {
@@ -973,7 +1117,7 @@ class NotificationService {
               });
 
               await _showNotification(
-                title: '🌧️ Rain Forecast',
+                title: 'Rain Forecast',
                 body: 'Rain expected $rainTime for $fieldName. Hold off on irrigation! (${rainProbability ?? 0}% chance)',
                 type: NotificationType.rainForecast,
               );
@@ -1084,23 +1228,23 @@ class NotificationService {
   }
 
   Future<void> _checkMoistureLevel(String sensorId, Map<String, dynamic> sensor, double moistureLevel) async {
-    final threshold = (sensor['lowThreshold'] ?? 50.0) as num;
+    final lowThreshold = (sensor['lowThreshold'] ?? 50.0) as num;
+    final fieldId = sensor['fieldId'] as String?;
+    String fieldName = 'Unknown Field';
 
-    if (moistureLevel < threshold) {
-      final alertKey = 'moisture_$sensorId';
+    if (fieldId != null) {
+      final fieldDoc = await _firestore.collection('fields').doc(fieldId).get();
+      if (fieldDoc.exists) {
+        fieldName = fieldDoc.data()?['name'] ?? fieldName;
+      }
+    }
+
+    // Check for LOW moisture (irrigation needed)
+    if (moistureLevel < lowThreshold) {
+      final alertKey = 'moisture_low_$sensorId';
 
       if (!_shouldAlert(alertKey, const Duration(hours: 6))) {
         return;
-      }
-
-      final fieldId = sensor['fieldId'] as String?;
-      String fieldName = 'Unknown Field';
-
-      if (fieldId != null) {
-        final fieldDoc = await _firestore.collection('fields').doc(fieldId).get();
-        if (fieldDoc.exists) {
-          fieldName = fieldDoc.data()?['name'] ?? fieldName;
-        }
       }
 
       await _firestore.collection('alerts').add({
@@ -1113,19 +1257,54 @@ class NotificationService {
         'severity': 'medium',
         'message': 'Soil moisture is low (${moistureLevel.toStringAsFixed(1)}%) in $fieldName. Irrigation recommended.',
         'moistureLevel': moistureLevel,
-        'threshold': threshold,
+        'threshold': lowThreshold,
         'timestamp': Timestamp.now(),
         'origin': 'client',
         'read': false,
       });
 
       await _showNotification(
-        title: '💧 Irrigation Needed',
+        title: 'Irrigation Needed',
         body: 'Soil moisture is low (${moistureLevel.toStringAsFixed(1)}%) in $fieldName. Time to irrigate!',
         type: NotificationType.irrigationNeeded,
+        severity: 'medium',
       );
 
       _recordAlert(alertKey);
+      print('✅ Irrigation needed notification sent for $fieldName');
+    } 
+    // Check for HIGH moisture (drainage issue)
+    else if (moistureLevel >= 100.0) {
+      final alertKey = 'moisture_high_$sensorId';
+
+      if (!_shouldAlert(alertKey, const Duration(hours: 12))) {
+        return;
+      }
+
+      await _firestore.collection('alerts').add({
+        'userId': sensor['userId'],
+        'fieldId': fieldId,
+        'fieldName': fieldName,
+        'sensorId': sensorId,
+        'sensorName': sensor['name'],
+        'type': 'drainage_check',
+        'severity': 'high',
+        'message': 'Soil moisture is at 100% in $fieldName. Check drainage system.',
+        'moistureLevel': moistureLevel,
+        'timestamp': Timestamp.now(),
+        'origin': 'client',
+        'read': false,
+      });
+
+      await _showNotification(
+        title: 'Check Drainage',
+        body: 'Soil moisture at 100% in $fieldName. Possible drainage issue!',
+        type: NotificationType.waterLow,
+        severity: 'high',
+      );
+
+      _recordAlert(alertKey);
+      print('✅ Drainage check notification sent for $fieldName');
     }
   }
 
@@ -1356,7 +1535,15 @@ class NotificationService {
             'read': false,
           });
 
+          await _showNotification(
+            title: 'Sensor Offline',
+            body: '$sensorName in $fieldName has been offline for $hoursOffline hours. Check connection!',
+            type: NotificationType.sensorOffline,
+            severity: 'high',
+          );
+
           _recordAlert(alertKey);
+          print('✅ Sensor offline notification sent for $sensorName');
         }
       }
     } catch (e) {
