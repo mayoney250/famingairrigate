@@ -37,9 +37,8 @@ class IrrigationScheduleModel {
     this.isManual = false,
   });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
+  Map<String, dynamic> toMap({bool includeId = false}) {
+    final map = <String, dynamic>{
       'userId': userId,
       'name': name,
       'zoneId': zoneId,
@@ -56,6 +55,13 @@ class IrrigationScheduleModel {
       'stoppedBy': stoppedBy,
       'isManual': isManual,
     };
+    
+    // Only include ID if explicitly requested (for updates, not creates)
+    if (includeId && id.isNotEmpty) {
+      map['id'] = id;
+    }
+    
+    return map;
   }
 
   factory IrrigationScheduleModel.fromMap(Map<String, dynamic> map) {
