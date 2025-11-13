@@ -25,6 +25,7 @@ class NotificationService {
   Timer? _weatherCheckTimer;
   StreamSubscription<User?>? _authSubscription;
   String? _attachedForUid;
+  DateTime? _attachCutoff; // Universal cutoff to skip all old events before login
 
   Future<void> initialize() async {
     print('Initializing Enhanced Notification Service...');
@@ -269,13 +270,9 @@ class NotificationService {
   void _setupAuthBoundListeners() {
     _authSubscription?.cancel();
 
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      print('🔥 User already logged in, attaching listeners immediately');
-      _attachListenersFor(currentUser.uid);
-    } else {
-      print('⚠️ No user currently logged in');
-    }
+    // Do NOT attach listeners immediately even if user is logged in
+    // Wait for auth state change to ensure proper initialization
+    print('⏳ Setting up auth listener (waiting for login)');
 
     _authSubscription = FirebaseAuth.instance.idTokenChanges().listen((user) {
       final uid = user?.uid;
@@ -299,7 +296,8 @@ class NotificationService {
   void _attachListenersFor(String uid) {
     _clearListeners();
     _attachedForUid = uid;
-    print('Attaching listeners for user: $uid');
+    _attachCutoff = DateTime.now(); // Universal cutoff to skip all old events
+    print('Attaching listeners for user: $uid at ${_attachCutoff}');
 
     _setupIrrigationListener(uid);
     _setupAlertsListener(uid);
@@ -402,7 +400,8 @@ class NotificationService {
           'severity': 'high',
           'message': 'AI recommends irrigation for $fieldName. ${reason ?? ""}',
           'confidence': confidence,
-          'timestamp': FieldValue.serverTimestamp(),
+          'timestamp': Timestamp.now(),
+          'origin': 'client',
           'read': false,
         });
         break;
@@ -420,7 +419,8 @@ class NotificationService {
           'severity': 'low',
           'message': 'AI recommends holding irrigation for $fieldName. ${reason ?? ""}',
           'confidence': confidence,
-          'timestamp': FieldValue.serverTimestamp(),
+          'timestamp': Timestamp.now(),
+          'origin': 'client',
           'read': false,
         });
         break;
@@ -438,7 +438,8 @@ class NotificationService {
           'severity': 'critical',
           'message': 'AI alert for $fieldName: ${reason ?? "System check needed."}',
           'confidence': confidence,
-          'timestamp': FieldValue.serverTimestamp(),
+          'timestamp': Timestamp.now(),
+          'origin': 'client',
           'read': false,
         });
         break;
@@ -474,13 +475,44 @@ class NotificationService {
       try {
         for (var change in snapshot.docChanges) {
           print('[IRRIGATION] Change type: ${change.type.name}, docId: ${change.doc.id}');
-          print('[IRRIGATION] Document data: ${change.doc.data()}');
+          
+          final data = change.doc.data()!;
+          
+          // Skip old irrigation cycles (completed before this listener attached)
+          if (change.type == DocumentChangeType.added) {
+            // Handle both Timestamp and String fields safely
+            DateTime? completedAt;
+            if (data['completedAt'] is Timestamp) {
+              completedAt = (data['completedAt'] as Timestamp).toDate();
+            } else if (data['completedAt'] is String && (data['completedAt'] as String).isNotEmpty) {
+              completedAt = DateTime.tryParse(data['completedAt']);
+            }
+            
+            DateTime? updatedAt;
+            if (data['updatedAt'] is Timestamp) {
+              updatedAt = (data['updatedAt'] as Timestamp).toDate();
+            } else if (data['updatedAt'] is String && (data['updatedAt'] as String).isNotEmpty) {
+              updatedAt = DateTime.tryParse(data['updatedAt']);
+            }
+            
+            final cycleTimestamp = completedAt ?? updatedAt;
+            
+            if (_attachCutoff != null && cycleTimestamp != null && 
+                cycleTimestamp.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
+              print('[IRRIGATION] ⏭️ Skipping old irrigation cycle (timestamp: $cycleTimestamp, cutoff: $_attachCutoff)');
+              continue;
+            }
+            
+            print('[IRRIGATION] ✅ Processing irrigation cycle (timestamp: $cycleTimestamp, cutoff: $_attachCutoff)');
+          }
+
+          print('[IRRIGATION] Document data: $data');
 
           if (change.type == DocumentChangeType.added ||
               change.type == DocumentChangeType.modified) {
             await _handleIrrigationStatusChange(
               change.doc.id,
-              change.doc.data()!,
+              data,
             );
           }
         }
@@ -560,7 +592,7 @@ class NotificationService {
       case 'running':
       case 'started':
       case 'active':
-        title = '▶️ Irrigation Started';
+        title = 'Irrigation Started';
         body = 'Irrigation has started for $fieldName.';
         alertType = 'irrigation_started';
         severity = 'medium';
@@ -572,7 +604,7 @@ class NotificationService {
       case 'finished':
         final waterUsed = data['waterUsed'] ?? 0;
         final durationMinutes = data['durationMinutes'] ?? data['duration'] ?? 0;
-        title = '✅ Irrigation Completed';
+        title = 'Irrigation Completed';
         body = 'Irrigation completed for $fieldName. ${durationMinutes > 0 ? 'Duration: ${durationMinutes}min' : ''}';
         alertType = 'irrigation_completed';
         severity = 'low';
@@ -582,7 +614,7 @@ class NotificationService {
       case 'stopped':
       case 'stop':
       case 'cancelled':
-        title = '⏹️ Irrigation Stopped';
+        title = 'Irrigation Stopped';
         body = 'Irrigation was manually stopped for $fieldName.';
         alertType = 'irrigation_stopped';
         severity = 'medium';
@@ -592,7 +624,7 @@ class NotificationService {
       case 'failed':
       case 'error':
         final errorMessage = data['errorMessage'] as String?;
-        title = '❌ Irrigation Failed';
+        title = 'Irrigation Failed';
         body = 'Irrigation failed for $fieldName. ${errorMessage ?? "Please check the system."}';
         alertType = 'irrigation_failed';
         severity = 'critical';
@@ -620,7 +652,8 @@ class NotificationService {
           'status': status,
           'waterUsed': data['waterUsed'],
           'duration': data['duration'],
-          'timestamp': FieldValue.serverTimestamp(),
+          'timestamp': Timestamp.now(),
+          'origin': 'client',
           'read': false,
         });
         print('[IRRIGATION] In-app alert created');
@@ -658,6 +691,7 @@ class NotificationService {
     for (var i = 0; i < sensorIds.length; i += 10) {
       final batch = sensorIds.skip(i).take(10).toList();
 
+      // Use collectionGroup to handle both top-level and subcollection schemas
       final listener = _firestore
           .collectionGroup('sensor_readings')
           .where('sensorId', whereIn: batch)
@@ -668,11 +702,21 @@ class NotificationService {
           for (var change in snapshot.docChanges) {
             if (change.type == DocumentChangeType.added) {
               final data = change.doc.data()!;
+              
+              // Skip old readings from before login (with 10 second buffer for clock skew)
+              final ts = (data['timestamp'] as Timestamp?)?.toDate();
+              if (_attachCutoff != null && ts != null && ts.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
+                print('📡 ⏭️ Skipping old sensor reading (timestamp: $ts, cutoff: $_attachCutoff)');
+                continue;
+              }
+              
+              print('📡 ✅ Processing sensor reading (timestamp: $ts, cutoff: $_attachCutoff)');
+              
               print('🔔 New sensor reading: ${change.doc.id} - sensorId: ${data['sensorId']}, value: ${data['value']}, type: ${data['type']}');
               await _handleNewSensorReading(change.doc.id, data);
 
               final sensorId = data['sensorId'] as String?;
-              final timestamp = (data['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now();
+              final timestamp = ts ?? DateTime.now();
               if (sensorId != null) {
                 await _firestore.collection('sensors').doc(sensorId).update({
                   'lastSeen': Timestamp.fromDate(timestamp),
@@ -726,6 +770,22 @@ class NotificationService {
         for (var change in snapshot.docChanges) {
           if (change.type == DocumentChangeType.added) {
             final data = change.doc.data()!;
+            
+            // Skip alerts created before this listener attached (old alerts from before login)
+            final ts = (data['timestamp'] as Timestamp?)?.toDate();
+            if (_attachCutoff != null && ts != null && ts.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
+              print('[ALERTS] ⏭️ Skipping old alert (timestamp: $ts, cutoff: $_attachCutoff)');
+              continue;
+            }
+            
+            print('[ALERTS] ✅ Processing alert (timestamp: $ts, cutoff: $_attachCutoff)');
+            
+            // Skip alerts we created locally (to avoid duplicate notifications)
+            if ((data['origin'] as String?) == 'client') {
+              print('[ALERTS] ⏭️ Skipping client-origin alert - already notified locally');
+              continue;
+            }
+
             print('[ALERTS] New alert detected - data: $data');
 
             final type = data['type'] as String?;
@@ -746,6 +806,7 @@ class NotificationService {
                 title: notificationData['title']!,
                 body: message,
                 type: notificationData['notificationType'] as NotificationType,
+                severity: (data['severity'] as String?)?.toLowerCase(),
               );
             }
           }
@@ -769,72 +830,77 @@ class NotificationService {
     // Existing alert types
       case 'irrigation_needed':
         return {
-          'title': '💧 Irrigation Needed',
+          'title': 'Irrigation Needed',
           'notificationType': NotificationType.irrigationNeeded,
+        };
+      case 'soil_dry':
+        return {
+          'title': 'Soil Critically Dry',
+          'notificationType': NotificationType.soilDry,
         };
       case 'water_low':
         return {
-          'title': '⚠️ Low Water Level',
+          'title': 'Low Water Level',
           'notificationType': NotificationType.waterLow,
         };
       case 'rain_forecast':
         return {
-          'title': '🌧️ Rain Forecast',
+          'title': 'Rain Forecast',
           'notificationType': NotificationType.rainForecast,
         };
       case 'sensor_offline':
         return {
-          'title': '📴 Sensor Offline',
+          'title': 'Sensor Offline',
           'notificationType': NotificationType.sensorOffline,
         };
       case 'schedule_reminder':
         return {
-          'title': '⏰ Irrigation Reminder',
+          'title': 'Irrigation Scheduled',
           'notificationType': NotificationType.scheduleReminder,
         };
 
     // NEW: Irrigation status alerts
       case 'irrigation_started':
         return {
-          'title': '▶️ Irrigation Started',
+          'title': 'Irrigation Started',
           'notificationType': NotificationType.irrigationStarted,
         };
       case 'irrigation_completed':
         return {
-          'title': '✅ Irrigation Completed',
+          'title': 'Irrigation Completed',
           'notificationType': NotificationType.irrigationCompleted,
         };
       case 'irrigation_stopped':
         return {
-          'title': '⏹️ Irrigation Stopped',
+          'title': 'Irrigation Stopped',
           'notificationType': NotificationType.irrigationStopped,
         };
       case 'irrigation_failed':
         return {
-          'title': '❌ Irrigation Failed',
+          'title': 'Irrigation Failed',
           'notificationType': NotificationType.irrigationFailed,
         };
 
     // NEW: AI recommendation alerts
       case 'ai_irrigate':
         return {
-          'title': '💧 AI: Irrigate Now',
+          'title': 'AI Recommendation - Irrigate',
           'notificationType': NotificationType.aiIrrigate,
         };
       case 'ai_hold':
         return {
-          'title': '⏸️ AI: Hold Irrigation',
+          'title': 'AI Recommendation - Hold',
           'notificationType': NotificationType.aiHold,
         };
       case 'ai_alert':
         return {
-          'title': '⚠️ AI Alert',
+          'title': 'AI Alert',
           'notificationType': NotificationType.aiAlert,
         };
 
       default:
         return {
-          'title': '🔔 Alert',
+          'title': 'Alert',
           'notificationType': NotificationType.generic,
         };
     }
@@ -901,7 +967,8 @@ class NotificationService {
                 'severity': 'low',
                 'message': 'Rain expected $rainTime. Consider postponing irrigation for $fieldName.',
                 'rainProbability': rainProbability,
-                'timestamp': FieldValue.serverTimestamp(),
+                'timestamp': Timestamp.now(),
+                'origin': 'client',
                 'read': false,
               });
 
@@ -1002,9 +1069,11 @@ class NotificationService {
         return;
       }
 
-      if (sensorType == 'soil_moisture') {
+      // Broaden sensor type matching to handle variations
+      final normalizedType = sensorType?.toLowerCase();
+      if (normalizedType == 'soil_moisture' || normalizedType == 'moisture' || normalizedType == 'soilmoisture') {
         await _checkMoistureLevel(sensorId, sensor, value.toDouble());
-      } else if (sensorType == 'water_level') {
+      } else if (normalizedType == 'water_level' || normalizedType == 'waterlevel') {
         await _checkWaterLevel(sensorId, sensor, value.toDouble());
       } else {
         print('⚠️ Unknown sensor type: $sensorType');
@@ -1045,7 +1114,8 @@ class NotificationService {
         'message': 'Soil moisture is low (${moistureLevel.toStringAsFixed(1)}%) in $fieldName. Irrigation recommended.',
         'moistureLevel': moistureLevel,
         'threshold': threshold,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': Timestamp.now(),
+        'origin': 'client',
         'read': false,
       });
 
@@ -1102,19 +1172,21 @@ class NotificationService {
         'message': 'Water level is ${severity == 'critical' ? 'critically' : ''} low (${waterLevel.toStringAsFixed(1)}%) at ${sensor['name']}.',
         'waterLevel': waterLevel,
         'threshold': threshold,
-        'timestamp': FieldValue.serverTimestamp(),
+        'timestamp': Timestamp.now(),
+        'origin': 'client',
         'read': false,
       });
 
       final title = severity == 'critical'
-          ? '🚨 Critical: Water Level Alert'
-          : '⚠️ Low Water Level';
+          ? 'Critical Water Level'
+          : 'Low Water Level';
       final body = 'Water level is ${severity == 'critical' ? 'critically' : ''} low (${waterLevel.toStringAsFixed(1)}%) at ${sensor['name']}.';
 
       await _showNotification(
         title: title,
         body: body,
         type: NotificationType.waterLow,
+        severity: severity,
       );
 
       _recordAlert(alertKey);
@@ -1279,7 +1351,8 @@ class NotificationService {
             'severity': 'high',
             'message': '$sensorName in $fieldName has not reported in $hoursOffline hours.',
             'lastSeen': effectiveLastSeen,
-            'timestamp': FieldValue.serverTimestamp(),
+            'timestamp': Timestamp.now(),
+            'origin': 'client',
             'read': false,
           });
 
@@ -1297,12 +1370,16 @@ class NotificationService {
     required String body,
     required NotificationType type,
     String? payload,
+    String? severity,
   }) async {
     try {
-      print('[NOTIFICATION] Attempting to show: $title (type: ${type.name})');
+      print('[NOTIFICATION] Attempting to show: $title (type: ${type.name}, severity: $severity)');
 
-      // Use same working config as direct test
-      const androidDetails = AndroidNotificationDetails(
+      // Select color based on severity and type
+      final notifColor = _colorFor(type, severity: severity);
+      
+      // Use working icon configuration (revert to launcher icon for now)
+      final androidDetails = AndroidNotificationDetails(
         'irrigation_alerts',
         'Irrigation Alerts',
         channelDescription: 'Critical irrigation and water level alerts',
@@ -1312,7 +1389,7 @@ class NotificationService {
         enableVibration: true,
         playSound: true,
         icon: '@mipmap/ic_launcher',
-        enableLights: true,
+        color: notifColor,
         styleInformation: BigTextStyleInformation(''),
       );
 
@@ -1322,7 +1399,7 @@ class NotificationService {
         presentSound: true,
       );
 
-      const platformDetails = NotificationDetails(
+      final platformDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );
@@ -1355,7 +1432,67 @@ class NotificationService {
     }
   }
 
-  /// Get notification configuration based on type
+  /// Select Android notification icon based on severity and type
+  String _androidIconFor(NotificationType type, {String? severity}) {
+    // Critical severity overrides type
+    if (severity == 'critical') {
+      return 'ic_notif_critical';
+    }
+    
+    // High severity or critical notification types
+    if (severity == 'high' || 
+        type == NotificationType.irrigationFailed ||
+        type == NotificationType.waterLow ||
+        type == NotificationType.sensorOffline ||
+        type == NotificationType.aiIrrigate ||
+        type == NotificationType.irrigationNeeded ||
+        type == NotificationType.aiAlert) {
+      return 'ic_notif_warning';
+    }
+    
+    // Reminder/schedule types
+    if (type == NotificationType.scheduleReminder ||
+        type == NotificationType.rainForecast) {
+      return 'ic_notif_reminder';
+    }
+    
+    // Default to info icon
+    return 'ic_notif_info';
+  }
+  
+  /// Select notification color based on severity and type
+  Color _colorFor(NotificationType type, {String? severity}) {
+    // Critical severity
+    if (severity == 'critical' || type == NotificationType.irrigationFailed) {
+      return const Color(0xFFD32F2F); // Red
+    }
+    
+    // High/warning severity
+    if (severity == 'high' || severity == 'medium' ||
+        type == NotificationType.waterLow ||
+        type == NotificationType.sensorOffline ||
+        type == NotificationType.aiAlert ||
+        type == NotificationType.irrigationNeeded) {
+      return const Color(0xFFFF9800); // Orange
+    }
+    
+    // Info/reminder types
+    if (type == NotificationType.scheduleReminder ||
+        type == NotificationType.rainForecast ||
+        type == NotificationType.aiHold) {
+      return const Color(0xFF2196F3); // Blue
+    }
+    
+    // Success/completion
+    if (type == NotificationType.irrigationCompleted) {
+      return const Color(0xFF4CAF50); // Green
+    }
+    
+    // Default
+    return const Color(0xFF4CAF50); // Green
+  }
+
+  /// Get notification configuration based on type (deprecated, keeping for compatibility)
   Map<String, dynamic> _getNotificationConfig(NotificationType type) {
     switch (type) {
       case NotificationType.irrigationFailed:
@@ -1462,6 +1599,7 @@ enum NotificationType {
 
   // Sensor alerts
   irrigationNeeded,
+  soilDry,
   waterLow,
   sensorOffline,
 

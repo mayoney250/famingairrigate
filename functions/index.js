@@ -92,8 +92,62 @@ exports.checkIrrigationNeeds = functions.pubsub
             const moistureLevel = reading.value;
 
             const threshold = sensor.lowThreshold || 50;
+            const criticalThreshold = sensor.criticalThreshold || 40;
 
-            if (moistureLevel < threshold) {
+            // Check for critically dry soil (≤40%)
+            if (moistureLevel <= criticalThreshold) {
+              const lastAlertSnapshot = await db
+                .collection('alerts')
+                .where('fieldId', '==', fieldId)
+                .where('type', '==', 'soil_dry')
+                .where('sensorId', '==', sensorDoc.id)
+                .orderBy('timestamp', 'desc')
+                .limit(1)
+                .get();
+
+              let shouldAlert = true;
+              if (!lastAlertSnapshot.empty) {
+                const lastAlert = lastAlertSnapshot.docs[0].data();
+                const hoursSinceLastAlert =
+                  (now.toMillis() - lastAlert.timestamp.toMillis()) / (1000 * 60 * 60);
+                
+                if (hoursSinceLastAlert < 4) {
+                  shouldAlert = false;
+                }
+              }
+
+              if (shouldAlert) {
+                await db.collection('alerts').add({
+                  userId: field.userId,
+                  fieldId: fieldId,
+                  fieldName: field.name,
+                  sensorId: sensorDoc.id,
+                  sensorName: sensor.name,
+                  type: 'soil_dry',
+                  severity: 'critical',
+                  message: `URGENT: Soil is critically dry (${moistureLevel.toFixed(1)}%) in ${field.name}. Immediate irrigation required.`,
+                  moistureLevel: moistureLevel,
+                  threshold: criticalThreshold,
+                  timestamp: now,
+                  read: false,
+                });
+
+                await sendNotificationToUser(field.userId, {
+                  title: '[URGENT] Soil Critically Dry',
+                  body: `Soil is critically dry (${moistureLevel.toFixed(1)}%) in ${field.name}. Immediate irrigation required.`,
+                  data: {
+                    type: 'soil_dry',
+                    fieldId: fieldId,
+                    sensorId: sensorDoc.id,
+                    moistureLevel: moistureLevel.toString(),
+                  },
+                });
+
+                console.log(`✓ Critical soil dry alert sent for field ${fieldId}`);
+              }
+            }
+            // Check for low moisture (irrigation needed)
+            else if (moistureLevel < threshold) {
               const lastAlertSnapshot = await db
                 .collection('alerts')
                 .where('fieldId', '==', fieldId)
@@ -131,8 +185,8 @@ exports.checkIrrigationNeeds = functions.pubsub
                 });
 
                 await sendNotificationToUser(field.userId, {
-                  title: '💧 Irrigation Needed',
-                  body: `Soil moisture is low (${moistureLevel.toFixed(1)}%) in ${field.name}. Time to irrigate!`,
+                  title: '[URGENT] Irrigation Needed',
+                  body: `Soil moisture is low (${moistureLevel.toFixed(1)}%) in ${field.name}. Time to irrigate.`,
                   data: {
                     type: 'irrigation_needed',
                     fieldId: fieldId,
@@ -237,8 +291,8 @@ exports.checkWaterLevels = functions.pubsub
               });
 
               const notificationTitle = severity === 'critical' 
-                ? '🚨 Critical: Water Level Alert' 
-                : '⚠️ Low Water Level';
+                ? '[URGENT] Critical Water Level' 
+                : '[URGENT] Low Water Level';
               
               const notificationBody = `Water level is ${severity === 'critical' ? 'critically' : ''} low (${waterLevel.toFixed(1)}%) at ${sensor.name}. ${severity === 'critical' ? 'Immediate action required!' : 'Please refill soon.'}`;
 
@@ -308,7 +362,7 @@ exports.sendScheduleReminders = functions.pubsub
             });
 
             await sendNotificationToUser(schedule.userId, {
-              title: '⏰ Irrigation Reminder',
+              title: '[REMINDER] Irrigation Scheduled',
               body: `Irrigation scheduled for ${field?.name || 'your field'} in ${Math.round(minutesUntil)} minutes.`,
               data: {
                 type: 'schedule_reminder',
@@ -346,22 +400,22 @@ exports.onIrrigationStatusChange = functions.firestore
 
       switch (newData.status) {
         case 'running':
-          title = '💧 Irrigation Started';
+          title = '[INFO] Irrigation Started';
           body = `Irrigation has started for ${field?.name || 'your field'}.`;
           shouldSend = true;
           break;
         case 'completed':
-          title = '✅ Irrigation Completed';
+          title = '[INFO] Irrigation Completed';
           body = `Irrigation completed for ${field?.name || 'your field'}. Total water used: ${newData.waterUsed || 0}L`;
           shouldSend = true;
           break;
         case 'stopped':
-          title = '⏸️ Irrigation Stopped';
+          title = '[INFO] Irrigation Stopped';
           body = `Irrigation was manually stopped for ${field?.name || 'your field'}.`;
           shouldSend = true;
           break;
         case 'failed':
-          title = '❌ Irrigation Failed';
+          title = '[URGENT] Irrigation Failed';
           body = `Irrigation failed for ${field?.name || 'your field'}. Please check the system.`;
           shouldSend = true;
           break;

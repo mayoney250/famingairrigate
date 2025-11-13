@@ -97,7 +97,7 @@ class FCMService {
       'irrigation_alerts',
       'Irrigation Alerts',
       description: 'Notifications for irrigation and water level alerts',
-      importance: Importance.high,
+      importance: Importance.max,
       enableVibration: true,
       playSound: true,
     );
@@ -185,6 +185,7 @@ class FCMService {
         body: body.toString(),
         payload: _encodePayload(data),
         type: data['type'] ?? 'general',
+        severity: data['severity'] as String?,
       );
     }
   }
@@ -214,19 +215,20 @@ class FCMService {
             'irrigation_alerts',
             'Irrigation Alerts',
             description: 'Notifications for irrigation and water level alerts',
-            importance: Importance.high,
+            importance: Importance.max,
             enableVibration: true,
             playSound: true,
           );
           await plugin
               .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
               ?.createNotificationChannel(channel);
+          
           final details = NotificationDetails(
             android: AndroidNotificationDetails(
               'irrigation_alerts',
               'Irrigation Alerts',
               channelDescription: 'Notifications for irrigation and water level alerts',
-              importance: Importance.high,
+              importance: Importance.max,
               priority: Priority.high,
               icon: '@mipmap/ic_launcher',
             ),
@@ -251,21 +253,25 @@ class FCMService {
     required String body,
     required String payload,
     required String type,
+    String? severity,
   }) async {
+    // Select color based on severity and type
+    final notifColor = _getNotificationColor(type, severity: severity);
+    
     AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'irrigation_alerts',
       'Irrigation Alerts',
       channelDescription: 'Notifications for irrigation and water level alerts',
-      importance: Importance.high,
+      importance: Importance.max,
       priority: Priority.high,
       ticker: 'ticker',
       icon: '@mipmap/ic_launcher',
+      color: notifColor,
       largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       styleInformation: BigTextStyleInformation(
         body,
         contentTitle: title,
       ),
-      color: _getNotificationColor(type),
     );
 
     const DarwinNotificationDetails iosDetails = DarwinNotificationDetails(
@@ -298,17 +304,63 @@ class FCMService {
     print('[FCM] ✅ Notification #$notificationId shown successfully!');
   }
 
-  Color _getNotificationColor(String type) {
-    switch (type) {
-      case 'irrigation_needed':
-        return const Color(0xFF2196F3); // Blue
-      case 'water_low':
-        return const Color(0xFFFF9800); // Orange
-      case 'critical':
-        return const Color(0xFFF44336); // Red
-      default:
-        return const Color(0xFF4CAF50); // Green
+  /// Select Android notification icon based on severity and type
+  String _getNotificationIcon(String type, {String? severity}) {
+    // Critical severity overrides type
+    if (severity == 'critical') {
+      return 'ic_notif_critical';
     }
+    
+    // High severity or critical notification types
+    if (severity == 'high' || 
+        type == 'irrigation_failed' ||
+        type == 'water_low' ||
+        type == 'sensor_offline' ||
+        type == 'ai_irrigate' ||
+        type == 'irrigation_needed' ||
+        type == 'ai_alert') {
+      return 'ic_notif_warning';
+    }
+    
+    // Reminder/schedule types
+    if (type == 'schedule_reminder' ||
+        type == 'rain_forecast') {
+      return 'ic_notif_reminder';
+    }
+    
+    // Default to info icon
+    return 'ic_notif_info';
+  }
+
+  Color _getNotificationColor(String type, {String? severity}) {
+    // Critical severity
+    if (severity == 'critical' || type == 'irrigation_failed') {
+      return const Color(0xFFD32F2F); // Red
+    }
+    
+    // High/warning severity
+    if (severity == 'high' || severity == 'medium' ||
+        type == 'water_low' ||
+        type == 'sensor_offline' ||
+        type == 'ai_alert' ||
+        type == 'irrigation_needed') {
+      return const Color(0xFFFF9800); // Orange
+    }
+    
+    // Info/reminder types
+    if (type == 'schedule_reminder' ||
+        type == 'rain_forecast' ||
+        type == 'ai_hold') {
+      return const Color(0xFF2196F3); // Blue
+    }
+    
+    // Success/completion
+    if (type == 'irrigation_completed') {
+      return const Color(0xFF4CAF50); // Green
+    }
+    
+    // Default
+    return const Color(0xFF4CAF50); // Green
   }
 
   void _onNotificationTap(NotificationResponse response) {
