@@ -171,14 +171,20 @@ class IrrigationService {
   // Create new schedule
   Future<bool> createSchedule(IrrigationScheduleModel schedule) async {
     try {
-      await _firestore
+      log('[IrrigationService] Creating schedule: ${schedule.name}');
+      
+      final scheduleData = schedule.toMap(includeId: false); // Don't include ID for new documents
+      log('[IrrigationService] Schedule data: $scheduleData');
+      
+      final docRef = await _firestore
           .collection('irrigationSchedules')
-          .add(schedule.toMap());
+          .add(scheduleData);
 
-      log('Schedule created');
+      log('[IrrigationService] Schedule created with ID: ${docRef.id}');
       return true;
-    } catch (e) {
-      log('Error creating schedule: $e');
+    } catch (e, stackTrace) {
+      log('[IrrigationService] Error creating schedule: $e');
+      log('[IrrigationService] Stack trace: $stackTrace');
       return false;
     }
   }

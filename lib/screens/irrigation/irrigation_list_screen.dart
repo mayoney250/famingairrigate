@@ -31,10 +31,27 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
   final Set<String> _deletedIds = <String>{};
 
   Future<List<Map<String, String>>> _fetchFieldOptions(BuildContext context) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final svc = FieldService();
-    final list = await svc.getUserFields(auth.currentUser!.userId).first;
-    return list.map((f) => {'id': f.id, 'name': f.label}).toList();
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.currentUser == null) {
+        print('[SCHEDULE] No authenticated user found');
+        return [];
+      }
+      
+      final svc = FieldService();
+      final list = await svc.getUserFields(auth.currentUser!.userId).first;
+      print('[SCHEDULE] Fetched ${list.length} fields');
+      
+      if (list.isEmpty) {
+        print('[SCHEDULE] No fields available for user');
+        return [];
+      }
+      
+      return list.map((f) => {'id': f.id, 'name': f.label}).toList();
+    } catch (e) {
+      print('[SCHEDULE] Error fetching field options: $e');
+      return [];
+    }
   }
 
   @override
@@ -759,35 +776,76 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                         TextButton(onPressed: () => Get.back(), child: Text(context.l10n.cancelButton)),
                         const Spacer(),
           ElevatedButton(
-            onPressed: () async {
-              final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
-              final duration = int.tryParse(durationController.text.trim()) ?? 60;
-                            List<Map<String,String>> options = await fieldsFuture;
-                            final field = options.firstWhere((f) => f['id'] == selectedFieldId, orElse: () => {'id': selectedFieldId, 'name': selectedFieldId});
-              final schedule = IrrigationScheduleModel(
-                id: '',
-                userId: userId,
-                name: name,
-                              zoneId: field['id']!,
-                              zoneName: field['name'] ?? field['id']!,
-                startTime: selectedStart,
-                durationMinutes: duration,
-                repeatDays: const <int>[],
-                isActive: true,
-                status: 'scheduled',
-                createdAt: DateTime.now(),
-              );
-              final ok = await _irrigationService.createSchedule(schedule);
-              if (ok) {
-                Get.back();
-                              Get.snackbar(context.l10n.success, context.l10n.scheduleSaved, snackPosition: SnackPosition.BOTTOM);
-              } else {
-                              Get.snackbar(context.l10n.error, context.l10n.failedSaveSchedule, snackPosition: SnackPosition.BOTTOM);
-                            }
-                          },
-                          style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),
-                          child: const Text('Save'),
-                        )
+           onPressed: () async {
+             try {
+               print('[SCHEDULE] Creating new schedule...');
+               
+               final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
+               final duration = int.tryParse(durationController.text.trim()) ?? 60;
+               
+               if (duration <= 0) {
+                 Get.snackbar('Invalid', 'Duration must be greater than 0');
+                 return;
+               }
+               
+               List<Map<String,String>> options = await fieldsFuture;
+               if (options.isEmpty) {
+                 Get.snackbar('Error', 'No fields available. Please create a field first.');
+                 return;
+               }
+               
+               final field = options.firstWhere(
+                 (f) => f['id'] == selectedFieldId, 
+                 orElse: () => options.first
+               );
+               
+               print('[SCHEDULE] Selected field: ${field['name']} (${field['id']})');
+               
+               final schedule = IrrigationScheduleModel(
+                 id: '',
+                 userId: userId,
+                 name: name,
+                 zoneId: field['id']!,
+                 zoneName: field['name'] ?? field['id']!,
+                 startTime: selectedStart,
+                 durationMinutes: duration,
+                 repeatDays: const <int>[],
+                 isActive: true,
+                 status: 'scheduled',
+                 createdAt: DateTime.now(),
+               );
+               
+               print('[SCHEDULE] Saving schedule: ${schedule.name}');
+               final ok = await _irrigationService.createSchedule(schedule);
+               
+               if (ok) {
+                 print('[SCHEDULE] Schedule created successfully');
+                 Get.back();
+                 Get.snackbar(
+                   'Success', 
+                   'Schedule created successfully',
+                   snackPosition: SnackPosition.BOTTOM,
+                 );
+               } else {
+                 print('[SCHEDULE] Failed to create schedule');
+                 Get.snackbar(
+                   'Error', 
+                   'Failed to save schedule. Please try again.',
+                   snackPosition: SnackPosition.BOTTOM,
+                 );
+               }
+             } catch (e) {
+               print('[SCHEDULE] Error creating schedule: $e');
+               Get.snackbar(
+                 'Error', 
+                 'An error occurred: $e',
+                 snackPosition: SnackPosition.BOTTOM,
+               );
+             }
+                         },
+                         style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),
+                         child: const Text('Save'),
+                       )
                       ],
                     )
                   ],
@@ -917,55 +975,88 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                         const Spacer(),
                         ElevatedButton(
                           onPressed: () async {
-                            final nameText = nameController.text.trim();
-                            if (nameText.isEmpty) {
-                              Get.snackbar('Invalid', 'Please enter a schedule name');
-                              return;
-                            }
-                            final parsed = int.tryParse(durationController.text.trim());
-                            if (parsed == null || parsed <= 0) {
-                              Get.snackbar('Invalid', 'Duration must be a positive number');
-                              return;
-                            }
-                            final duration = parsed;
-                            List<Map<String,String>> options = await fieldOptionsAsync;
-                            final field = options.firstWhere((f) => f['id'] == selectedFieldId, orElse: () => {'id': selectedFieldId, 'name': selectedFieldId});
+                            try {
+                              print('[SCHEDULE] Updating schedule: ${schedule.id}');
+                              
+                              final nameText = nameController.text.trim();
+                              if (nameText.isEmpty) {
+                                Get.snackbar('Invalid', 'Please enter a schedule name');
+                                return;
+                              }
+                              
+                              final parsed = int.tryParse(durationController.text.trim());
+                              if (parsed == null || parsed <= 0) {
+                                Get.snackbar('Invalid', 'Duration must be a positive number');
+                                return;
+                              }
+                              final duration = parsed;
+                              
+                              List<Map<String,String>> options = await fieldOptionsAsync;
+                              if (options.isEmpty) {
+                                Get.snackbar('Error', 'No fields available');
+                                return;
+                              }
+                              
+                              final field = options.firstWhere(
+                                (f) => f['id'] == selectedFieldId, 
+                                orElse: () => options.first
+                              );
 
-                            final now = DateTime.now();
-                            // Calculate nextRun based on whether it's a recurring schedule
-                            DateTime? nextRunTime;
-                            if (schedule.repeatDays.isNotEmpty) {
-                              // For recurring schedules, find next occurrence
-                              for (int i = 0; i < 7; i++) {
-                                final candidateDay = selectedStart.add(Duration(days: i));
-                                if (schedule.repeatDays.contains(candidateDay.weekday)) {
-                                  nextRunTime = DateTime(
-                                    candidateDay.year,
-                                    candidateDay.month,
-                                    candidateDay.day,
-                                    selectedStart.hour,
-                                    selectedStart.minute,
-                                  );
-                                  if (nextRunTime.isAfter(now)) break;
+                              print('[SCHEDULE] Selected field: ${field['name']} (${field['id']})');
+
+                              final now = DateTime.now();
+                              // Calculate nextRun based on whether it's a recurring schedule
+                              DateTime? nextRunTime;
+                              if (schedule.repeatDays.isNotEmpty) {
+                                // For recurring schedules, find next occurrence
+                                for (int i = 0; i < 7; i++) {
+                                  final candidateDay = selectedStart.add(Duration(days: i));
+                                  if (schedule.repeatDays.contains(candidateDay.weekday)) {
+                                    nextRunTime = DateTime(
+                                      candidateDay.year,
+                                      candidateDay.month,
+                                      candidateDay.day,
+                                      selectedStart.hour,
+                                      selectedStart.minute,
+                                    );
+                                    if (nextRunTime.isAfter(now)) break;
+                                  }
                                 }
                               }
-                            }
 
-                            await FirebaseFirestore.instance
-                                .collection('irrigationSchedules')
-                                .doc(schedule.id)
-                                .update({
-                              'name': nameText,
-                              'zoneId': field['id'],
-                              'zoneName': field['name'] ?? field['id'],
-                              'startTime': Timestamp.fromDate(selectedStart),
-                              'nextRun': nextRunTime != null ? Timestamp.fromDate(nextRunTime) : null,
-                              'durationMinutes': duration,
-                              'status': 'scheduled',
-                              'updatedAt': Timestamp.fromDate(now),
-                            });
-                            Get.back();
-                            Get.snackbar('Updated', 'Schedule updated');
+                              final updateData = {
+                                'name': nameText,
+                                'zoneId': field['id'],
+                                'zoneName': field['name'] ?? field['id'],
+                                'startTime': Timestamp.fromDate(selectedStart),
+                                'nextRun': nextRunTime != null ? Timestamp.fromDate(nextRunTime) : null,
+                                'durationMinutes': duration,
+                                'status': 'scheduled',
+                                'updatedAt': Timestamp.fromDate(now),
+                              };
+
+                              print('[SCHEDULE] Updating with data: $updateData');
+
+                              await FirebaseFirestore.instance
+                                  .collection('irrigationSchedules')
+                                  .doc(schedule.id)
+                                  .update(updateData);
+                              
+                              print('[SCHEDULE] Schedule updated successfully');
+                              Get.back();
+                              Get.snackbar(
+                                'Updated', 
+                                'Schedule updated successfully',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            } catch (e) {
+                              print('[SCHEDULE] Error updating schedule: $e');
+                              Get.snackbar(
+                                'Error', 
+                                'Failed to update schedule: $e',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            }
                           },
                           style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),
                           child: const Text('Save'),
