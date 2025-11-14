@@ -12,6 +12,8 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
 import '../../widgets/map/osm_map_drawing_widget.dart';
 import '../../utils/l10n_extensions.dart';
+import '../../utils/soil_types.dart';
+import '../../utils/field_options.dart';
 
 class AddFieldWithMapScreen extends StatefulWidget {
   final FieldModel? existingField;
@@ -27,6 +29,9 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
   final _nameController = TextEditingController();
   final _sizeController = TextEditingController();
   final _ownerController = TextEditingController();
+  final _growthStageController = TextEditingController();
+  final _cropTypeController = TextEditingController();
+  String _soilType = 'Unknown';
   bool _isOrganic = false;
   bool _isLoading = false;
   
@@ -59,6 +64,17 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
       if (_fieldBoundary.isNotEmpty) {
         _currentStep = 1;
       }
+      
+      // Load additional field metadata if available
+      FirebaseFirestore.instance.collection('fields').doc(widget.existingField!.id).get().then((doc) {
+        if (doc.exists) {
+          final data = doc.data() as Map<String, dynamic>;
+          _growthStageController.text = data['growthStage'] ?? '';
+          _cropTypeController.text = data['cropType'] ?? '';
+          _soilType = data['soilType'] ?? 'Unknown';
+          if (mounted) setState(() {});
+        }
+      });
     }
   }
 
@@ -67,6 +83,8 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
     _nameController.dispose();
     _sizeController.dispose();
     _ownerController.dispose();
+    _growthStageController.dispose();
+    _cropTypeController.dispose();
     super.dispose();
   }
 
@@ -128,10 +146,20 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
           'size': field.size,
           'owner': field.owner,
           'isOrganic': field.isOrganic,
+          'soilType': _soilType,
+          'growthStage': _growthStageController.text.trim(),
+          'cropType': _cropTypeController.text.trim(),
         });
         fieldId = widget.existingField!.id;
       } else {
         fieldId = await _fieldService.createField(field);
+        if (fieldId != null) {
+          await _fieldService.updateField(fieldId, {
+            'soilType': _soilType,
+            'growthStage': _growthStageController.text.trim(),
+            'cropType': _cropTypeController.text.trim(),
+          });
+        }
       }
 
       if (mounted) {
@@ -398,6 +426,48 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
             ),
             const SizedBox(height: 24),
 
+            DropdownButtonFormField<String>(
+              value: _soilType,
+              items: soilTypeDropdownItems(context),
+              onChanged: (value) {
+                setState(() => _soilType = value ?? 'Unknown');
+              },
+              decoration: InputDecoration(
+                labelText: context.l10n.soilType,
+                prefixIcon: const Icon(Icons.landscape),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            CustomTextField(
+              controller: _growthStageController,
+              label: context.l10n.growthStage,
+              hintText: 'e.g., Germination, Seedling, Flowering',
+              prefixIcon: Icons.eco,
+              validator: (val) {
+                final v = val?.trim() ?? '';
+                if (v.isEmpty) return 'Please enter growth stage';
+                if (!isValidGrowthStage(v)) return 'Enter a valid growth stage';
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
+
+            CustomTextField(
+              controller: _cropTypeController,
+              label: 'Crop Type',
+              hintText: 'e.g., Maize, Wheat, Rice',
+              prefixIcon: Icons.agriculture,
+              validator: (val) {
+                final v = val?.trim() ?? '';
+                if (v.isEmpty) return 'Please enter crop type';
+                if (!isValidCropType(v)) return 'Enter a valid crop type';
+                return null;
+              },
+            ),
+            const SizedBox(height: 24),
+
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -480,6 +550,7 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
             initialPoints: _fieldBoundary,
             initialDrawingMode: DrawingMode.polygon,
             allowModeSwitch: false,
+            mapTileLayer: 'satellite',
             onDrawingComplete: (points, mode) {
               setState(() {
                 _fieldBoundary = points;

@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/l10n_extensions.dart';
+import '../../utils/soil_types.dart';
+import '../../utils/field_options.dart';
 import '../../models/field_model.dart';
 import '../../services/field_service.dart';
 
@@ -32,9 +34,8 @@ class AddFieldModal {
       text: hasCoords ? field!.borderCoordinates.first.longitude.toString() : '',
     );
     String soilType = 'Unknown';
-    String growthStage = 'Germination';
-    String cropType = 'Unknown';
-    final cropTypeOtherController = TextEditingController();
+    final growthStageController = TextEditingController(text: field?.label ?? '');
+    final cropTypeController = TextEditingController(text: '');
 
     bool fieldCreated = false;
 
@@ -88,65 +89,25 @@ class AddFieldModal {
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: soilType,
-                              items: [
-                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
-                                DropdownMenuItem(value: 'Clay', child: Text(context.l10n.clay)),
-                                DropdownMenuItem(value: 'Sandy', child: Text(context.l10n.sandy)),
-                                DropdownMenuItem(value: 'Loam', child: Text(context.l10n.loam)),
-                                DropdownMenuItem(value: 'Silt', child: Text(context.l10n.silt)),
-                                DropdownMenuItem(value: 'Peat', child: Text(context.l10n.peat)),
-                                DropdownMenuItem(value: 'Chalk', child: Text(context.l10n.chalk)),
-                              ],
+                              items: soilTypeDropdownItems(context),
                               onChanged: (v) => modalState(() => soilType = v ?? 'Unknown'),
                               decoration: InputDecoration(labelText: context.l10n.soilType),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
-                            child: DropdownButtonFormField<String>(
-                              value: growthStage,
-                              items: [
-                                DropdownMenuItem(value: 'Germination', child: Text(context.l10n.germination)),
-                                DropdownMenuItem(value: 'Seedling', child: Text(context.l10n.seedling)),
-                                DropdownMenuItem(value: 'Vegetative Growth', child: Text(context.l10n.vegetativeGrowth)),
-                                DropdownMenuItem(value: 'Flowering', child: Text(context.l10n.flowering)),
-                                DropdownMenuItem(value: 'Fruit', child: Text(context.l10n.fruit)),
-                                DropdownMenuItem(value: 'Maturity', child: Text(context.l10n.maturity)),
-                                DropdownMenuItem(value: 'Harvest', child: Text(context.l10n.harvest)),
-                              ],
-                              onChanged: (v) => modalState(() => growthStage = v ?? 'Germination'),
+                            child: TextField(
+                              controller: growthStageController,
                               decoration: InputDecoration(labelText: context.l10n.growthStage),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
-                            child: DropdownButtonFormField<String>(
-                              value: cropType,
-                              items: [
-                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
-                                DropdownMenuItem(value: 'Maize', child: Text(context.l10n.maize)),
-                                DropdownMenuItem(value: 'Wheat', child: Text(context.l10n.wheat)),
-                                DropdownMenuItem(value: 'Rice', child: Text(context.l10n.rice)),
-                                DropdownMenuItem(value: 'Soybean', child: Text(context.l10n.soybean)),
-                                DropdownMenuItem(value: 'Cotton', child: Text(context.l10n.cotton)),
-                                DropdownMenuItem(value: 'Coffee', child: Text(context.l10n.coffee)),
-                                DropdownMenuItem(value: 'Tea', child: Text(context.l10n.tea)),
-                                DropdownMenuItem(value: 'Vegetables', child: Text(context.l10n.vegetables)),
-                                DropdownMenuItem(value: 'Fruits', child: Text(context.l10n.fruits)),
-                                DropdownMenuItem(value: 'Other', child: Text(context.l10n.other)),
-                              ],
-                              onChanged: (v) => modalState(() => cropType = v ?? 'Unknown'),
+                            child: TextField(
+                              controller: cropTypeController,
                               decoration: const InputDecoration(labelText: 'Crop Type'),
                             ),
                           ),
-                          if (cropType == 'Other')
-                            SizedBox(
-                              width: fieldWidth,
-                                child: TextField(
-                                controller: cropTypeOtherController,
-                                decoration: InputDecoration(labelText: '${context.l10n.other}*'),
-                              ),
-                            ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
@@ -227,13 +188,26 @@ class AddFieldModal {
                             final lat = double.tryParse(latController.text.trim());
                             final lng = double.tryParse(lngController.text.trim());
 
-                            final effectiveCropType = cropType == 'Other'
-                                ? cropTypeOtherController.text.trim()
-                                : cropType;
+                            final effectiveCropType = cropTypeController.text.trim();
+                            final growthStageVal = growthStageController.text.trim();
 
                             if (name.isEmpty || label.isEmpty || owner.isEmpty || size == null || size <= 0 ||
-                                (cropType == 'Other' && effectiveCropType.isEmpty)) {
+                              effectiveCropType.isEmpty) {
                               Get.snackbar('Validation Error', 'Please fill all required fields correctly.',
+                                  backgroundColor: Theme.of(context).colorScheme.error,
+                                  colorText: Theme.of(context).colorScheme.onError);
+                              return;
+                            }
+
+                            // Validate against allowed lists
+                            if (!isValidCropType(effectiveCropType)) {
+                              Get.snackbar('Validation Error', 'Please enter a valid crop type.',
+                                  backgroundColor: Theme.of(context).colorScheme.error,
+                                  colorText: Theme.of(context).colorScheme.onError);
+                              return;
+                            }
+                            if (!isValidGrowthStage(growthStageVal)) {
+                              Get.snackbar('Validation Error', 'Please enter a valid growth stage.',
                                   backgroundColor: Theme.of(context).colorScheme.error,
                                   colorText: Theme.of(context).colorScheme.onError);
                               return;
@@ -252,7 +226,7 @@ class AddFieldModal {
                                 'isOrganic': isOrganic,
                                 'name': name,
                                 'soilType': soilType,
-                                'growthStage': growthStage,
+                                'growthStage': growthStageController.text.trim(),
                                 'cropType': effectiveCropType,
                                 'description': descriptionController.text.trim(),
                                 if (lat != null && lng != null) 'borderCoordinates': [
@@ -279,7 +253,7 @@ class AddFieldModal {
                                 await fieldService.updateField(createdId, {
                                   'name': name,
                                   'soilType': soilType,
-                                  'growthStage': growthStage,
+                                  'growthStage': growthStageController.text.trim(),
                                   'cropType': effectiveCropType,
                                   'description': descriptionController.text.trim(),
                                 });

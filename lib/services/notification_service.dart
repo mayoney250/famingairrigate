@@ -675,8 +675,15 @@ class NotificationService {
   /// Listen to sensor readings for moisture and water levels
   void _setupSensorReadingsListener(String userId) async {
     print('🔧 [SENSOR LISTENER] Setting up listener for userId: $userId');
-    
-    // Get all fields for this user
+
+    // 1) Guard: ensure a user is signed in and matches expected userId
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUid == null || currentUid != userId) {
+      print('❌ [SENSOR LISTENER] No signed-in user or mismatch. Aborting listener setup.');
+      return;
+    }
+
+    // 2) Get fields owned by this user (used for initial scan only)
     final fieldsSnapshot = await _firestore
         .collection('fields')
         .where('userId', isEqualTo: userId)
@@ -686,100 +693,95 @@ class NotificationService {
 
     if (fieldIds.isEmpty) {
       print('⚠️ [SENSOR LISTENER] No fields found for user $userId');
-      return;
-    }
+    } else {
+      print('✓ [SENSOR LISTENER] Found ${fieldIds.length} fields for user: ${fieldIds.join(", ")}');
 
-    print('✓ [SENSOR LISTENER] Found ${fieldIds.length} fields for user: ${fieldIds.join(", ")}');
-    
-    // IMPORTANT: Check LATEST sensor data immediately on attach (even if before login)
-    // This ensures we notify about current conditions
-    print('🔍 [SENSOR LISTENER] Checking current sensor data on startup...');
-    for (final fieldId in fieldIds) {
-      try {
-        final latestSnapshot = await _firestore
-            .collection('sensorData')
-            .where('fieldId', isEqualTo: fieldId)
-            .orderBy('timestamp', descending: true)
-            .limit(1)
-            .get();
-        
-        if (latestSnapshot.docs.isNotEmpty) {
-          final data = latestSnapshot.docs.first.data();
-          final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
-          final ts = (data['timestamp'] as Timestamp?)?.toDate();
-          
-          print('📊 [SENSOR LISTENER] Latest data for field $fieldId: moisture=$soilMoisture%, timestamp=$ts');
-          
-          if (soilMoisture != null) {
-            // Check current moisture levels on startup
-            await _checkSensorDataMoisture(fieldId, soilMoisture, data);
+      // IMPORTANT: Check LATEST sensor data immediately on attach
+      print('🔍 [SENSOR LISTENER] Checking current sensor data on startup...');
+      for (final fieldId in fieldIds) {
+        try {
+          final latestSnapshot = await _firestore
+              .collection('sensorData')
+              .where('fieldId', isEqualTo: fieldId)
+              .orderBy('timestamp', descending: true)
+              .limit(1)
+              .get();
+
+          if (latestSnapshot.docs.isNotEmpty) {
+            final data = latestSnapshot.docs.first.data();
+            final dataUserId = data['userId'] as String?;
+            if (dataUserId != currentUid) {
+              print('⏭️ [SENSOR LISTENER] Latest sensorData belongs to a different user. Skipping.');
+            } else {
+              final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
+              final ts = (data['timestamp'] as Timestamp?)?.toDate();
+              print('📊 [SENSOR LISTENER] Latest data for field $fieldId: moisture=$soilMoisture%, timestamp=$ts');
+
+              if (soilMoisture != null) {
+                await _checkSensorDataMoisture(fieldId, soilMoisture, data);
+              }
+            }
+          } else {
+            print('⚠️ [SENSOR LISTENER] No sensor data found for field $fieldId');
           }
-        } else {
-          print('⚠️ [SENSOR LISTENER] No sensor data found for field $fieldId');
+        } catch (e) {
+          print('❌ [SENSOR LISTENER] Error checking initial data: $e');
         }
-      } catch (e) {
-        print('❌ [SENSOR LISTENER] Error checking initial data: $e');
       }
     }
 
-    // Listen to sensorData collection (NOT sensor_readings)
-    for (var i = 0; i < fieldIds.length; i += 10) {
-      final batch = fieldIds.skip(i).take(10).toList();
+    // 3) Real-time listener for new sensorData documents that are for this user
+    // Use userId filter to guarantee security and correctness, and trigger immediate notifications
+    final listener = _firestore
+        .collection('sensorData')
+        .where('userId', isEqualTo: userId)
+        .orderBy('timestamp', descending: true)
+        .snapshots()
+        .listen((snapshot) async {
+      print('📡 [SENSOR DATA] Snapshot received: size=${snapshot.size} changes=${snapshot.docChanges.length}');
+      try {
+        for (var change in snapshot.docChanges) {
+          print('📡 [SENSOR DATA] Change type: ${change.type.name}, docId: ${change.doc.id}');
+          if (change.type == DocumentChangeType.added) {
+            final data = change.doc.data()!;
 
-      print('🔧 [SENSOR LISTENER] Setting up listener for batch: ${batch.join(", ")}');
-      
-      final listener = _firestore
-          .collection('sensorData')
-          .where('fieldId', whereIn: batch)
-          .snapshots()
-          .listen((snapshot) async {
-        print('📡 [SENSOR DATA] Snapshot received: size=${snapshot.size} changes=${snapshot.docChanges.length}');
-        try {
-          for (var change in snapshot.docChanges) {
-            print('📡 [SENSOR DATA] Change type: ${change.type.name}, docId: ${change.doc.id}');
-            
-            if (change.type == DocumentChangeType.added) {
-              final data = change.doc.data()!;
-              print('📡 [SENSOR DATA] Full data: $data');
-              
-              // Skip old readings from before login
-              final ts = (data['timestamp'] as Timestamp?)?.toDate();
-              if (_attachCutoff != null && ts != null && ts.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
-                print('📡 ⏭️ Skipping old sensor data (timestamp: $ts, cutoff: $_attachCutoff)');
-                continue;
-              }
-              
-              print('📡 ✅ Processing NEW sensor data (timestamp: $ts, cutoff: $_attachCutoff)');
-              
-              final fieldId = data['fieldId'] as String?;
-              final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
-              
-              print('📡 [SENSOR DATA] Extracted - fieldId=$fieldId, soilMoisture=$soilMoisture%');
-              
-              if (fieldId != null && soilMoisture != null) {
-                print('🔔 [SENSOR DATA] Calling moisture check for Field=$fieldId, Moisture=$soilMoisture%');
-                
-                // Check moisture levels directly
-                await _checkSensorDataMoisture(fieldId, soilMoisture, data);
-              } else {
-                print('⚠️ [SENSOR DATA] Missing fieldId or soilMoisture in data!');
-              }
+            // Skip old readings from before login
+            final ts = (data['timestamp'] as Timestamp?)?.toDate();
+            if (_attachCutoff != null && ts != null && ts.isBefore(_attachCutoff!.subtract(const Duration(seconds: 10)))) {
+              print('📡 ⏭️ Skipping old sensor data (timestamp: $ts, cutoff: $_attachCutoff)');
+              continue;
+            }
+
+            // Ensure the data belongs to the current user (defense-in-depth)
+            final dataUserId = data['userId'] as String?;
+            if (dataUserId != currentUid) {
+              print('⏭️ [SENSOR DATA] Document userId mismatch. Skipping.');
+              continue;
+            }
+
+            final fieldId = data['fieldId'] as String?;
+            final soilMoisture = (data['soilMoisture'] as num?)?.toDouble();
+
+            if (fieldId != null && soilMoisture != null) {
+              // Resolve field name in _checkSensorDataMoisture and send notification if thresholds met
+              await _checkSensorDataMoisture(fieldId, soilMoisture, data);
+            } else {
+              print('⚠️ [SENSOR DATA] Missing fieldId or soilMoisture in data!');
             }
           }
-        } catch (e, stackTrace) {
-          print('❌ [SENSOR DATA] Listener handler error: $e');
-          print(stackTrace);
         }
-      }, onError: (e, stackTrace) {
-        print('❌ [SENSOR DATA] Stream error: $e');
+      } catch (e, stackTrace) {
+        print('❌ [SENSOR DATA] Listener handler error: $e');
         print(stackTrace);
-      });
+      }
+    }, onError: (e, stackTrace) {
+      print('❌ [SENSOR DATA] Stream error: $e');
+      print(stackTrace);
+    });
 
-      _listeners.add(listener);
-    }
+    _listeners.add(listener);
 
-    print('✅ [SENSOR LISTENER] Sensor data listener setup complete for ${fieldIds.length} fields');
-    print('📊 [SENSOR LISTENER] Monitoring fields: ${fieldIds.join(", ")}');
+    print('✅ [SENSOR LISTENER] Sensor data listener setup complete for user filter');
     print('🔍 [SENSOR LISTENER] Will alert if moisture < 50% or >= 100%');
   }
 
@@ -787,11 +789,21 @@ class NotificationService {
   Future<void> _checkSensorDataMoisture(String fieldId, double moistureLevel, Map<String, dynamic> data) async {
     print('🔍 [MOISTURE CHECK] Starting check for field=$fieldId, moisture=$moistureLevel%');
     
+    // Verify user is signed in
     final userId = FirebaseAuth.instance.currentUser?.uid;
     if (userId == null) {
       print('❌ [MOISTURE CHECK] No user logged in, aborting');
       return;
     }
+
+    // Verify sensorData belongs to authenticated user
+    final dataUserId = data['userId'] as String?;
+    if (dataUserId == null || dataUserId != userId) {
+      print('❌ [MOISTURE CHECK] SensorData userId mismatch: data=$dataUserId, auth=$userId. Aborting for security.');
+      return;
+    }
+    
+    print('✅ [MOISTURE CHECK] User verified: $userId matches sensorData userId');
 
     // Get field name
     String fieldName = 'Unknown Field';
@@ -1309,6 +1321,17 @@ class NotificationService {
   }
 
   Future<void> _checkWaterLevel(String sensorId, Map<String, dynamic> sensor, double waterLevel) async {
+    // Verify user is signed in
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) return;
+
+    // Verify sensor belongs to authenticated user
+    final sensorUserId = sensor['userId'] as String?;
+    if (sensorUserId == null || sensorUserId != userId) {
+      print('❌ [WATER CHECK] Sensor userId mismatch. Aborting for security.');
+      return;
+    }
+    
     final lowThreshold = (sensor['lowThreshold'] ?? 20.0) as num;
     final criticalThreshold = (sensor['criticalThreshold'] ?? 10.0) as num;
 
@@ -1466,8 +1489,12 @@ class NotificationService {
   }
 
   Future<void> _detectOfflineSensors(Duration threshold) async {
+    // Verify user is signed in
     final userId = FirebaseAuth.instance.currentUser?.uid;
-    if (userId == null) return;
+    if (userId == null) {
+      print('⚠️ [OFFLINE CHECK] No user logged in, skipping');
+      return;
+    }
 
     try {
       final cutoff = DateTime.now().subtract(threshold);
@@ -1476,8 +1503,18 @@ class NotificationService {
           .where('userId', isEqualTo: userId)
           .get();
 
+      print('🔍 [OFFLINE CHECK] Checking ${sensorsSnapshot.docs.length} sensors for user $userId');
+
       for (var sensorDoc in sensorsSnapshot.docs) {
         final sensor = sensorDoc.data();
+        
+        // Verify sensor belongs to authenticated user
+        final sensorUserId = sensor['userId'] as String?;
+        if (sensorUserId == null || sensorUserId != userId) {
+          print('❌ [OFFLINE CHECK] Sensor userId mismatch. Skipping for security.');
+          continue;
+        }
+        
         final sensorName = sensor['name'] ?? 'Sensor';
         final lastSeenTimestamp = sensor['lastSeen'] as Timestamp?;
         DateTime? effectiveLastSeen = lastSeenTimestamp?.toDate();

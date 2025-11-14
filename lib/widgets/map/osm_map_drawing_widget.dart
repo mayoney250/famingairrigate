@@ -21,6 +21,7 @@ class OSMMapDrawingWidget extends StatefulWidget {
   final Function(List<LatLng> points, DrawingMode mode)? onDrawingComplete;
   final bool showControls;
   final bool allowModeSwitch;
+  final String mapTileLayer; // 'streets' or 'satellite'
   
   const OSMMapDrawingWidget({
     super.key,
@@ -30,6 +31,7 @@ class OSMMapDrawingWidget extends StatefulWidget {
     this.onDrawingComplete,
     this.showControls = true,
     this.allowModeSwitch = true,
+    this.mapTileLayer = 'streets',
   });
 
   @override
@@ -54,6 +56,7 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
   void initState() {
     super.initState();
     _drawingMode = widget.initialDrawingMode;
+    _currentMapLayer = widget.mapTileLayer; // Use passed-in layer preference
     if (widget.initialPoints != null && widget.initialPoints!.isNotEmpty) {
       _points.addAll(widget.initialPoints!);
       // If we have initial points, center on them instead of current location
@@ -327,7 +330,7 @@ class _OSMMapDrawingWidgetState extends State<OSMMapDrawingWidget> {
               urlTemplate: _currentMapLayer == 'satellite'
                   ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
                   : 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-              userAgentPackageName: 'com.faminga.irrigation',
+              userAgentPackageName: 'faminga.irrigate',
               tileProvider: CancellableNetworkTileProvider(),
             ),
             
