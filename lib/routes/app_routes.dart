@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../screens/auth/email_verification_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+import '../screens/auth/verification_pending_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/fields/add_field_screen.dart';
@@ -61,6 +62,11 @@ class AppRoutes {
     GetPage(
       name: register,
       page: () => const RegisterScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+      name: '/verification-pending',
+      page: () => const VerificationPendingScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(

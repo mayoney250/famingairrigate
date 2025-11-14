@@ -1931,4 +1931,17 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get failedDeleteSchedule => 'Imeshindwa kufuta ratiba.';
+
+  @override
+  String get accountVerification => 'Account Verification';
+
+  @override
+  String get verificationPendingTitle => 'Account Being Verified';
+
+  @override
+  String get verificationPendingMessage =>
+      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+
+  @override
+  String get goToHome => 'Go to Home';
 }

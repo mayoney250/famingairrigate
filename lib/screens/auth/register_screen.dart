@@ -9,6 +9,7 @@ import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
 import '../../utils/l10n_extensions.dart';
 import '../../generated/app_localizations.dart';
+import '../../services/verification_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,6 +27,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _addressController = TextEditingController();
+  // Cooperative fields
+  bool _isInCooperative = false;
+  final _coopNameController = TextEditingController();
+  final _coopGovIdController = TextEditingController();
+  final _memberIdController = TextEditingController();
+  final _numFarmersController = TextEditingController();
+  final _leaderNameController = TextEditingController();
+  final _leaderPhoneController = TextEditingController();
+  final _leaderEmailController = TextEditingController();
+  final _coopFieldSizeController = TextEditingController();
+  final _coopNumFieldsController = TextEditingController();
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -53,6 +65,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     _addressController.dispose();
+    _coopNameController.dispose();
+    _coopGovIdController.dispose();
+    _memberIdController.dispose();
+    _numFarmersController.dispose();
+    _leaderNameController.dispose();
+    _leaderPhoneController.dispose();
+    _leaderEmailController.dispose();
+    _coopFieldSizeController.dispose();
+    _coopNumFieldsController.dispose();
     super.dispose();
   }
 
@@ -69,6 +90,61 @@ class _RegisterScreenState extends State<RegisterScreen> {
         district: _selectedDistrict ?? '',
       );
       if (success && mounted) {
+        // If user indicated cooperative membership, save cooperative data and create verification request
+        if (_isInCooperative) {
+          final verificationService = VerificationService();
+          // Prepare coop payload
+          final coopPayload = {
+            'type': 'cooperative',
+            'userEmail': _emailController.text.trim(),
+            'firstName': _firstNameController.text.trim(),
+            'lastName': _lastNameController.text.trim(),
+            'coopName': _coopNameController.text.trim(),
+            'coopGovId': _coopGovIdController.text.trim(),
+            'memberId': _memberIdController.text.trim(),
+            'numFarmers': int.tryParse(_numFarmersController.text.trim()) ?? 0,
+            'leaderName': _leaderNameController.text.trim(),
+            'leaderPhone': _leaderPhoneController.text.trim(),
+            'leaderEmail': _leaderEmailController.text.trim(),
+            'coopFieldSize': double.tryParse(_coopFieldSizeController.text.trim()) ?? 0.0,
+            'coopNumFields': int.tryParse(_coopNumFieldsController.text.trim()) ?? 0,
+          };
+
+          // Update user's Firestore profile with cooperative info and pending flag
+          try {
+            if (authProvider.currentUser != null) {
+              await authProvider.updateProfile({
+                'isCooperative': true,
+                'cooperative': coopPayload,
+                'verificationStatus': 'pending',
+              });
+            }
+
+            // create verification request and include admin email
+            final adminEmail = await verificationService.getAdminEmail();
+            final requesterIdentifier = _emailController.text.trim();
+            final verificationDocId = await verificationService.createVerificationRequest(
+              {
+                'adminEmail': adminEmail,
+                'requesterUserId': authProvider.currentUser?.userId ?? '',
+                'payload': coopPayload,
+              },
+              requesterIdentifier: requesterIdentifier,
+            );
+
+            // Cloud Function triggers an email to admin automatically
+            // Verification document stored with identifier type for admin reference
+          } catch (e) {
+            // ignore errors but show snackbar
+            Get.snackbar(context.l10n.error, 'Failed to create verification request: $e');
+          }
+
+          // Show verification pending screen
+          Get.offAllNamed('/verification-pending');
+          return;
+        }
+
+        // Not cooperative: continue with normal email verification flow
         _showSuccessDialog();
       } else if (mounted) {
         _showErrorSnackBar(authProvider.errorMessage ?? context.l10n.registrationFailed);
@@ -163,21 +239,38 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Email
+                // Email/Phone/Cooperative ID
                 CustomTextField(
                   controller: _emailController,
-                  label: context.l10n.email,
-                  hintText: context.l10n.enterEmail,
+                  label: 'Email, Phone, or Cooperative ID',
+                  hintText: 'email@example.com, +250123456789, or COOP-ID-123',
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon: Icons.email_outlined,
+                  prefixIcon: Icons.person_outline,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return context.l10n.pleaseEnterEmail;
                     }
-                    if (!GetUtils.isEmail(value)) {
-                      return context.l10n.pleaseEnterValidEmail;
+                    
+                    final email = value.trim();
+                    
+                    // Check if it's a valid email
+                    if (GetUtils.isEmail(email)) {
+                      return null;
                     }
-                    return null;
+                    
+                    // Check if it's a phone number (starts with + or has 10+ digits)
+                    if (email.startsWith('+') || 
+                        (email.replaceAll(RegExp(r'\D'), '').length >= 10 && 
+                         email.contains(RegExp(r'\d')))) {
+                      return null;
+                    }
+                    
+                    // Check if it's a cooperative ID (alphanumeric with hyphens, 5+ chars)
+                    if (RegExp(r'^[A-Z0-9-]{5,}$', caseSensitive: false).hasMatch(email)) {
+                      return null;
+                    }
+                    
+                    return 'Please enter a valid email, phone number (+250123456789), or cooperative ID (e.g., COOP-ID-123)';
                   },
                 ),
                 const SizedBox(height: 16),
@@ -254,6 +347,196 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   },
                 ),
                 const SizedBox(height: 16),
+                
+                // Cooperative question
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: FamingaBrandColors.primaryOrange.withOpacity(0.3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.group_work, color: FamingaBrandColors.primaryOrange),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Are you part of a farming cooperative?',
+                              style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Select if you belong to an organized cooperative',
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                          ],
+                        ),
+                      ),
+                      Switch(
+                        value: _isInCooperative,
+                        onChanged: (val) => setState(() => _isInCooperative = val),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Cooperative details section (shown if _isInCooperative is true)
+                if (_isInCooperative) ...[
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.3)),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Cooperative Information',
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Cooperative Name
+                        CustomTextField(
+                          controller: _coopNameController,
+                          label: 'Cooperative Name*',
+                          hintText: 'Enter cooperative name',
+                          prefixIcon: Icons.group_work,
+                          validator: _isInCooperative
+                              ? (value) =>
+                                  (value == null || value.isEmpty) ? 'Cooperative name required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Government ID
+                        CustomTextField(
+                          controller: _coopGovIdController,
+                          label: 'Government ID*',
+                          hintText: 'Cooperative government registration ID',
+                          prefixIcon: Icons.badge,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Government ID required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Member ID
+                        CustomTextField(
+                          controller: _memberIdController,
+                          label: 'Your Member ID*',
+                          hintText: 'Your membership ID in the cooperative',
+                          prefixIcon: Icons.person_add,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Member ID required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Number of Farmers
+                        CustomTextField(
+                          controller: _numFarmersController,
+                          label: 'Number of Farmers*',
+                          hintText: 'Total farmers in cooperative',
+                          keyboardType: TextInputType.number,
+                          prefixIcon: Icons.people,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Number of farmers required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        Text(
+                          'Leader Information',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Leader Name
+                        CustomTextField(
+                          controller: _leaderNameController,
+                          label: 'Leader Name*',
+                          hintText: 'Cooperative leader/chairperson name',
+                          prefixIcon: Icons.person_outlined,
+                          textCapitalization: TextCapitalization.words,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Leader name required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Leader Phone
+                        CustomTextField(
+                          controller: _leaderPhoneController,
+                          label: 'Leader Phone*',
+                          hintText: 'Leader contact number',
+                          keyboardType: TextInputType.phone,
+                          prefixIcon: Icons.phone_outlined,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Leader phone required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Leader Email
+                        CustomTextField(
+                          controller: _leaderEmailController,
+                          label: 'Leader Email*',
+                          hintText: 'Leader email address',
+                          keyboardType: TextInputType.emailAddress,
+                          prefixIcon: Icons.email_outlined,
+                          validator: _isInCooperative
+                              ? (value) {
+                                  if (value == null || value.isEmpty) return 'Leader email required';
+                                  if (!GetUtils.isEmail(value)) return 'Enter valid email';
+                                  return null;
+                                }
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        Text(
+                          'Cooperative Land',
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Total Field Size
+                        CustomTextField(
+                          controller: _coopFieldSizeController,
+                          label: 'Total Size of Fields (hectares)*',
+                          hintText: 'Total cultivated area',
+                          keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                          prefixIcon: Icons.landscape,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Field size required' : null
+                              : null,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Number of Fields
+                        CustomTextField(
+                          controller: _coopNumFieldsController,
+                          label: 'Number of Fields*',
+                          hintText: 'Total number of fields',
+                          keyboardType: TextInputType.number,
+                          prefixIcon: Icons.grid_on,
+                          validator: _isInCooperative
+                              ? (value) => (value == null || value.isEmpty) ? 'Number of fields required' : null
+                              : null,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 
                 // Password
                 CustomTextField(

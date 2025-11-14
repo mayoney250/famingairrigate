@@ -3761,6 +3761,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Failed to delete schedule.'**
   String get failedDeleteSchedule;
+
+  /// No description provided for @accountVerification.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Verification'**
+  String get accountVerification;
+
+  /// No description provided for @verificationPendingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Account Being Verified'**
+  String get verificationPendingTitle;
+
+  /// No description provided for @verificationPendingMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!'**
+  String get verificationPendingMessage;
+
+  /// No description provided for @goToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to Home'**
+  String get goToHome;
 }
 
 class _AppLocalizationsDelegate

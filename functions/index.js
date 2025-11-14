@@ -1,10 +1,20 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
 admin.initializeApp();
 
 const db = admin.firestore();
 const messaging = admin.messaging();
+
+// Configure nodemailer with Gmail
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.ADMIN_EMAIL_USER || 'your-email@gmail.com',
+    pass: process.env.ADMIN_EMAIL_PASSWORD || 'your-app-password',
+  },
+});
 
 async function sendNotificationToUser(userId, notification) {
   try {
@@ -438,4 +448,219 @@ exports.onIrrigationStatusChange = functions.firestore
     }
 
     return null;
+  });
+
+/**
+ * Cloud Function: Triggered when a new verification request is created
+ * Sends email to admin with verification details
+ */
+exports.sendVerificationEmail = functions
+  .region('us-central1')
+  .firestore.document('verifications/{verificationId}')
+  .onCreate(async (snap, context) => {
+    const data = snap.data();
+    const verificationId = context.params.verificationId;
+    const adminEmail = data.adminEmail || 'julieisaro01@gmail.com';
+    const requesterEmail = data.requesterEmail || 'unknown@example.com';
+    const payload = data.payload || {};
+
+    console.log(`New verification request: ${verificationId}`);
+    console.log(`Admin email: ${adminEmail}`);
+    console.log(`Requester email: ${requesterEmail}`);
+
+    try {
+      // Determine registration type
+      const registrationType = data.type || 'unknown';
+      let emailBody = '';
+      let emailSubject = '';
+
+      if (registrationType === 'cooperative') {
+        emailSubject = `New Cooperative Registration for Verification - ${payload.coopName}`;
+        emailBody = `
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2>New Cooperative Registration</h2>
+    <p>A new cooperative has registered and requires verification.</p>
+    
+    <h3>User Information:</h3>
+    <ul>
+      <li><strong>Name:</strong> ${payload.firstName} ${payload.lastName}</li>
+      <li><strong>Email/Phone/ID:</strong> ${requesterEmail}</li>
+      <li><strong>Identifier Type:</strong> ${data.requesterIdentifierType || 'unknown'}</li>
+    </ul>
+
+    <h3>Cooperative Information:</h3>
+    <ul>
+      <li><strong>Cooperative Name:</strong> ${payload.coopName}</li>
+      <li><strong>Government ID:</strong> ${payload.coopGovId}</li>
+      <li><strong>Member ID:</strong> ${payload.memberId}</li>
+      <li><strong>Number of Farmers:</strong> ${payload.numFarmers}</li>
+    </ul>
+
+    <h3>Leader Information:</h3>
+    <ul>
+      <li><strong>Leader Name:</strong> ${payload.leaderName}</li>
+      <li><strong>Leader Phone:</strong> ${payload.leaderPhone}</li>
+      <li><strong>Leader Email:</strong> ${payload.leaderEmail}</li>
+    </ul>
+
+    <h3>Land Information:</h3>
+    <ul>
+      <li><strong>Total Field Size:</strong> ${payload.coopFieldSize} hectares</li>
+      <li><strong>Number of Fields:</strong> ${payload.coopNumFields}</li>
+    </ul>
+
+    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+    <p><strong>Verification ID:</strong> ${verificationId}</p>
+    <p>Log in to the Firebase Console to review and approve/reject this registration.</p>
+    <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
+    
+    <p style="color: #666; font-size: 12px;">
+      This is an automated email from Faminga Irrigation System.
+      Please do not reply to this email.
+    </p>
+  </body>
+</html>
+        `;
+      } else {
+        // Individual farmer registration
+        emailSubject = `New Farmer Registration for Verification - ${payload.firstName} ${payload.lastName}`;
+        emailBody = `
+<html>
+  <body style="font-family: Arial, sans-serif; line-height: 1.6;">
+    <h2>New Farmer Registration</h2>
+    <p>A new farmer has registered and requires verification.</p>
+    
+    <h3>User Information:</h3>
+    <ul>
+      <li><strong>Name:</strong> ${payload.firstName} ${payload.lastName}</li>
+      <li><strong>Email/Phone/ID:</strong> ${requesterEmail}</li>
+      <li><strong>Identifier Type:</strong> ${data.requesterIdentifierType || 'unknown'}</li>
+      <li><strong>Phone:</strong> ${payload.phoneNumber || 'N/A'}</li>
+      <li><strong>Province:</strong> ${payload.province || 'N/A'}</li>
+      <li><strong>District:</strong> ${payload.district || 'N/A'}</li>
+    </ul>
+
+    <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
+    <p><strong>Verification ID:</strong> ${verificationId}</p>
+    <p>Log in to the Firebase Console to review and approve/reject this registration.</p>
+    <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
+    
+    <p style="color: #666; font-size: 12px;">
+      This is an automated email from Faminga Irrigation System.
+      Please do not reply to this email.
+    </p>
+  </body>
+</html>
+        `;
+      }
+
+      // Send email
+      const mailOptions = {
+        from: process.env.ADMIN_EMAIL_USER || 'your-email@gmail.com',
+        to: adminEmail,
+        subject: emailSubject,
+        html: emailBody,
+      };
+
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent successfully to ${adminEmail}`);
+
+      // Update verification request with email sent timestamp
+      await snap.ref.update({
+        emailSentAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      console.error('Error sending email:', error);
+      // Update verification with error
+      await snap.ref.update({
+        emailError: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  });
+
+/**
+ * Cloud Function: HTTP endpoint to manually trigger verification emails
+ * Useful for testing or re-sending emails
+ */
+exports.retriggerVerificationEmail = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+    // Verify the user is authenticated
+    if (!context.auth) {
+      throw new functions.https.HttpsError(
+        'unauthenticated',
+        'Must be authenticated to trigger emails'
+      );
+    }
+
+    const { verificationId } = data;
+
+    try {
+      const verificationSnap = await db
+        .collection('verifications')
+        .doc(verificationId)
+        .get();
+
+      if (!verificationSnap.exists) {
+        throw new functions.https.HttpsError(
+          'not-found',
+          'Verification request not found'
+        );
+      }
+
+      const verificationData = verificationSnap.data();
+      const adminEmail = verificationData.adminEmail || 'julieisaro01@gmail.com';
+      const payload = verificationData.payload || {};
+      const requesterEmail = verificationData.requesterEmail || 'unknown@example.com';
+      const registrationType = verificationData.type || 'unknown';
+
+      let emailSubject = '';
+      let emailBody = '';
+
+      if (registrationType === 'cooperative') {
+        emailSubject = `[RE-SENT] New Cooperative Registration - ${payload.coopName}`;
+        emailBody = `
+          <html>
+            <body style="font-family: Arial, sans-serif;">
+              <h2>[Re-sent] Cooperative Registration</h2>
+              <p>Cooperative: ${payload.coopName}</p>
+              <p>Leader: ${payload.leaderName}</p>
+              <p>Verification ID: ${verificationId}</p>
+              <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
+            </body>
+          </html>
+        `;
+      } else {
+        emailSubject = `[RE-SENT] New Farmer Registration - ${payload.firstName} ${payload.lastName}`;
+        emailBody = `
+          <html>
+            <body style="font-family: Arial, sans-serif;">
+              <h2>[Re-sent] Farmer Registration</h2>
+              <p>Name: ${payload.firstName} ${payload.lastName}</p>
+              <p>Email: ${requesterEmail}</p>
+              <p>Verification ID: ${verificationId}</p>
+              <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
+            </body>
+          </html>
+        `;
+      }
+
+      const mailOptions = {
+        from: process.env.ADMIN_EMAIL_USER || 'your-email@gmail.com',
+        to: adminEmail,
+        subject: emailSubject,
+        html: emailBody,
+      };
+
+      await transporter.sendMail(mailOptions);
+      return { success: true, message: 'Email sent successfully' };
+    } catch (error) {
+      console.error('Error in retriggerVerificationEmail:', error);
+      throw new functions.https.HttpsError(
+        'internal',
+        error instanceof Error ? error.message : 'Failed to send email'
+      );
+    }
   });

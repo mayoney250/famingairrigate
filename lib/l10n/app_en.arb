@@ -778,5 +778,9 @@
   "changePasswordTitle": "Change Password",
   "secureYourAccountTitle": "Secure Your Account",
   "securityTipsTitle": "Security Tips",
-  "failedDeleteSchedule": "Failed to delete schedule."
+  "failedDeleteSchedule": "Failed to delete schedule.",
+  "accountVerification": "Account Verification",
+  "verificationPendingTitle": "Account Being Verified",
+  "verificationPendingMessage": "Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!",
+  "goToHome": "Go to Home"
 }
