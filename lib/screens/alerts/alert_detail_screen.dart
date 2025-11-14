@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../generated/app_localizations.dart';
 import '../../models/alert_model.dart';
 import '../../services/alert_service.dart';
 
@@ -15,7 +16,7 @@ class AlertDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Alert'),
+  title: Text(AppLocalizations.of(context)?.alerts ?? 'Alert'),
         actions: [
           if (!alert.read)
             TextButton(
@@ -23,7 +24,7 @@ class AlertDetailScreen extends StatelessWidget {
                 await service.markAsRead(alert.id);
                 Get.back();
               },
-              child: const Text('Mark read'),
+              child: Text(AppLocalizations.of(context)?.markAsRead ?? 'Mark read'),
             ),
         ],
       ),

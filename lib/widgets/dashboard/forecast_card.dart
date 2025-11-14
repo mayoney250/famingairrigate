@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../config/colors.dart';
-import '../../models/forecast_day.dart';
+import '../../models/forecast_day_model.dart';
+import '../../l10n/app_localizations.dart';
 
 class ForecastCard extends StatefulWidget {
   final List<ForecastDay> forecastDays;
@@ -101,9 +103,10 @@ class _ForecastCardState extends State<ForecastCard> {
               size: 20,
             ),
             const SizedBox(width: 8),
-            const Text(
-              'Weather Forecast',
-              style: TextStyle(
+            Text(
+              // localized
+              AppLocalizations.of(context)?.weatherForecast ?? 'Weather Forecast',
+              style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
@@ -130,6 +133,56 @@ class _ForecastCardState extends State<ForecastCard> {
     
     final today = widget.forecastDays.first;
     final weatherIcon = _getWeatherIcon(today.status);
+    String localizedDay() {
+      final now = DateTime.now();
+      final t = DateTime(now.year, now.month, now.day);
+      final tom = t.add(const Duration(days: 1));
+      final d = DateTime(today.date.year, today.date.month, today.date.day);
+      if (d == t) return AppLocalizations.of(context)?.today ?? 'Today';
+      if (d == tom) return AppLocalizations.of(context)?.tomorrow ?? 'Tomorrow';
+      final l10n = AppLocalizations.of(context);
+      if (l10n != null) {
+        switch (today.date.weekday) {
+          case DateTime.monday:
+            return l10n.monday;
+          case DateTime.tuesday:
+            return l10n.tuesday;
+          case DateTime.wednesday:
+            return l10n.wednesday;
+          case DateTime.thursday:
+            return l10n.thursday;
+          case DateTime.friday:
+            return l10n.friday;
+          case DateTime.saturday:
+            return l10n.saturday;
+          case DateTime.sunday:
+            return l10n.sunday;
+        }
+      }
+      try {
+        final locale = Localizations.localeOf(context).toString();
+        return DateFormat.E(locale).format(today.date);
+      } catch (_) {
+        return today.dayName;
+      }
+    }
+
+    String localizedStatus(String s) {
+      switch (s.toLowerCase()) {
+        case 'clear':
+          return AppLocalizations.of(context)?.weatherClear ?? 'Clear';
+        case 'clouds':
+          return AppLocalizations.of(context)?.weatherClouds ?? 'Cloudy';
+        case 'rain':
+          return AppLocalizations.of(context)?.weatherRain ?? 'Rain';
+        case 'thunderstorm':
+          return AppLocalizations.of(context)?.weatherThunderstorm ?? 'Thunderstorm';
+        case 'snow':
+          return AppLocalizations.of(context)?.weatherSnow ?? 'Snow';
+        default:
+          return s;
+      }
+    }
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -157,7 +210,7 @@ class _ForecastCardState extends State<ForecastCard> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  today.dayName,
+                  localizedDay(),
                   style: const TextStyle(
                     color: FamingaBrandColors.textPrimary,
                     fontSize: 16,
@@ -166,7 +219,7 @@ class _ForecastCardState extends State<ForecastCard> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  today.status,
+                  localizedStatus(today.status),
                   style: const TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 13,
@@ -216,6 +269,57 @@ class _ForecastCardState extends State<ForecastCard> {
   Widget _buildForecastRow(ForecastDay day) {
     final weatherIcon = _getWeatherIcon(day.status);
 
+    String localizedDayLabel(DateTime date) {
+      final now = DateTime.now();
+      final t = DateTime(now.year, now.month, now.day);
+      final tom = t.add(const Duration(days: 1));
+      final d = DateTime(date.year, date.month, date.day);
+      if (d == t) return AppLocalizations.of(context)?.today ?? 'Today';
+      if (d == tom) return AppLocalizations.of(context)?.tomorrow ?? 'Tomorrow';
+      final l10n = AppLocalizations.of(context);
+      if (l10n != null) {
+        switch (date.weekday) {
+          case DateTime.monday:
+            return l10n.monday;
+          case DateTime.tuesday:
+            return l10n.tuesday;
+          case DateTime.wednesday:
+            return l10n.wednesday;
+          case DateTime.thursday:
+            return l10n.thursday;
+          case DateTime.friday:
+            return l10n.friday;
+          case DateTime.saturday:
+            return l10n.saturday;
+          case DateTime.sunday:
+            return l10n.sunday;
+        }
+      }
+      try {
+        final locale = Localizations.localeOf(context).toString();
+        return DateFormat.E(locale).format(date);
+      } catch (_) {
+        return day.dayName;
+      }
+    }
+
+    String localizedStatus(String s) {
+      switch (s.toLowerCase()) {
+        case 'clear':
+          return AppLocalizations.of(context)?.weatherClear ?? 'Clear';
+        case 'clouds':
+          return AppLocalizations.of(context)?.weatherClouds ?? 'Cloudy';
+        case 'rain':
+          return AppLocalizations.of(context)?.weatherRain ?? 'Rain';
+        case 'thunderstorm':
+          return AppLocalizations.of(context)?.weatherThunderstorm ?? 'Thunderstorm';
+        case 'snow':
+          return AppLocalizations.of(context)?.weatherSnow ?? 'Snow';
+        default:
+          return s;
+      }
+    }
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
@@ -228,7 +332,7 @@ class _ForecastCardState extends State<ForecastCard> {
           SizedBox(
             width: 50,
             child: Text(
-              day.dayName,
+              localizedDayLabel(day.date),
               style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontSize: 12,
@@ -245,7 +349,7 @@ class _ForecastCardState extends State<ForecastCard> {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              day.status,
+              localizedStatus(day.status),
               style: const TextStyle(
                 color: FamingaBrandColors.textSecondary,
                 fontSize: 12,
@@ -290,24 +394,24 @@ class _ForecastCardState extends State<ForecastCard> {
           ),
         ],
       ),
-      child: const Center(
+            child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            SizedBox(height: 20),
-            CircularProgressIndicator(
+            const SizedBox(height: 20),
+            const CircularProgressIndicator(
               color: FamingaBrandColors.primaryOrange,
               strokeWidth: 2,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'Loading weather...',
-              style: TextStyle(
+              AppLocalizations.of(context)?.loadingWeather ?? 'Loading weather...',
+              style: const TextStyle(
                 color: FamingaBrandColors.textSecondary,
                 fontSize: 12,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
           ],
         ),
       ),
@@ -328,19 +432,19 @@ class _ForecastCardState extends State<ForecastCard> {
           ),
         ],
       ),
-      child: const Center(
+        child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.cloud_off,
               color: FamingaBrandColors.textSecondary,
               size: 48,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
             Text(
-              'No weather data available',
-              style: TextStyle(
+              AppLocalizations.of(context)?.noWeatherData ?? 'No weather data available',
+              style: const TextStyle(
                 color: FamingaBrandColors.textSecondary,
                 fontSize: 12,
               ),

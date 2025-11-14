@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../services/auth_service.dart';
+import '../../utils/l10n_extensions.dart';
 
 class ChangePasswordScreen extends StatefulWidget {
   const ChangePasswordScreen({super.key});
@@ -64,11 +65,11 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       _passwordStrength = strength / 6;
       
       if (strength <= 2) {
-        _passwordStrengthText = 'Weak';
+        _passwordStrengthText = context.l10n.weakPassword;
       } else if (strength <= 4) {
-        _passwordStrengthText = 'Medium';
+        _passwordStrengthText = context.l10n.mediumPassword;
       } else {
-        _passwordStrengthText = 'Strong';
+        _passwordStrengthText = context.l10n.strongPassword;
       }
     });
   }
@@ -79,8 +80,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     // Check if new password matches confirm password
     if (_newPasswordController.text != _confirmPasswordController.text) {
       Get.snackbar(
-        'Error',
-        'New passwords do not match',
+        context.l10n.error,
+        context.l10n.passwordsDoNotMatch,
         backgroundColor: Theme.of(context).colorScheme.error,
         colorText: Theme.of(context).colorScheme.onError,
         icon: Icon(Icons.error, color: Theme.of(context).colorScheme.onError),
@@ -100,8 +101,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       
       Get.back();
       Get.snackbar(
-        'Success',
-        'Password changed successfully!',
+        context.l10n.success,
+        context.l10n.passwordChangedSuccess,
         backgroundColor: Theme.of(context).colorScheme.secondary,
         colorText: Theme.of(context).colorScheme.onSecondary,
         icon: Icon(Icons.check_circle, color: Theme.of(context).colorScheme.onSecondary),
@@ -109,17 +110,17 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       
-      String errorMessage = 'Failed to change password';
+      String errorMessage = context.l10n.passwordChangeFailed;
       if (e.toString().contains('wrong-password')) {
-        errorMessage = 'Current password is incorrect';
+        errorMessage = context.l10n.currentPasswordIncorrect;
       } else if (e.toString().contains('weak-password')) {
-        errorMessage = 'New password is too weak';
+        errorMessage = context.l10n.passwordTooWeak;
       } else if (e.toString().contains('requires-recent-login')) {
-        errorMessage = 'Please sign out and sign in again to change password';
+        errorMessage = context.l10n.passwordChangeRequireRelogin;
       }
-      
+
       Get.snackbar(
-        'Error',
+        context.l10n.error,
         errorMessage,
         backgroundColor: Theme.of(context).colorScheme.error,
         colorText: Theme.of(context).colorScheme.onError,
@@ -135,7 +136,7 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Change Password'),
+        title: Text(context.l10n.changePasswordTitle),
         elevation: 0,
       ),
       body: Form(
@@ -163,10 +164,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('Secure Your Account', style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(context.l10n.secureYourAccount, style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 8),
                     Text(
-                      'Choose a strong password to protect your farming data',
+                      context.l10n.chooseStrongPassword,
                       textAlign: TextAlign.center,
                       style: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                     ),
@@ -179,15 +180,15 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               // Current Password
               _buildPasswordField(
                 controller: _currentPasswordController,
-                label: 'Current Password',
-                hint: 'Enter your current password',
+                label: context.l10n.currentPassword,
+                hint: context.l10n.enterCurrentPassword,
                 obscureText: _obscureCurrentPassword,
                 onToggleVisibility: () {
                   setState(() => _obscureCurrentPassword = !_obscureCurrentPassword);
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter your current password';
+                    return context.l10n.currentPasswordRequired;
                   }
                   return null;
                 },
@@ -198,8 +199,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               // New Password
               _buildPasswordField(
                 controller: _newPasswordController,
-                label: 'New Password',
-                hint: 'Enter your new password',
+                label: context.l10n.newPassword,
+                hint: context.l10n.enterNewPassword,
                 obscureText: _obscureNewPassword,
                 onToggleVisibility: () {
                   setState(() => _obscureNewPassword = !_obscureNewPassword);
@@ -207,13 +208,13 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 onChanged: _checkPasswordStrength,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a new password';
+                    return context.l10n.newPasswordRequired;
                   }
                   if (value.length < 6) {
-                    return 'Password must be at least 6 characters';
+                    return context.l10n.passwordMinimumLength;
                   }
                   if (value == _currentPasswordController.text) {
-                    return 'New password must be different from current password';
+                    return context.l10n.passwordCannotBeSame;
                   }
                   return null;
                 },
@@ -258,24 +259,24 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       }),
                       const SizedBox(height: 12),
                       _buildPasswordRequirement(
-                        'At least 8 characters',
+                        context.l10n.passwordRequirement8Chars,
                         _newPasswordController.text.length >= 8,
                       ),
                       _buildPasswordRequirement(
-                        'Contains uppercase letter',
+                        context.l10n.passwordRequirementUppercase,
                         _newPasswordController.text.contains(RegExp(r'[A-Z]')),
                       ),
                       _buildPasswordRequirement(
-                        'Contains lowercase letter',
+                        context.l10n.passwordRequirementLowercase,
                         _newPasswordController.text.contains(RegExp(r'[a-z]')),
                       ),
                       _buildPasswordRequirement(
-                        'Contains number',
+                        context.l10n.passwordRequirementNumber,
                         _newPasswordController.text.contains(RegExp(r'[0-9]')),
                       ),
                       _buildPasswordRequirement(
-                        'Contains special character (!@#\$%^&*)',
-                        _newPasswordController.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]')),
+                        context.l10n.passwordRequirementSpecial,
+                        _newPasswordController.text.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]')),
                       ),
                     ],
                   ),
@@ -286,18 +287,18 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
               // Confirm Password
               _buildPasswordField(
                 controller: _confirmPasswordController,
-                label: 'Confirm New Password',
-                hint: 'Re-enter your new password',
+                label: context.l10n.confirmNewPassword,
+                hint: context.l10n.reEnterNewPassword,
                 obscureText: _obscureConfirmPassword,
                 onToggleVisibility: () {
                   setState(() => _obscureConfirmPassword = !_obscureConfirmPassword);
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please confirm your new password';
+                    return context.l10n.newPasswordConfirmRequired;
                   }
                   if (value != _newPasswordController.text) {
-                    return 'Passwords do not match';
+                    return context.l10n.passwordsDoNotMatchConfirm;
                   }
                   return null;
                 },
@@ -323,14 +324,14 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                       children: [
                         Icon(Icons.security, color: scheme.primary, size: 20),
                         const SizedBox(width: 8),
-                        Text('Security Tips', style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
+                        Text(context.l10n.securityTips, style: textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold)),
                       ],
                     ),
                     const SizedBox(height: 12),
-                    _buildSecurityTip('Use a unique password for your Faminga account'),
-                    _buildSecurityTip('Avoid using personal information'),
-                    _buildSecurityTip('Change your password regularly'),
-                    _buildSecurityTip('Never share your password with anyone'),
+                    _buildSecurityTip(context.l10n.tipUnique),
+                    _buildSecurityTip(context.l10n.tipPersonal),
+                    _buildSecurityTip(context.l10n.tipRegularly),
+                    _buildSecurityTip(context.l10n.tipNeverShare),
                   ],
                 ),
               ),
@@ -352,8 +353,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                             width: 24,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text(
-                            'Change Password',
+                        : Text(
+                            context.l10n.changePassword,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -374,8 +375,8 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                   child: TextButton(
                     onPressed: _isLoading ? null : () => Get.back(),
                     style: TextButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))),
-                    child: const Text(
-                      'Cancel',
+                    child: Text(
+                      context.l10n.cancelButton,
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,

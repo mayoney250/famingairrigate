@@ -3,22 +3,32 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../models/irrigation_log_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../services/irrigation_log_service.dart';
 import '../../services/irrigation_service.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
+import '../../utils/l10n_extensions.dart';
 
 class IrrigationControlScreen extends StatelessWidget {
   const IrrigationControlScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    final userId = auth.currentUser?.userId ?? '';
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userId = authProvider.currentUser?.userId ?? '';
     final logsService = IrrigationLogService();
     final irrigationService = IrrigationService();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Irrigation Control')),
+      appBar: AppBar(title: Text(context.l10n.irrigationControlTitle)),
       body: Column(
         children: [
           Padding(
@@ -29,8 +39,8 @@ class IrrigationControlScreen extends StatelessWidget {
                   child: ElevatedButton.icon(
                     onPressed: () => _confirmAction(
                       context,
-                      title: 'Open Valve',
-                      note: 'Ensure personnel and equipment are clear of active irrigation paths.',
+                      title: context.l10n.openValve,
+                      note: context.l10n.ensurePersonnel,
                       onConfirm: () async {
                         // Start a manual irrigation cycle with placeholder field/zone
                         final ok = await irrigationService.startIrrigationManually(
@@ -44,7 +54,7 @@ class IrrigationControlScreen extends StatelessWidget {
                       },
                     ),
                     icon: const Icon(Icons.play_arrow),
-                    label: const Text('OPEN'),
+                    label: Text(context.l10n.openValve),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -56,8 +66,8 @@ class IrrigationControlScreen extends StatelessWidget {
                     ),
                     onPressed: () => _confirmAction(
                       context,
-                      title: 'Close Valve',
-                      note: 'Confirm that manual irrigation should stop now.',
+                      title: context.l10n.closeValve,
+                      note: context.l10n.confirmStopIrrigation,
                       onConfirm: () async {
                         // Without a schedule id context, log a stop entry for UX feedback
                         final logId = await logsService.logIrrigationStop(
@@ -72,19 +82,19 @@ class IrrigationControlScreen extends StatelessWidget {
                       },
                     ),
                     icon: const Icon(Icons.stop),
-                    label: const Text('CLOSE'),
+                    label: Text(context.l10n.closeValve),
                   ),
                 ),
               ],
             ),
           ),
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Align(
               alignment: Alignment.centerLeft,
               child: Text(
-                'Action Log',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                context.l10n.actionLog,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
             ),
           ),
@@ -100,7 +110,7 @@ class IrrigationControlScreen extends StatelessWidget {
                 }
                 final logs = snapshot.data ?? const <IrrigationLogModel>[];
                 if (logs.isEmpty) {
-                  return const Center(child: Text('No actions yet'));
+                  return Center(child: Text(context.l10n.noActionsYet));
                 }
                 return ListView.separated(
                   padding: const EdgeInsets.all(16),
@@ -153,7 +163,7 @@ class IrrigationControlScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Safety Note', style: textTheme.titleMedium),
+            Text(context.l10n.safetyNoteTitle, style: textTheme.titleMedium),
             const SizedBox(height: 8),
             Text(
               note,
@@ -164,13 +174,13 @@ class IrrigationControlScreen extends StatelessWidget {
           ],
         ),
         actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+          TextButton(onPressed: () => Get.back(), child: Text(context.l10n.cancelButton)),
           ElevatedButton(
             onPressed: () async {
               Get.back();
               await onConfirm();
             },
-            child: const Text('Confirm'),
+            child: Text(context.l10n.ok),
           ),
         ],
       ),

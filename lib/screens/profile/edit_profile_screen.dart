@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
+import '../../utils/l10n_extensions.dart';
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -41,11 +42,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   // Rwanda provinces and districts
   final Map<String, List<String>> _rwandaLocations = {
-    'Kigali City': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
-    'Eastern Province': ['Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana'],
-    'Northern Province': ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'],
-    'Southern Province': ['Gisagara', 'Huye', 'Kamonyi', 'Muhanga', 'Nyamagabe', 'Nyanza', 'Nyaruguru', 'Ruhango'],
-    'Western Province': ['Karongi', 'Ngororero', 'Nyabihu', 'Nyamasheke', 'Rubavu', 'Rusizi', 'Rutsiro'],
+    'Kigali': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
+    'Eastern': ['Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana'],
+    'Northern': ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'],
+    'Southern': ['Gisagara', 'Huye', 'Kamonyi', 'Muhanga', 'Nyamagabe', 'Nyanza', 'Nyaruguru', 'Ruhango'],
+    'Western': ['Karongi', 'Ngororero', 'Nyabihu', 'Nyamasheke', 'Rubavu', 'Rusizi', 'Rutsiro'],
   };
   
   // Sectors will be populated based on district (simplified for now)
@@ -227,7 +228,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Edit Profile'),
+        title: Text(context.l10n.editProfileTitle),
         elevation: 0,
       ),
       body: Form(
@@ -293,7 +294,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Tap camera icon to change photo',
+                      context.l10n.tapCameraToChangePhoto,
                       style: textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -306,27 +307,27 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Personal Information Section
               _buildSection(
-                title: 'Personal Information',
+                title: context.l10n.personalInformation,
                 icon: Icons.person,
                 children: [
                   _buildTextField(
                     controller: _firstNameController,
-                    label: 'First Name',
+                    label: context.l10n.firstName,
                     icon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your first name';
+                        return context.l10n.pleaseEnterFirstName;
                       }
                       return null;
                     },
                   ),
                   _buildTextField(
                     controller: _lastNameController,
-                    label: 'Last Name',
+                    label: context.l10n.lastName,
                     icon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your last name';
+                        return context.l10n.pleaseEnterLastName;
                       }
                       return null;
                     },
@@ -359,21 +360,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Contact Information Section
               _buildSection(
-                title: 'Contact Information',
+                title: context.l10n.contactInformation,
                 icon: Icons.contact_phone,
                 children: [
                   _buildTextField(
                     controller: _phoneController,
-                    label: 'Phone Number',
+                    label: context.l10n.phoneNumberLabel,
                     icon: Icons.phone,
                     keyboardType: TextInputType.phone,
                     prefixText: '+250 ',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Please enter your phone number';
+                        return context.l10n.pleaseEnterPhoneNumber;
                       }
                       if (value.length < 9) {
-                        return 'Please enter a valid phone number';
+                        return context.l10n.pleaseEnterValidPhoneNumber;
                       }
                       return null;
                     },
@@ -430,7 +431,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Location Section
               _buildSection(
-                title: 'Location',
+                title: context.l10n.location,
                 icon: Icons.location_on,
                 children: [
                   _buildDropdown(
@@ -502,7 +503,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           )
                         : Text(
-                            'Save Changes',
+                            context.l10n.saveChanges,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: scheme.onPrimary,

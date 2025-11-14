@@ -12,9 +12,11 @@ import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../models/field_model.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/field_service.dart';
 import '../../services/irrigation_service.dart';
+import '../../utils/l10n_extensions.dart';
 import 'add_field_with_map_screen.dart';
 
 class FieldsScreen extends StatefulWidget {
@@ -53,25 +55,36 @@ class _FieldsScreenState extends State<FieldsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return KeyedSubtree(
+          key: ValueKey(languageProvider.currentLocale.languageCode),
+          child: _buildContent(context),
+        );
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProvider.currentUser?.userId;
 
     if (userId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('My Fields')),
-        body: const Center(child: Text('Please log in to view your fields')),
+        appBar: AppBar(title: Text(context.l10n.myFields)),
+        body: Center(child: Text(context.l10n.pleaseLoginToViewFields)),
       );
     }
 
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('My Fields'),
+        title: Text(context.l10n.myFields),
         actions: [
           TextButton.icon(
             onPressed: () => Get.to(() => const AddFieldWithMapScreen()),
             icon: const Icon(Icons.add),
-            label: const Text('Add Field'),
+            label: Text(context.l10n.addField),
             style: TextButton.styleFrom(
               foregroundColor: Theme.of(context).colorScheme.onSurface,
             ),
@@ -94,7 +107,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                   );
                 }
                 if (snapshot.hasError) {
-                  return const Center(child: Text('Error loading fields.'));
+                  return Center(child: Text(context.l10n.errorLoadingFields));
                 }
                 if (!snapshot.hasData || snapshot.data!.isEmpty) {
                   return _buildEmptyState(context, userId);
@@ -158,14 +171,14 @@ class _FieldsScreenState extends State<FieldsScreen> {
         children: [
           Icon(Icons.landscape_outlined, size: 80, color: Theme.of(context).colorScheme.onSurfaceVariant),
           const SizedBox(height: 24),
-          Text('No fields found.', style: Theme.of(context).textTheme.titleLarge),
+          Text(context.l10n.noFieldsFound, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 8),
-          Text('Add your first field to get started!', style: Theme.of(context).textTheme.bodyMedium),
+          Text(context.l10n.addFirstField, style: Theme.of(context).textTheme.bodyMedium),
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () => Get.to(() => const AddFieldWithMapScreen()),
             icon: const Icon(Icons.add),
-            label: const Text('Add Field'),
+            label: Text(context.l10n.addField),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
@@ -182,7 +195,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
         children: [
           const Icon(Icons.search_off, size: 80, color: Colors.grey),
           const SizedBox(height: 24),
-          Text('No fields found for "$_searchQuery"', style: Theme.of(context).textTheme.titleMedium),
+          Text('${context.l10n.noFieldsFoundFor} "$_searchQuery"', style: Theme.of(context).textTheme.titleMedium),
         ],
       ),
     );
@@ -223,7 +236,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(isEditing ? 'Edit Field' : 'Add New Field', style: Theme.of(context).textTheme.titleLarge),
+                  Text(isEditing ? context.l10n.editField : context.l10n.addFieldTitle, style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 24),
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -237,21 +250,21 @@ class _FieldsScreenState extends State<FieldsScreen> {
                             width: fieldWidth,
                             child: TextField(
                               controller: fieldNameController,
-                              decoration: const InputDecoration(labelText: 'Field Name*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.fieldNameField}*'),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
                               controller: fieldLabelController,
-                              decoration: const InputDecoration(labelText: 'Field Label*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.fieldLabelField}*'),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
                               controller: sizeController,
-                              decoration: const InputDecoration(labelText: 'Size (hectares)*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.sizeHectares}*'),
                               keyboardType: TextInputType.number,
                             ),
                           ),
@@ -259,52 +272,52 @@ class _FieldsScreenState extends State<FieldsScreen> {
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: soilType,
-                              items: const [
-                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
-                                DropdownMenuItem(value: 'Clay', child: Text('Clay')),
-                                DropdownMenuItem(value: 'Sandy', child: Text('Sandy')),
-                                DropdownMenuItem(value: 'Loam', child: Text('Loam')),
-                                DropdownMenuItem(value: 'Silt', child: Text('Silt')),
-                                DropdownMenuItem(value: 'Peat', child: Text('Peat')),
-                                DropdownMenuItem(value: 'Chalk', child: Text('Chalk')),
+                              items: [
+                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
+                                DropdownMenuItem(value: 'Clay', child: Text(context.l10n.clay)),
+                                DropdownMenuItem(value: 'Sandy', child: Text(context.l10n.sandy)),
+                                DropdownMenuItem(value: 'Loam', child: Text(context.l10n.loam)),
+                                DropdownMenuItem(value: 'Silt', child: Text(context.l10n.silt)),
+                                DropdownMenuItem(value: 'Peat', child: Text(context.l10n.peat)),
+                                DropdownMenuItem(value: 'Chalk', child: Text(context.l10n.chalk)),
                               ],
                               onChanged: (v) => modalState(() => soilType = v ?? 'Unknown'),
-                              decoration: const InputDecoration(labelText: 'Soil Type'),
+                              decoration: InputDecoration(labelText: context.l10n.soilType),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: growthStage,
-                              items: const [
-                                DropdownMenuItem(value: 'Germination', child: Text('Germination')),
-                                DropdownMenuItem(value: 'Seedling', child: Text('Seedling')),
-                                DropdownMenuItem(value: 'Vegetative Growth', child: Text('Vegetative Growth')),
-                                DropdownMenuItem(value: 'Flowering', child: Text('Flowering')),
-                                DropdownMenuItem(value: 'Fruit', child: Text('Fruit')),
-                                DropdownMenuItem(value: 'Maturity', child: Text('Maturity')),
-                                DropdownMenuItem(value: 'Harvest', child: Text('Harvest')),
+                              items: [
+                                DropdownMenuItem(value: 'Germination', child: Text(context.l10n.germination)),
+                                DropdownMenuItem(value: 'Seedling', child: Text(context.l10n.seedling)),
+                                DropdownMenuItem(value: 'Vegetative Growth', child: Text(context.l10n.vegetativeGrowth)),
+                                DropdownMenuItem(value: 'Flowering', child: Text(context.l10n.flowering)),
+                                DropdownMenuItem(value: 'Fruit', child: Text(context.l10n.fruit)),
+                                DropdownMenuItem(value: 'Maturity', child: Text(context.l10n.maturity)),
+                                DropdownMenuItem(value: 'Harvest', child: Text(context.l10n.harvest)),
                               ],
                               onChanged: (v) => modalState(() => growthStage = v ?? 'Germination'),
-                              decoration: const InputDecoration(labelText: 'Growth Stage'),
+                              decoration: InputDecoration(labelText: context.l10n.growthStage),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: cropType,
-                              items: const [
-                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
-                                DropdownMenuItem(value: 'Maize', child: Text('Maize')),
-                                DropdownMenuItem(value: 'Wheat', child: Text('Wheat')),
-                                DropdownMenuItem(value: 'Rice', child: Text('Rice')),
-                                DropdownMenuItem(value: 'Soybean', child: Text('Soybean')),
-                                DropdownMenuItem(value: 'Cotton', child: Text('Cotton')),
-                                DropdownMenuItem(value: 'Coffee', child: Text('Coffee')),
-                                DropdownMenuItem(value: 'Tea', child: Text('Tea')),
-                                DropdownMenuItem(value: 'Vegetables', child: Text('Vegetables')),
-                                DropdownMenuItem(value: 'Fruits', child: Text('Fruits')),
-                                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                              items: [
+                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
+                                DropdownMenuItem(value: 'Maize', child: Text(context.l10n.maize)),
+                                DropdownMenuItem(value: 'Wheat', child: Text(context.l10n.wheat)),
+                                DropdownMenuItem(value: 'Rice', child: Text(context.l10n.rice)),
+                                DropdownMenuItem(value: 'Soybean', child: Text(context.l10n.soybean)),
+                                DropdownMenuItem(value: 'Cotton', child: Text(context.l10n.cotton)),
+                                DropdownMenuItem(value: 'Coffee', child: Text(context.l10n.coffee)),
+                                DropdownMenuItem(value: 'Tea', child: Text(context.l10n.tea)),
+                                DropdownMenuItem(value: 'Vegetables', child: Text(context.l10n.vegetables)),
+                                DropdownMenuItem(value: 'Fruits', child: Text(context.l10n.fruits)),
+                                DropdownMenuItem(value: 'Other', child: Text(context.l10n.other)),
                               ],
                               onChanged: (v) => modalState(() => cropType = v ?? 'Unknown'),
                               decoration: const InputDecoration(labelText: 'Crop Type'),
@@ -322,18 +335,18 @@ class _FieldsScreenState extends State<FieldsScreen> {
                             width: fieldWidth,
                             child: TextField(
                               controller: ownerController,
-                              decoration: const InputDecoration(labelText: 'Owner*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.ownerManagerName}*'),
                             ),
                           ),
-                          SizedBox(
-                            width: fieldWidth,
-                            child: SwitchListTile(
-                    title: const Text('Organic Farming'),
-                    value: isOrganic,
-                    onChanged: (value) => modalState(() => isOrganic = value),
-                    contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
+              SizedBox(
+                width: fieldWidth,
+                child: SwitchListTile(
+              title: Text(context.l10n.organicFarming),
+              value: isOrganic,
+              onChanged: (value) => modalState(() => isOrganic = value),
+              contentPadding: EdgeInsets.zero,
+                ),
+              ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
@@ -600,12 +613,12 @@ class _FieldsScreenState extends State<FieldsScreen> {
           case 4: Get.offAllNamed(AppRoutes.profile); break;
         }
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-        BottomNavigationBarItem(icon: Icon(Icons.water_drop), label: 'Irrigation'),
-        BottomNavigationBarItem(icon: Icon(Icons.landscape), label: 'Fields'),
-        BottomNavigationBarItem(icon: Icon(Icons.sensors), label: 'Sensors'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      items: [
+        BottomNavigationBarItem(icon: const Icon(Icons.dashboard), label: context.l10n.dashboard),
+        BottomNavigationBarItem(icon: const Icon(Icons.water_drop), label: context.l10n.irrigation),
+        BottomNavigationBarItem(icon: const Icon(Icons.landscape), label: context.l10n.fields),
+        BottomNavigationBarItem(icon: const Icon(Icons.sensors), label: context.l10n.sensors),
+        BottomNavigationBarItem(icon: const Icon(Icons.person), label: context.l10n.profile),
       ],
     );
   }

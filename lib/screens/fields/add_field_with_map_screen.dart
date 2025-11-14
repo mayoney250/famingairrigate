@@ -6,10 +6,12 @@ import 'package:latlong2/latlong.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/field_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../services/field_service.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
 import '../../widgets/map/osm_map_drawing_widget.dart';
+import '../../utils/l10n_extensions.dart';
 
 class AddFieldWithMapScreen extends StatefulWidget {
   final FieldModel? existingField;
@@ -75,8 +77,8 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
     } else if (_currentStep == 1) {
       if (_fieldBoundary.isEmpty) {
         Get.snackbar(
-          'Draw Field Boundary',
-          'Please draw the field boundary on the map first',
+          context.l10n.drawFieldBoundary,
+          context.l10n.pleaseDrawFieldBoundary,
           backgroundColor: Theme.of(context).colorScheme.error,
           colorText: Theme.of(context).colorScheme.onError,
         );
@@ -139,8 +141,10 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
       if (fieldId != null && mounted) {
         await Future.delayed(const Duration(milliseconds: 300));
         Get.snackbar(
-          'Success',
-          'Field "${field.label}" ${widget.existingField != null ? "updated" : "created"} successfully!',
+          context.l10n.success,
+          widget.existingField != null
+              ? context.l10n.fieldUpdatedSuccess(field.label)
+              : context.l10n.fieldAddedSuccess,
           backgroundColor: Theme.of(context).brightness == Brightness.dark
               ? Theme.of(context).colorScheme.primaryContainer
               : Colors.green,
@@ -156,8 +160,8 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'Error',
-          'Failed to save field: $e',
+          context.l10n.error,
+          '${context.l10n.failedCreateField}: $e',
           backgroundColor: Theme.of(context).colorScheme.error,
           colorText: Theme.of(context).colorScheme.onError,
           snackPosition: SnackPosition.BOTTOM,
@@ -191,13 +195,21 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: Text(widget.existingField != null ? 'Edit Field' : 'Add New Field'),
+        title: Text(widget.existingField != null ? context.l10n.editFieldTitle : context.l10n.addFieldTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
@@ -253,11 +265,11 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  ['1. Basic Info', '2. Draw Boundary', '3. Review'][_currentStep],
+                  [context.l10n.basicInfo, context.l10n.drawBoundary, context.l10n.review][_currentStep],
                   style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 Text(
-                  'Step ${_currentStep + 1} of 3',
+                  context.l10n.stepOf(_currentStep + 1),
                   style: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ],
@@ -295,13 +307,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
                   Expanded(
                     child: OutlinedButton(
                       onPressed: _isLoading ? null : _previousStep,
-                      child: const Text('Back'),
+                      child: Text(context.l10n.back),
                     ),
                   ),
                 if (_currentStep > 0) const SizedBox(width: 16),
                 Expanded(
                   child: CustomButton(
-                    text: _currentStep == 2 ? 'Save Field' : 'Next',
+                    text: _currentStep == 2 ? context.l10n.saveField : context.l10n.next,
                     onPressed: _nextStep,
                     isLoading: _isLoading,
                   ),
@@ -325,13 +337,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
             Icon(Icons.edit_note, size: 64, color: scheme.primary),
             const SizedBox(height: 16),
             Text(
-              'Field Information',
+              context.l10n.fieldInformation,
               style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 8),
             Text(
-              'Enter basic details about your field',
+              context.l10n.enterBasicDetails,
               style: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
@@ -339,13 +351,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
             CustomTextField(
               controller: _nameController,
-              label: 'Field Name',
-              hintText: 'e.g., North Field, Back Garden',
+              label: context.l10n.fieldName,
+              hintText: context.l10n.fieldNameHint,
               prefixIcon: Icons.landscape,
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter a field name';
+                  return context.l10n.fieldNameRequired;
                 }
                 return null;
               },
@@ -354,17 +366,17 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
             CustomTextField(
               controller: _sizeController,
-              label: 'Estimated Size (hectares)',
-              hintText: 'e.g., 2.5 (will be calculated from boundary)',
+              label: context.l10n.estimatedSize,
+              hintText: context.l10n.estimatedSizeHint,
               prefixIcon: Icons.straighten,
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter field size';
+                  return context.l10n.fieldSizeRequired;
                 }
                 final size = double.tryParse(value.trim());
                 if (size == null || size <= 0) {
-                  return 'Please enter a valid size';
+                  return context.l10n.pleaseEnterValidSize;
                 }
                 return null;
               },
@@ -373,13 +385,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
             CustomTextField(
               controller: _ownerController,
-              label: 'Owner/Manager Name',
-              hintText: 'e.g., John Doe',
+              label: context.l10n.ownerManagerName,
+              hintText: context.l10n.ownerHint,
               prefixIcon: Icons.person,
               textCapitalization: TextCapitalization.words,
               validator: (value) {
                 if (value == null || value.trim().isEmpty) {
-                  return 'Please enter owner name';
+                  return context.l10n.ownerNameRequired;
                 }
                 return null;
               },
@@ -402,12 +414,12 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Organic Farming',
+                          context.l10n.organicFarming,
                           style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'Is this field certified organic?',
+                          context.l10n.isCertifiedOrganic,
                           style: textTheme.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                         ),
                       ],
@@ -443,7 +455,7 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Draw Field Boundary',
+                      context.l10n.drawFieldBoundary,
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: Theme.of(context).colorScheme.onPrimaryContainer,
@@ -454,7 +466,7 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Tap on the map to mark the corners of your field. You can drag markers to adjust positions.',
+                context.l10n.tapMapMarkCorners,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onPrimaryContainer,
                     ),
@@ -478,16 +490,16 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
                 }
               });
               
-              Get.snackbar(
-                'Success',
-                'Field boundary saved with ${points.length} points',
-                backgroundColor: Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : Colors.green,
-                colorText: Theme.of(context).brightness == Brightness.dark
-                    ? Theme.of(context).colorScheme.onPrimaryContainer
-                    : Colors.white,
-              );
+        Get.snackbar(
+        context.l10n.success,
+        context.l10n.fieldBoundarySaved(points.length),
+        backgroundColor: Theme.of(context).brightness == Brightness.dark
+          ? Theme.of(context).colorScheme.primaryContainer
+          : Colors.green,
+        colorText: Theme.of(context).brightness == Brightness.dark
+          ? Theme.of(context).colorScheme.onPrimaryContainer
+          : Colors.white,
+        );
             },
           ),
         ),
@@ -506,13 +518,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
           Icon(Icons.check_circle_outline, size: 64, color: scheme.primary),
           const SizedBox(height: 16),
           Text(
-            'Review & Confirm',
+            context.l10n.reviewConfirm,
             style: textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            'Please review your field details before saving',
+            context.l10n.reviewDetails,
             style: textTheme.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
@@ -520,13 +532,13 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
           _buildReviewCard(
             scheme,
-            'Field Information',
+            context.l10n.fieldInformation,
             [
-              _buildReviewRow('Name', _nameController.text, Icons.landscape),
-              _buildReviewRow('Owner', _ownerController.text, Icons.person),
+              _buildReviewRow(context.l10n.fieldNameField, _nameController.text, Icons.landscape),
+              _buildReviewRow(context.l10n.ownerManagerName, _ownerController.text, Icons.person),
               _buildReviewRow(
-                'Farming Type',
-                _isOrganic ? 'Organic' : 'Conventional',
+                context.l10n.organicFarming,
+                _isOrganic ? context.l10n.organicStatus : context.l10n.nonOrganic,
                 Icons.eco,
               ),
             ],
@@ -535,26 +547,26 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
 
           _buildReviewCard(
             scheme,
-            'Boundary Details',
+            context.l10n.boundaryDetails,
             [
               _buildReviewRow(
-                'Boundary Points',
-                '${_fieldBoundary.length} points',
+                context.l10n.boundaryPoints,
+                '${_fieldBoundary.length} ${context.l10n.pointsLabel}',
                 Icons.location_on,
               ),
               _buildReviewRow(
-                'Entered Size',
-                '${_sizeController.text} ha',
+                context.l10n.enteredSize,
+                '${_sizeController.text} ${context.l10n.hectareUnit}',
                 Icons.straighten,
               ),
               if (_fieldBoundary.length >= 3)
                 _buildReviewRow(
-                  'Calculated Area',
-                  '${calculatedArea.toStringAsFixed(2)} ha',
+                  context.l10n.calculatedArea,
+                  '${calculatedArea.toStringAsFixed(2)} ${context.l10n.hectareUnit}',
                   Icons.calculate,
                   subtitle: calculatedArea > 0
-                      ? 'Based on drawn boundary'
-                      : 'Invalid boundary shape',
+                      ? context.l10n.basedOnDrawn
+                      : context.l10n.invalidBoundary,
                   subtitleColor: calculatedArea > 0 ? scheme.primary : scheme.error,
                 ),
             ],
@@ -575,11 +587,11 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'The calculated area will be used if it differs from your entered size.',
-                        style: textTheme.bodySmall?.copyWith(
-                          color: scheme.onSecondaryContainer,
+                          context.l10n.calculatedAreaWill,
+                          style: textTheme.bodySmall?.copyWith(
+                            color: scheme.onSecondaryContainer,
+                          ),
                         ),
-                      ),
                     ),
                   ],
                 ),

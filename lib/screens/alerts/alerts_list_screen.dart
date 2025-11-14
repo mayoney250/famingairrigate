@@ -8,6 +8,7 @@ import '../../services/alert_service.dart';
 import '../../services/alert_local_service.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
+import '../../generated/app_localizations.dart';
 
 class AlertsListScreen extends StatefulWidget {
   const AlertsListScreen({super.key});
@@ -91,7 +92,7 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Alerts')),
+      appBar: AppBar(title: Text(AppLocalizations.of(context)?.alerts ?? 'Alerts')),
       body: _loading
           ? ListView.builder(
               itemCount: 5,
@@ -104,10 +105,10 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
               onRefresh: _refreshRemote,
               child: _alerts.isEmpty
                   ? ListView(
-                      children: const [
-                        SizedBox(height: 120),
-                        Center(child: Text('No alerts')),
-                        SizedBox(height: 400),
+                      children: [
+                        const SizedBox(height: 120),
+                        Center(child: Text(AppLocalizations.of(context)?.noAlertsYet ?? 'No alerts')),
+                        const SizedBox(height: 400),
                       ],
                     )
                   : ListView.separated(

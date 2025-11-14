@@ -7,10 +7,12 @@ import '../../models/field_model.dart';
 import '../../models/irrigation_zone_model.dart';
 import '../../services/irrigation_zone_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../widgets/map/map_drawing_widget.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+import '../../utils/l10n_extensions.dart';
 
 class IrrigationPlanningScreen extends StatefulWidget {
   final FieldModel field;
@@ -32,9 +34,17 @@ class _IrrigationPlanningScreenState extends State<IrrigationPlanningScreen> {
   
   @override
   Widget build(BuildContext context) {
-    final scheme = Theme.of(context).colorScheme;
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final userId = authProvider.currentUser?.userId ?? '';
+    final scheme = Theme.of(context).colorScheme;
     
     return Scaffold(
       appBar: AppBar(

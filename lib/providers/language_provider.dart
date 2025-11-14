@@ -40,7 +40,7 @@ class LanguageProvider with ChangeNotifier {
 
   Future<void> setLanguage(String languageName) async {
     final locale = _localeMap[languageName];
-    if (locale != null && locale != _currentLocale) {
+    if (locale != null) {
       _currentLocale = locale;
       
       // Update GetX locale
@@ -58,21 +58,19 @@ class LanguageProvider with ChangeNotifier {
   }
 
   Future<void> setLocale(Locale locale) async {
-    if (locale != _currentLocale) {
-      _currentLocale = locale;
-      
-      // Update GetX locale
-      Get.updateLocale(locale);
-      
-      try {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('language_code', locale.languageCode);
-      } catch (e) {
-        print('Error saving language preference: $e');
-      }
-      
-      notifyListeners();
+    _currentLocale = locale;
+    
+    // Update GetX locale
+    Get.updateLocale(locale);
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('language_code', locale.languageCode);
+    } catch (e) {
+      print('Error saving language preference: $e');
     }
+    
+    notifyListeners();
   }
 
   Locale? getLocaleFromLanguageName(String languageName) {

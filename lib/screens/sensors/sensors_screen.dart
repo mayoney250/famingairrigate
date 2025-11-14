@@ -6,7 +6,9 @@ import '../../routes/app_routes.dart';
 import '../../services/sensor_service.dart';
 import '../../models/sensor_model.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../services/sensor_local_service.dart';
+import '../../utils/l10n_extensions.dart';
 
 class SensorsScreen extends StatefulWidget {
   const SensorsScreen({super.key});
@@ -41,10 +43,18 @@ class _SensorsScreenState extends State<SensorsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        title: const Text('Sensors'),
+        title: Text(context.l10n.sensorsTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -60,7 +70,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
         children: [
                   Icon(Icons.sensors, size: 48, color: Theme.of(context).colorScheme.primary),
                   const SizedBox(height: 12),
-                  Text('No sensors yet. Tap + to add.', style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
+                  Text(context.l10n.noSensorsMessage, style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
               ],
             ),
             )
@@ -95,12 +105,12 @@ class _SensorsScreenState extends State<SensorsScreen> {
             break;
         }
       },
-      items: const [
-        BottomNavigationBarItem(icon: Icon(Icons.dashboard), label: 'Dashboard'),
-        BottomNavigationBarItem(icon: Icon(Icons.water_drop), label: 'Irrigation'),
-        BottomNavigationBarItem(icon: Icon(Icons.landscape), label: 'Fields'),
-        BottomNavigationBarItem(icon: Icon(Icons.sensors), label: 'Sensors'),
-        BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+      items: [
+        BottomNavigationBarItem(icon: const Icon(Icons.dashboard), label: context.l10n.dashboard),
+        BottomNavigationBarItem(icon: const Icon(Icons.water_drop), label: context.l10n.irrigation),
+        BottomNavigationBarItem(icon: const Icon(Icons.landscape), label: context.l10n.fields),
+        BottomNavigationBarItem(icon: const Icon(Icons.sensors), label: context.l10n.sensors),
+        BottomNavigationBarItem(icon: const Icon(Icons.person), label: context.l10n.profile),
       ],
     );
   }
@@ -150,7 +160,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                           Icon(Icons.sensors, color: scheme.onPrimaryContainer, size: 28),
                           const SizedBox(width: 12),
                           Text(
-                            'Add Sensor',
+                            context.l10n.addSensor,
                             style: Theme.of(context).textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: scheme.onPrimaryContainer,
@@ -166,7 +176,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Sensor Information',
+                              context.l10n.sensorInformation,
                               style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w600,
                                 color: scheme.primary,
@@ -175,41 +185,41 @@ class _SensorsScreenState extends State<SensorsScreen> {
                             const SizedBox(height: 16),
                             TextFormField(
                               decoration: InputDecoration(
-                                labelText: 'Sensor Name/Label',
+                                labelText: context.l10n.sensorNameLabel,
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 filled: true,
                                 fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                               ),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                              validator: (v) => v == null || v.trim().isEmpty ? context.l10n.requiredField : null,
                               onChanged: (v) => displayName = v,
                             ),
                             const SizedBox(height: 16),
                             TextFormField(
                               decoration: InputDecoration(
-                                labelText: 'Hardware ID/Serial',
+                                labelText: context.l10n.hardwareIdSerial,
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 filled: true,
                                 fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                               ),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'Required' : null,
+                              validator: (v) => v == null || v.trim().isEmpty ? context.l10n.requiredField : null,
                               onChanged: (v) => hardwareId = v,
                             ),
                             const SizedBox(height: 16),
                             DropdownButtonFormField<String>(
                               decoration: InputDecoration(
-                                labelText: 'Pairing Method',
+                                labelText: context.l10n.pairingMethod,
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                 filled: true,
                                 fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                 contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                               ),
                               value: pairingMethod,
-                              items: const [
-                                DropdownMenuItem(value: 'BLE', child: Text('Bluetooth (BLE)')),
-                                DropdownMenuItem(value: 'WiFi', child: Text('WiFi')),
-                                DropdownMenuItem(value: 'LoRaWAN', child: Text('LoRaWAN Gateway')),
+                              items: [
+                                DropdownMenuItem(value: 'BLE', child: Text(context.l10n.bleOption)),
+                                DropdownMenuItem(value: 'WiFi', child: Text(context.l10n.wifiOption)),
+                                DropdownMenuItem(value: 'LoRaWAN', child: Text(context.l10n.loraOption)),
                               ],
                               onChanged: (v) => setState(() => pairingMethod = v!),
                             ),
@@ -217,37 +227,37 @@ class _SensorsScreenState extends State<SensorsScreen> {
                             if (pairingMethod == 'BLE')
                               TextFormField(
                                 decoration: InputDecoration(
-                                  labelText: 'BLE MAC Address',
+                                  labelText: context.l10n.bleMacAddress,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   filled: true,
                                   fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 ),
-                                validator: (v) => pairingMethod == 'BLE' && (v == null || v.isEmpty) ? 'Required' : null,
+                                validator: (v) => pairingMethod == 'BLE' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
                                 onChanged: (v) => bleMac = v,
                               ),
                             if (pairingMethod == 'WiFi')
                               TextFormField(
                                 decoration: InputDecoration(
-                                  labelText: 'WiFi SSID',
+                                  labelText: context.l10n.wifiSsid,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   filled: true,
                                   fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 ),
-                                validator: (v) => pairingMethod == 'WiFi' && (v == null || v.isEmpty) ? 'Required' : null,
+                                validator: (v) => pairingMethod == 'WiFi' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
                                 onChanged: (v) => wifiSsid = v,
                               ),
                             if (pairingMethod == 'LoRaWAN')
                               TextFormField(
                                 decoration: InputDecoration(
-                                  labelText: 'Gateway ID/Name',
+                                  labelText: context.l10n.gatewayIdName,
                                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                   filled: true,
                                   fillColor: scheme.surfaceVariant.withOpacity(0.3),
                                   contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                                 ),
-                                validator: (v) => pairingMethod == 'LoRaWAN' && (v == null || v.isEmpty) ? 'Required' : null,
+                                validator: (v) => pairingMethod == 'LoRaWAN' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
                                 onChanged: (v) => loraGateway = v,
                               ),
                             const SizedBox(height: 20),
@@ -256,7 +266,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                               child: ExpansionTile(
                                 tilePadding: EdgeInsets.zero,
                                 title: Text(
-                                  'Advanced Options',
+                                  context.l10n.advancedOptions,
                                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                     fontWeight: FontWeight.w600,
                                     color: scheme.onSurfaceVariant,
@@ -269,7 +279,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                       padding: const EdgeInsets.only(bottom: 16),
                                       child: TextFormField(
                                         decoration: InputDecoration(
-                                          labelText: 'Pairing Note/Code (Optional)',
+                                          labelText: context.l10n.pairingNoteCode,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                           filled: true,
                                           fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -283,7 +293,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                       padding: const EdgeInsets.only(bottom: 16),
                                       child: TextFormField(
                                         decoration: InputDecoration(
-                                          labelText: 'WiFi Password (Optional)',
+                                          labelText: context.l10n.wifiPassword,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                           filled: true,
                                           fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -298,7 +308,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                       padding: const EdgeInsets.only(bottom: 16),
                                       child: TextFormField(
                                         decoration: InputDecoration(
-                                          labelText: 'LoRaWAN Network ID (Optional)',
+                                          labelText: context.l10n.loraNetworkId,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                           filled: true,
                                           fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -311,7 +321,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                       padding: const EdgeInsets.only(bottom: 16),
                                       child: TextFormField(
                                         decoration: InputDecoration(
-                                          labelText: 'Channel (Optional)',
+                                          labelText: context.l10n.channel,
                                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                           filled: true,
                                           fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -323,7 +333,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                   ],
                                   TextFormField(
                                     decoration: InputDecoration(
-                                      labelText: 'Field/Zone Assignment (Optional)',
+                                      labelText: context.l10n.fieldZoneAssignment,
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                       filled: true,
                                       fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -334,7 +344,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                   const SizedBox(height: 16),
                                   TextFormField(
                                     decoration: InputDecoration(
-                                      labelText: 'Installation Note (Optional)',
+                                      labelText: context.l10n.installationNote,
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                                       filled: true,
                                       fillColor: scheme.surfaceVariant.withOpacity(0.3),
@@ -371,7 +381,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                 padding: const EdgeInsets.symmetric(vertical: 16),
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                               ),
-                              child: const Text('Cancel'),
+                              child: Text(context.l10n.cancelButton),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -411,7 +421,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                 if (!mounted) return;
                                 Navigator.pop(context);
                                 await _loadSensors();
-                                Get.snackbar('Sensor Added', 'Sensor "$displayName" created.', snackPosition: SnackPosition.BOTTOM);
+                                Get.snackbar(context.l10n.success, context.l10n.sensorCreated(displayName), snackPosition: SnackPosition.BOTTOM);
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: FamingaBrandColors.primaryOrange,
@@ -420,7 +430,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                 elevation: 2,
                               ),
-                              child: const Text('Add Sensor', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                              child: Text(context.l10n.addSensor, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                             ),
                           ),
                         ],

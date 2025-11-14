@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+import '../../generated/app_localizations.dart';
 import '../../utils/l10n_extensions.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -76,9 +78,16 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+        child: Stack(
+          children: [
+            Positioned(
+              top: 16,
+              right: 16,
+              child: _buildCompactLanguageSelector(),
+            ),
+            Center(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24.0),
             child: Form(
               key: _formKey,
               child: Column(
@@ -201,14 +210,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 24),
                   
                   // Divider with OR text
-                  const Row(
+                  Row(
                     children: [
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16),
-                        child: Text('OR'),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(AppLocalizations.of(context)?.or ?? 'OR'),
                       ),
-                      Expanded(child: Divider()),
+                      const Expanded(child: Divider()),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -225,9 +234,9 @@ class _LoginScreenState extends State<LoginScreen> {
                           size: 32,
                           color: FamingaBrandColors.primaryOrange,
                         ),
-                        label: const Text(
-                          'Sign in with Google',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                        label: Text(
+                          AppLocalizations.of(context)?.googleSignIn ?? 'Sign in with Google',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -273,7 +282,79 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ),
         ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCompactLanguageSelector() {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    
+    final languages = [
+      {'code': 'English', 'flag': '🇬🇧'},
+      {'code': 'Kinyarwanda', 'flag': '🇷🇼'},
+      {'code': 'French', 'flag': '🇫🇷'},
+      {'code': 'Swahili', 'flag': '🇹🇿'},
+    ];
+
+    final currentLang = languages.firstWhere(
+      (lang) => lang['code'] == languageProvider.currentLanguageName,
+      orElse: () => languages[0],
+    );
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 45),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currentLang['flag']!,
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.arrow_drop_down,
+              color: FamingaBrandColors.primaryOrange,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => languages.map((lang) {
+        return PopupMenuItem<String>(
+          value: lang['code'],
+          child: Row(
+            children: [
+              Text(
+                lang['flag']!,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                lang['code']!,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      onSelected: (value) {
+        languageProvider.setLanguage(value);
+      },
     );
   }
 }

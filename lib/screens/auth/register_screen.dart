@@ -3,10 +3,12 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
 import '../../utils/l10n_extensions.dart';
+import '../../generated/app_localizations.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -98,6 +100,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
         ),
+        actions: [
+          _buildCompactLanguageSelector(),
+          const SizedBox(width: 16),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -351,6 +357,76 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCompactLanguageSelector() {
+    final languageProvider = Provider.of<LanguageProvider>(context);
+    
+    final languages = [
+      {'code': 'English', 'flag': '🇬🇧'},
+      {'code': 'Kinyarwanda', 'flag': '🇷🇼'},
+      {'code': 'French', 'flag': '🇫🇷'},
+      {'code': 'Swahili', 'flag': '🇹🇿'},
+    ];
+
+    final currentLang = languages.firstWhere(
+      (lang) => lang['code'] == languageProvider.currentLanguageName,
+      orElse: () => languages[0],
+    );
+
+    return PopupMenuButton<String>(
+      offset: const Offset(0, 45),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              currentLang['flag']!,
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(width: 4),
+            const Icon(
+              Icons.arrow_drop_down,
+              color: FamingaBrandColors.primaryOrange,
+              size: 18,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) => languages.map((lang) {
+        return PopupMenuItem<String>(
+          value: lang['code'],
+          child: Row(
+            children: [
+              Text(
+                lang['flag']!,
+                style: const TextStyle(fontSize: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                lang['code']!,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+      onSelected: (value) {
+        languageProvider.setLanguage(value);
+      },
     );
   }
 }

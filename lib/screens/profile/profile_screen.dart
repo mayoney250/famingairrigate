@@ -9,9 +9,9 @@ import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
-import '../../widgets/shimmer/shimmer_widgets.dart';
 import 'edit_profile_screen.dart';
 import 'change_password_screen.dart';
+import '../../utils/l10n_extensions.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -28,18 +28,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Profile'),
+        title: Text(context.l10n.profileTitle),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () {
-              Get.snackbar(
-                'Edit Profile',
-                'Profile editing coming soon!',
-                snackPosition: SnackPosition.BOTTOM,
-              );
-            },
-          ),
+          // IconButton(
+          //   icon: const Icon(Icons.edit),
+          //   onPressed: () {
+          //     Get.snackbar(
+          //       'Edit Profile',
+          //       'Profile editing coming soon!',
+          //       snackPosition: SnackPosition.BOTTOM,
+          //     );
+          //   },
+          // ),
         ],
       ),
       body: Consumer<AuthProvider>(
@@ -78,8 +78,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               placeholder: (context, url) => CircleAvatar(
                                     radius: 50,
                                 backgroundColor: Theme.of(context).colorScheme.primary,
-                                child: const ShimmerLoader(
-                                  child: ShimmerCircle(size: 100),
+                                child: CircularProgressIndicator(
+                                  color: Theme.of(context).colorScheme.onPrimary,
                                 ),
                                   ),
                               errorWidget: (context, url, error) => CircleAvatar(
@@ -172,20 +172,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   [
                     _buildMenuItem(
                       Icons.person_outline,
-                      'Personal Information',
-                      'Update your personal details',
+                      context.l10n.personalInformation,
+                      context.l10n.updatePersonalDetails,
                       () => Get.to(() => const EditProfileScreen()),
                     ),
                     _buildMenuItem(
                       Icons.lock_outline,
-                      'Change Password',
-                      'Update your password',
+                      context.l10n.changePassword,
+                      context.l10n.secureYourAccount,
                       () => Get.to(() => const ChangePasswordScreen()),
                     ),
                     _buildMenuItem(
                       Icons.notifications_outlined,
-                      'Notifications',
-                      'Manage notification preferences',
+                      context.l10n.notificationSettings,
+                      context.l10n.manageNotificationPreferences,
                       () => _showNotificationSettings(),
                     ),
                   ],
@@ -198,31 +198,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   [
                     _buildMenuItem(
                       Icons.settings_outlined,
-                      'Settings',
-                      'App settings and preferences',
+                      context.l10n.appSettings,
+                      context.l10n.appSection,
                       () {
                         Get.toNamed(AppRoutes.settings);
                       },
                     ),
-                    if (kDebugMode)
-                      _buildMenuItem(
-                        Icons.bug_report_outlined,
-                        'Notification Test',
-                        'Test push notifications',
-                        () {
-                          Get.toNamed(AppRoutes.notificationTest);
-                        },
-                      ),
                     _buildMenuItem(
                       Icons.help_outline,
-                      'Help & Support',
-                      'Get help and support',
+                      context.l10n.helpSupport,
+                      context.l10n.getHelpSupport,
                       () => _showHelpAndSupport(),
                     ),
                     _buildMenuItem(
                       Icons.info_outline,
-                      'About',
-                      'About Faminga Irrigation',
+                      context.l10n.aboutFaminga,
+                      context.l10n.aboutFamingaIrrigation,
                       () {
                         _showAboutDialog();
                       },
@@ -237,8 +228,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   [
                     _buildMenuItem(
                       Icons.logout,
-                      'Logout',
-                      'Sign out of your account',
+                      context.l10n.logout,
+                      context.l10n.signOut,
                       () {
                         _showLogoutDialog(authProvider);
                       },
@@ -258,6 +249,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildSection(String title, List<Widget> items) {
+    // Translate section titles
+    String translatedTitle = title;
+    if (title == 'Account') {
+      translatedTitle = context.l10n.accountSection;
+    } else if (title == 'App') {
+      translatedTitle = context.l10n.appSection;
+    } else if (title == 'Account Actions') {
+      translatedTitle = context.l10n.accountActions;
+    }
+    
     return Container(
       color: Theme.of(context).colorScheme.surface,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -267,7 +268,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Text(
-              title,
+              translatedTitle,
               style: Theme.of(context).textTheme.labelSmall?.copyWith(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                     letterSpacing: 1,
@@ -311,12 +312,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showLogoutDialog(AuthProvider authProvider) {
     Get.dialog(
       AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
+        title: Text(context.l10n.logoutTitle),
+        content: Text(context.l10n.logoutConfirmationMessage),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancelButton),
           ),
           TextButton(
             onPressed: () async {
@@ -337,8 +338,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Get.offAllNamed(AppRoutes.login);
                 
                 Get.snackbar(
-                  'Success',
-                  'You have been logged out successfully',
+                  context.l10n.success,
+                  context.l10n.logoutSuccess,
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: Theme.of(context).colorScheme.secondary,
                   colorText: Theme.of(context).colorScheme.onSecondary,
@@ -346,15 +347,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               } catch (e) {
                 Get.back(); // Close loading
                 Get.snackbar(
-                  'Error',
-                  'Failed to logout: ${e.toString()}',
+                  context.l10n.error,
+                  '${context.l10n.logoutFailed}: ${e.toString()}',
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: Theme.of(context).colorScheme.error,
                   colorText: Theme.of(context).colorScheme.onError,
                 );
               }
             },
-            child: Text('Logout', style: TextStyle(color: Theme.of(context).colorScheme.error)),
+            child: Text(context.l10n.logoutButton, style: TextStyle(color: Theme.of(context).colorScheme.error)),
           ),
         ],
       ),
@@ -364,8 +365,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _showAboutDialog() {
     Get.dialog(
       AlertDialog(
-        title: const Text('About Faminga Irrigation'),
-        content: const Column(
+        title: Text(context.l10n.aboutFamingaTitle),
+        content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -376,23 +377,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 8),
-            Text('Version 1.0.0'),
-            SizedBox(height: 16),
+            const SizedBox(height: 8),
+            Text(context.l10n.famingaVersion),
+            const SizedBox(height: 16),
+            Text(context.l10n.famingaDescription),
+            const SizedBox(height: 16),
             Text(
-              'Smart irrigation management system for African farmers.',
-            ),
-            SizedBox(height: 16),
-            Text(
-              '© 2025 Faminga. All rights reserved.',
-              style: TextStyle(fontSize: 12),
+              context.l10n.famingaCopyright,
+              style: const TextStyle(fontSize: 12),
             ),
           ],
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Close'),
+            child: Text(context.l10n.closeButton),
           ),
         ],
       ),
@@ -515,7 +514,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             Text(
-              'Change Profile Picture',
+              context.l10n.changeProfilePicture,
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -523,7 +522,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             ListTile(
               leading: Icon(Icons.camera_alt, color: scheme.primary),
-              title: Text('Take Photo', style: TextStyle(color: scheme.onSurface)),
+              title: Text(context.l10n.takePhoto, style: TextStyle(color: scheme.onSurface)),
               onTap: () {
                 Get.back();
                 _pickImage(ImageSource.camera);
@@ -531,7 +530,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ListTile(
               leading: Icon(Icons.photo_library, color: scheme.primary),
-              title: Text('Choose from Gallery', style: TextStyle(color: scheme.onSurface)),
+              title: Text(context.l10n.chooseFromGallery, style: TextStyle(color: scheme.onSurface)),
               onTap: () {
                 Get.back();
                 _pickImage(ImageSource.gallery);
@@ -539,7 +538,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ListTile(
               leading: Icon(Icons.delete, color: scheme.error),
-              title: Text('Remove Photo', style: TextStyle(color: scheme.error)),
+              title: Text(context.l10n.removePhoto, style: TextStyle(color: scheme.error)),
               onTap: () {
                 Get.back();
                 _removeProfilePicture();
@@ -609,8 +608,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           if (!mounted) return;
           
           Get.snackbar(
-            'Success',
-            'Profile picture updated successfully!',
+            context.l10n.success,
+            context.l10n.profilePictureUpdated,
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Theme.of(context).colorScheme.secondary,
             colorText: Theme.of(context).colorScheme.onSecondary,
@@ -621,7 +620,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             isLoadingShown = false;
           }
           Get.snackbar(
-            'Error',
+            context.l10n.error,
             'User not found',
             snackPosition: SnackPosition.BOTTOM,
             backgroundColor: Theme.of(context).colorScheme.error,
@@ -636,7 +635,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       if (!mounted) return;
       Get.snackbar(
-        'Error',
+        context.l10n.error,
         'Failed to update profile picture: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Theme.of(context).colorScheme.error,
@@ -675,8 +674,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         if (!mounted) return;
         
         Get.snackbar(
-          'Success',
-          'Profile picture removed!',
+          context.l10n.success,
+          context.l10n.profilePictureRemoved,
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Theme.of(context).colorScheme.secondary,
           colorText: Theme.of(context).colorScheme.onSecondary,
@@ -687,7 +686,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           isLoadingShown = false;
         }
         Get.snackbar(
-          'Error',
+          context.l10n.error,
           'User not found',
           snackPosition: SnackPosition.BOTTOM,
           backgroundColor: Theme.of(context).colorScheme.error,
@@ -701,7 +700,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
       if (!mounted) return;
       Get.snackbar(
-        'Error',
+        context.l10n.error,
         'Failed to remove profile picture: ${e.toString()}',
         snackPosition: SnackPosition.BOTTOM,
         backgroundColor: Theme.of(context).colorScheme.error,
@@ -718,31 +717,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     Get.dialog(
       AlertDialog(
-        title: const Text('Edit Profile'),
+        title: Text(context.l10n.editProfileTitle),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: firstNameController,
-                decoration: const InputDecoration(
-                  labelText: 'First Name',
+                decoration: InputDecoration(
+                  labelText: context.l10n.firstName,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: lastNameController,
-                decoration: const InputDecoration(
-                  labelText: 'Last Name',
+                decoration: InputDecoration(
+                  labelText: context.l10n.lastName,
                   border: OutlineInputBorder(),
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: phoneController,
-                decoration: const InputDecoration(
-                  labelText: 'Phone Number',
+                decoration: InputDecoration(
+                  labelText: context.l10n.phoneNumberLabel,
                   border: OutlineInputBorder(),
                   prefixText: '+',
                 ),
@@ -754,7 +753,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: const Text('Cancel'),
+            child: Text(context.l10n.cancelButton),
           ),
           TextButton(
             onPressed: () async {
@@ -783,8 +782,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                   Get.back(); // Close loading
                   Get.snackbar(
-                    'Success',
-                    'Profile updated successfully!',
+                    context.l10n.success,
+                    context.l10n.profileUpdatedSuccess,
                     snackPosition: SnackPosition.BOTTOM,
                     backgroundColor: Theme.of(context).colorScheme.secondary,
                     colorText: Theme.of(context).colorScheme.onSecondary,
@@ -793,15 +792,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               } catch (e) {
                 Get.back(); // Close loading
                 Get.snackbar(
-                  'Error',
-                  'Failed to update profile: ${e.toString()}',
+                  context.l10n.error,
+                  '${context.l10n.profileUpdateFailed}: ${e.toString()}',
                   snackPosition: SnackPosition.BOTTOM,
                   backgroundColor: Theme.of(context).colorScheme.error,
                   colorText: Theme.of(context).colorScheme.onError,
                 );
               }
             },
-            child: const Text('Save'),
+            child: Text(context.l10n.saveButton),
           ),
         ],
       ),
@@ -820,7 +819,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       StatefulBuilder(
         builder: (context, setState) {
           return AlertDialog(
-            title: const Text('Change Password'),
+            title: Text(context.l10n.changePasswordTitle),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -829,7 +828,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: currentPasswordController,
                     obscureText: obscureCurrentPassword,
                     decoration: InputDecoration(
-                      labelText: 'Current Password',
+                      labelText: context.l10n.currentPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -850,7 +849,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: newPasswordController,
                     obscureText: obscureNewPassword,
                     decoration: InputDecoration(
-                      labelText: 'New Password',
+                      labelText: context.l10n.newPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -871,7 +870,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     controller: confirmPasswordController,
                     obscureText: obscureConfirmPassword,
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: context.l10n.confirmNewPassword,
                       border: const OutlineInputBorder(),
                       suffixIcon: IconButton(
                         icon: Icon(
@@ -893,14 +892,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () => Get.back(),
-                child: const Text('Cancel'),
+                child: Text(context.l10n.cancelButton),
               ),
               TextButton(
                 onPressed: () async {
                   if (newPasswordController.text.length < 6) {
                     Get.snackbar(
-                      'Error',
-                      'Password must be at least 6 characters',
+                      context.l10n.error,
+                      context.l10n.passwordMinimumLength,
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: Theme.of(context).colorScheme.error,
                       colorText: Theme.of(context).colorScheme.onError,
@@ -911,8 +910,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   if (newPasswordController.text !=
                       confirmPasswordController.text) {
                     Get.snackbar(
-                      'Error',
-                      'Passwords do not match',
+                      context.l10n.error,
+                      context.l10n.passwordsDoNotMatchConfirm,
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: Theme.of(context).colorScheme.error,
                       colorText: Theme.of(context).colorScheme.onError,
@@ -937,24 +936,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     Get.back(); // Close loading
                     Get.snackbar(
-                      'Success',
-                      'Password changed successfully!',
+                      context.l10n.success,
+                      context.l10n.passwordChangedSuccess,
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: Theme.of(context).colorScheme.secondary,
                       colorText: Theme.of(context).colorScheme.onSecondary,
                     );
                   } catch (e) {
                     Get.back(); // Close loading
+                    String err = e.toString();
                     Get.snackbar(
-                      'Error',
-                      e.toString(),
+                      context.l10n.error,
+                      err,
                       snackPosition: SnackPosition.BOTTOM,
                       backgroundColor: Theme.of(context).colorScheme.error,
                       colorText: Theme.of(context).colorScheme.onError,
                     );
                   }
                 },
-                child: const Text('Change Password'),
+                child: Text(context.l10n.changePassword),
               ),
             ],
           );
@@ -979,7 +979,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Notification Settings',
+              context.l10n.notificationsTitle,
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -987,11 +987,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 20),
             SwitchListTile(
               title: Text(
-                'Irrigation Alerts',
+                context.l10n.irrigationAlerts,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'Get notified about irrigation schedules',
+                context.l10n.irrigationAlertsDesc,
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -1001,19 +1001,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onChanged: (value) {
                 // TODO: Save to Firebase
                 Get.snackbar(
-                  'Settings Updated',
-                  'Irrigation alerts ${value ? 'enabled' : 'disabled'}',
+                  context.l10n.settingsUpdated,
+                  '${context.l10n.irrigationAlerts} ${value ? context.l10n.enabledSetting : context.l10n.disabledSetting}',
                   snackPosition: SnackPosition.BOTTOM,
                 );
               },
             ),
             SwitchListTile(
               title: Text(
-                'System Updates',
+                context.l10n.systemUpdates,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'Get notified about system status changes',
+                context.l10n.systemUpdatesDesc,
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -1022,19 +1022,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
-                  'Settings Updated',
-                  'System updates ${value ? 'enabled' : 'disabled'}',
+                  context.l10n.settingsUpdated,
+                  '${context.l10n.systemUpdates} ${value ? context.l10n.enabledSetting : context.l10n.disabledSetting}',
                   snackPosition: SnackPosition.BOTTOM,
                 );
               },
             ),
             SwitchListTile(
               title: Text(
-                'Weather Alerts',
+                context.l10n.weatherAlerts,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'Get notified about weather conditions',
+                context.l10n.weatherAlertsDesc,
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -1043,19 +1043,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
               activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
-                  'Settings Updated',
-                  'Weather alerts ${value ? 'enabled' : 'disabled'}',
+                  context.l10n.settingsUpdated,
+                  '${context.l10n.weatherAlerts} ${value ? context.l10n.enabledSetting : context.l10n.disabledSetting}',
                   snackPosition: SnackPosition.BOTTOM,
                 );
               },
             ),
             SwitchListTile(
               title: Text(
-                'Sensor Alerts',
+                context.l10n.sensorAlerts,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'Get notified about sensor readings',
+                context.l10n.sensorAlertsDesc,
                 style: textTheme.bodyMedium?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -1064,8 +1064,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               activeThumbColor: scheme.primary,
               onChanged: (value) {
                 Get.snackbar(
-                  'Settings Updated',
-                  'Sensor alerts ${value ? 'enabled' : 'disabled'}',
+                  context.l10n.settingsUpdated,
+                  '${context.l10n.sensorAlerts} ${value ? context.l10n.enabledSetting : context.l10n.disabledSetting}',
                   snackPosition: SnackPosition.BOTTOM,
                 );
               },
@@ -1093,7 +1093,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Help & Support',
+              context.l10n.helpSupport,
               style: textTheme.headlineSmall?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -1105,18 +1105,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: scheme.primary,
               ),
               title: Text(
-                'Email Support',
+                context.l10n.emailSupport,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'akariclaude@gmail.com',
+                'info@faminga.app',
                 style: textTheme.bodyMedium,
               ),
               onTap: () {
                 Get.back();
                 Get.snackbar(
-                  'Contact Support',
-                  'Opening email app...',
+                  context.l10n.openingEmailApp,
+                  context.l10n.openingEmailApp,
                   snackPosition: SnackPosition.BOTTOM,
                 );
                 // TODO: Launch email app
@@ -1128,18 +1128,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: scheme.primary,
               ),
               title: Text(
-                'Phone Support',
+                context.l10n.phoneSupport,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                '+250 XXX XXX XXX',
+                '+250 796 882 585 ',
                 style: textTheme.bodyMedium,
               ),
               onTap: () {
                 Get.back();
                 Get.snackbar(
-                  'Contact Support',
-                  'Opening phone app...',
+                  context.l10n.openingPhoneApp,
+                  context.l10n.openingPhoneApp,
                   snackPosition: SnackPosition.BOTTOM,
                 );
                 // TODO: Launch phone app
@@ -1151,7 +1151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: scheme.primary,
               ),
               title: Text(
-                'Visit Website',
+                context.l10n.visitWebsite,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
@@ -1161,8 +1161,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: () {
                 Get.back();
                 Get.snackbar(
-                  'Opening Website',
-                  'Launching browser...',
+                  context.l10n.launchingBrowser,
+                  context.l10n.launchingBrowser,
                   snackPosition: SnackPosition.BOTTOM,
                 );
                 // TODO: Launch browser
@@ -1174,11 +1174,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 color: scheme.primary,
               ),
               title: Text(
-                'FAQs',
+                context.l10n.faqs,
                 style: textTheme.titleMedium,
               ),
               subtitle: Text(
-                'Frequently asked questions',
+                context.l10n.frequentlyAskedQuestions,
                 style: textTheme.bodyMedium,
               ),
               onTap: () {
@@ -1200,7 +1200,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       AlertDialog(
         backgroundColor: scheme.surface,
         title: Text(
-          'Frequently Asked Questions',
+          context.l10n.frequentlyAskedQuestions,
           style: textTheme.titleLarge,
         ),
         content: SingleChildScrollView(
@@ -1209,20 +1209,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildFAQItem(
-                'How do I add a field?',
-                'Go to Fields tab → Tap the + button → Draw your field boundaries on the map.',
+                context.l10n.faqAddField,
+                context.l10n.faqAddFieldAnswer,
               ),
               _buildFAQItem(
-                'How do I schedule irrigation?',
-                'Go to Irrigation tab → Tap Schedule → Select field and set time.',
+                context.l10n.faqScheduleIrrigation,
+                context.l10n.faqScheduleIrrigationAnswer,
               ),
               _buildFAQItem(
-                'How do I add sensors?',
-                'Go to Sensors tab → Tap Add Sensor → Enter sensor details and location.',
+                context.l10n.faqAddSensor,
+                context.l10n.faqAddSensorAnswer,
               ),
               _buildFAQItem(
-                'How do I change my password?',
-                'Go to Profile → Change Password → Enter current and new password.',
+                context.l10n.faqChangePassword,
+                context.l10n.faqChangePasswordAnswer,
               ),
             ],
           ),
@@ -1231,7 +1231,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           TextButton(
             onPressed: () => Get.back(),
             child: Text(
-              'Close',
+              context.l10n.closeButton,
               style: TextStyle(color: scheme.primary),
             ),
           ),
@@ -1296,26 +1296,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       type: BottomNavigationBarType.fixed,
       selectedItemColor: Theme.of(context).colorScheme.primary,
       unselectedItemColor: Theme.of(context).colorScheme.onSurfaceVariant,
-      items: const [
+      items: [
         BottomNavigationBarItem(
-          icon: Icon(Icons.dashboard),
-          label: 'Dashboard',
+          icon: const Icon(Icons.dashboard),
+          label: context.l10n.dashboard,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.water_drop),
-          label: 'Irrigation',
+          icon: const Icon(Icons.water_drop),
+          label: context.l10n.irrigation,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.landscape),
-          label: 'Fields',
+          icon: const Icon(Icons.landscape),
+          label: context.l10n.fields,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.sensors),
-          label: 'Sensors',
+          icon: const Icon(Icons.sensors),
+          label: context.l10n.sensors,
         ),
         BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'Profile',
+          icon: const Icon(Icons.person),
+          label: context.l10n.profile,
         ),
       ],
     );

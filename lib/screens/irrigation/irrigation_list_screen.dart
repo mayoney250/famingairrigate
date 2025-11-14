@@ -13,6 +13,8 @@ import '../../services/irrigation_service.dart';
 import '../../services/irrigation_status_service.dart';
 import '../../routes/app_routes.dart';
 import '../../services/field_service.dart';
+import '../../utils/l10n_extensions.dart';
+import '../../providers/language_provider.dart';
 
 class IrrigationListScreen extends StatefulWidget {
   const IrrigationListScreen({super.key});
@@ -62,7 +64,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
 
     if (!authProvider.hasAuthChecked) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Irrigation Schedules')),
+          appBar: AppBar(title: Text(context.l10n.irrigationSchedulesTitle)),
         body: const Center(
           child: CircularProgressIndicator(
             color: FamingaBrandColors.primaryOrange,
@@ -73,9 +75,9 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
 
     if (userId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Irrigation Schedules')),
-        body: const Center(
-          child: Text('Please log in to view schedules'),
+          appBar: AppBar(title: Text(context.l10n.irrigationSchedulesTitle)),
+        body: Center(
+            child: Text(context.l10n.pleaseLoginToViewSchedules),
         ),
       );
     }
@@ -83,7 +85,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
-        title: const Text('Irrigation Schedules'),
+          title: Text(context.l10n.irrigationSchedulesTitle),
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -147,8 +149,8 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     color: FamingaBrandColors.textSecondary,
                   ),
                   const SizedBox(height: 16),
-                  const Text(
-                    'No Irrigation Schedules',
+                  Text(
+                      context.l10n.noIrrigationSchedules,
                     style: TextStyle(
                       color: FamingaBrandColors.textPrimary,
                       fontSize: 18,
@@ -156,8 +158,8 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Create your first irrigation schedule',
+                  Text(
+                      context.l10n.createFirstSchedule,
                     style: TextStyle(
                       color: FamingaBrandColors.textSecondary,
                       fontSize: 14,
@@ -167,7 +169,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _openCreateSchedule(context, userId),
                     icon: const Icon(Icons.add),
-                    label: const Text('Create Schedule'),
+                      label: Text(context.l10n.createScheduleButton),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.primaryOrange,
                       padding: const EdgeInsets.symmetric(
@@ -335,7 +337,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _stopIrrigation(schedule),
                     icon: const Icon(Icons.stop, size: 18),
-                    label: const Text('Stop Irrigation'),
+                      label: Text(context.l10n.stopIrrigationButton),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.statusWarning,
                       foregroundColor: FamingaBrandColors.white,
@@ -357,7 +359,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _startScheduledCycleNow(schedule),
                     icon: const Icon(Icons.play_arrow, size: 18),
-                    label: const Text('Start Now'),
+                      label: Text(context.l10n.startNowButton),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.statusSuccess,
                       foregroundColor: FamingaBrandColors.white,
@@ -378,25 +380,25 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     TextButton.icon(
                       onPressed: () => _openEditSchedule(context, schedule),
                       icon: const Icon(Icons.edit_outlined),
-                      label: const Text('Update'),
+                        label: Text(context.l10n.updateButton),
                     ),
                   const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: () async {
                       if (schedule.status == 'running') {
-                        Get.snackbar('Not allowed', 'Stop the cycle before deleting');
+                          Get.snackbar(context.l10n.notAllowed, context.l10n.stopCycleBeforeDeleting);
                         return;
                       }
                       final confirmed = await Get.dialog<bool>(
                         AlertDialog(
-                          title: const Text('Delete Schedule'),
-                          content: const Text('Are you sure you want to delete this irrigation schedule?'),
+                          title: Text(context.l10n.deleteSchedule),
+                          content: Text(context.l10n.areYouSureDelete),
                           actions: [
-                            TextButton(onPressed: () => Get.back(result: false), child: const Text('Cancel')),
+                              TextButton(onPressed: () => Get.back(result: false), child: Text(context.l10n.cancelButton)),
                             TextButton(
                               onPressed: () => Get.back(result: true),
                               style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
-                              child: const Text('Delete'),
+                                child: Text(context.l10n.deleteButton),
                             ),
                           ],
                         ),
@@ -404,7 +406,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       if (confirmed != true) return;
                       try {
                         if (schedule.id.isEmpty) {
-                          Get.snackbar('Error', 'Invalid schedule id');
+                            Get.snackbar(context.l10n.error, context.l10n.invalidScheduleId);
                           return;
                         }
                         final ok = await _irrigationService.deleteSchedule(schedule.id);
@@ -414,22 +416,22 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                             _deletedIds.add(schedule.id);
                           });
                           Get.snackbar(
-                            'Success',
-                            'Schedule deleted successfully.',
+                              context.l10n.success,
+                              context.l10n.scheduleDeletedSuccessfully,
                             snackPosition: SnackPosition.BOTTOM,
                             backgroundColor: Theme.of(context).colorScheme.surface,
                             colorText: Theme.of(context).colorScheme.onSurface,
                           );
                         } else {
-                          Get.snackbar('Error', 'Failed to delete schedule');
+                            Get.snackbar(context.l10n.error, context.l10n.failedDeleteSchedule);
                         }
                       } catch (e) {
-                        Get.snackbar('Error', 'Delete failed: $e');
+                          Get.snackbar(context.l10n.error, 'Delete failed: $e');
                       }
                     },
                     style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
                     icon: const Icon(Icons.delete_outline),
-                    label: const Text('Delete'),
+                      label: Text(context.l10n.deleteButton),
                   ),
                 ],
               )
@@ -667,11 +669,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                 mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    Text('Create Irrigation Schedule', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    Text(context.l10n.createScheduleName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                   TextField(
                     controller: nameController,
-                      decoration: const InputDecoration(labelText: 'Schedule Name', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: context.l10n.scheduleName, border: const OutlineInputBorder()),
                   ),
                     const SizedBox(height: 12),
                     FutureBuilder<List<Map<String,String>>>(
@@ -687,7 +689,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                               borderRadius: BorderRadius.circular(8),
                               border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
                             ),
-                            child: const Text('No fields available'),
+                            child: Text(context.l10n.noFieldsAvailableMessage),
                           );
                         }
                         if (!options.any((f) => f['id'] == selectedFieldId)) {
@@ -720,13 +722,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     const SizedBox(height: 12),
                   TextField(
                     controller: durationController,
-                      decoration: const InputDecoration(labelText: 'Duration (minutes)', border: OutlineInputBorder()),
+                      decoration: InputDecoration(labelText: context.l10n.durationMinutes, border: const OutlineInputBorder()),
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
-                        Text('Start Time: ', style: Theme.of(context).textTheme.bodyMedium),
+                        Text('${context.l10n.startTimeLabel}: ', style: Theme.of(context).textTheme.bodyMedium),
                       Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
                       const Spacer(),
                       TextButton(
@@ -747,14 +749,14 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                               selectedStart = DateTime(date.year, date.month, date.day, time.hour, time.minute);
                           });
                         },
-                        child: const Text('Pick'),
+                        child: Text(context.l10n.pickButton),
                       ),
                     ],
                   ),
                     const SizedBox(height: 16),
                     Row(
-                      children: [
-                        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+                    children: [
+                        TextButton(onPressed: () => Get.back(), child: Text(context.l10n.cancelButton)),
                         const Spacer(),
           ElevatedButton(
             onPressed: () async {
@@ -778,9 +780,9 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               final ok = await _irrigationService.createSchedule(schedule);
               if (ok) {
                 Get.back();
-                              Get.snackbar('Success', 'Schedule saved');
+                              Get.snackbar(context.l10n.success, context.l10n.scheduleSaved, snackPosition: SnackPosition.BOTTOM);
               } else {
-                              Get.snackbar('Error', 'Failed to save schedule');
+                              Get.snackbar(context.l10n.error, context.l10n.failedSaveSchedule, snackPosition: SnackPosition.BOTTOM);
                             }
                           },
                           style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),

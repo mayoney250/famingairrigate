@@ -3,9 +3,11 @@ import 'package:get/get.dart';
 import 'package:provider/provider.dart';
 import '../../models/field_model.dart';
 import '../../providers/auth_provider.dart';
+import '../../providers/language_provider.dart';
 import '../../services/field_service.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+import '../../utils/l10n_extensions.dart';
 
 class AddFieldScreen extends StatefulWidget {
   const AddFieldScreen({super.key});
@@ -74,8 +76,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
         // Show success message AFTER navigation
         await Future.delayed(const Duration(milliseconds: 300));
         Get.snackbar(
-          'Success',
-          'Field "${field.label}" created successfully!',
+          context.l10n.success,
+          context.l10n.fieldAddedSuccess,
           backgroundColor: Theme.of(context).colorScheme.secondary,
           colorText: Theme.of(context).colorScheme.onSecondary,
           snackPosition: SnackPosition.BOTTOM,
@@ -87,8 +89,8 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
     } catch (e) {
       if (mounted) {
         Get.snackbar(
-          'Error',
-          'Failed to create field: $e',
+          context.l10n.error,
+          '${context.l10n.failedCreateField}: $e',
           backgroundColor: Theme.of(context).colorScheme.error,
           colorText: Theme.of(context).colorScheme.onError,
           snackPosition: SnackPosition.BOTTOM,
@@ -103,12 +105,20 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Add New Field'),
+        title: Text(context.l10n.addFieldTitle),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),
@@ -123,14 +133,14 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
             children: [
               // Header
               Text(
-                'Field Information',
+                context.l10n.fieldInformation,
                 style: textTheme.headlineSmall?.copyWith(
                       fontWeight: FontWeight.bold,
                     ),
               ),
               const SizedBox(height: 8),
               Text(
-                'Enter basic details about your field',
+                context.l10n.enterBasicDetails,
                 style: textTheme.bodyMedium?.copyWith(
                       color: scheme.onSurfaceVariant,
                     ),
@@ -140,13 +150,13 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               // Field Name
               CustomTextField(
                 controller: _nameController,
-                label: 'Field Name',
-                hintText: 'e.g., North Field, Back Garden',
+                label: context.l10n.fieldName,
+                hintText: context.l10n.fieldNameHint,
                 prefixIcon: Icons.landscape,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter a field name';
+                    return context.l10n.fieldNameRequired;
                   }
                   return null;
                 },
@@ -156,17 +166,17 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               // Field Size
               CustomTextField(
                 controller: _sizeController,
-                label: 'Field Size (hectares)',
-                hintText: 'e.g., 2.5',
+                label: context.l10n.fieldSize,
+                hintText: context.l10n.fieldSizeHint,
                 prefixIcon: Icons.straighten,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter field size';
+                    return context.l10n.fieldSizeRequired;
                   }
                   final size = double.tryParse(value.trim());
                   if (size == null || size <= 0) {
-                    return 'Please enter a valid size';
+                    return context.l10n.pleaseEnterValidSize;
                   }
                   return null;
                 },
@@ -176,13 +186,13 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
               // Owner
               CustomTextField(
                 controller: _ownerController,
-                label: 'Owner/Manager Name',
-                hintText: 'e.g., John Doe',
+                label: context.l10n.ownerManagerName,
+                hintText: context.l10n.ownerHint,
                 prefixIcon: Icons.person,
                 textCapitalization: TextCapitalization.words,
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter owner name';
+                    return context.l10n.ownerNameRequired;
                   }
                   return null;
                 },
@@ -206,14 +216,14 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Organic Farming',
+                            context.l10n.organicFarming,
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Is this field certified organic?',
+                            context.l10n.isCertifiedOrganic,
                             style: textTheme.bodySmall?.copyWith(
                               color: scheme.onSurfaceVariant,
                             ),
@@ -249,7 +259,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'You can add more details like crop types and irrigation systems after creating the field.',
+                        context.l10n.youCanAddMore,
                         style: textTheme.bodySmall,
                       ),
                     ),
@@ -260,7 +270,7 @@ class _AddFieldScreenState extends State<AddFieldScreen> {
 
               // Save Button
               CustomButton(
-                text: 'Create Field',
+                text: context.l10n.createField,
                 onPressed: _handleSaveField,
                 isLoading: _isLoading,
               ),

@@ -200,8 +200,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // System Status Card
                   _buildSystemStatusCard(dashboardProvider),
                   const SizedBox(height: 20),
-                  _buildUserInsightCard(dashboardProvider),
-                  const SizedBox(height: 20),
 
                   // Quick Actions
                   Text(
@@ -370,122 +368,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(cardIcon, color: Colors.white, size: 32),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserInsightCard(DashboardProvider dashboardProvider) {
-    // Greeting + short insight based on aggregated sensor data
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.currentUser;
-    final name = user?.firstName ?? user?.email?.split('@').first ?? 'Farmer';
-
-    final sensors = dashboardProvider.latestSensorDataPerField;
-    double totalMoisture = 0.0;
-    int moistureCount = 0;
-    sensors.forEach((_, sensor) {
-      try {
-        if (sensor != null && sensor.soilMoisture != null) {
-          totalMoisture += sensor.soilMoisture;
-          moistureCount += 1;
-        }
-      } catch (_) {}
-    });
-
-    final double? avgMoisture = moistureCount > 0 ? totalMoisture / moistureCount : null;
-
-    String insight;
-    String recommendation;
-    final l10n = context.l10n;
-    if (avgMoisture == null) {
-      insight = l10n.userInsightNoData;
-      recommendation = l10n.userInsightNoDataRecommendation;
-    } else {
-      final avgStr = avgMoisture.toStringAsFixed(0);
-      if (avgMoisture < 40) {
-        insight = l10n.userInsightDryInsight(avgStr);
-        recommendation = l10n.userInsightDryRecommendation;
-      } else if (avgMoisture > 80) {
-        insight = l10n.userInsightWetInsight(avgStr);
-        recommendation = l10n.userInsightWetRecommendation;
-      } else {
-        insight = l10n.userInsightOptimalInsight(avgStr);
-        recommendation = l10n.userInsightOptimalRecommendation;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.person,
-              color: FamingaBrandColors.primaryOrange,
-              size: 28,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.userInsightGreeting(name),
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  insight,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  recommendation,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            children: [
-              ElevatedButton(
-                onPressed: () => Get.toNamed(AppRoutes.fields),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FamingaBrandColors.primaryOrange,
-                ),
-                child: Text(l10n.userInsightViewFields),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () => Get.toNamed(AppRoutes.sensors),
-                child: Text(l10n.userInsightViewSensors),
-              ),
-            ],
           ),
         ],
       ),

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:provider/provider.dart';
+import '../../providers/language_provider.dart';
+import '../../utils/l10n_extensions.dart';
 
 class SensorDetailScreen extends StatefulWidget {
   const SensorDetailScreen({super.key});
@@ -26,6 +29,14 @@ class _SensorDetailScreenState extends State<SensorDetailScreen>
 
   @override
   Widget build(BuildContext context) {
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        return _buildContent(context);
+      },
+    );
+  }
+
+  Widget _buildContent(BuildContext context) {
     final sensor = Get.arguments as Map<String, dynamic>?;
     final name = sensor?['name'] ?? 'Sensor';
     final status = (sensor?['status'] ?? 'Offline') as String;

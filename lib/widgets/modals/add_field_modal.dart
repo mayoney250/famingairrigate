@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:flutter/foundation.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../utils/l10n_extensions.dart';
 import '../../models/field_model.dart';
 import '../../services/field_service.dart';
 
@@ -51,7 +52,7 @@ class AddFieldModal {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(isEditing ? 'Edit Field' : 'Add New Field', style: Theme.of(context).textTheme.titleLarge),
+                  Text(isEditing ? context.l10n.editField : context.l10n.addFieldTitle, style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 24),
                   LayoutBuilder(
                     builder: (context, constraints) {
@@ -65,21 +66,21 @@ class AddFieldModal {
                             width: fieldWidth,
                             child: TextField(
                               controller: fieldNameController,
-                              decoration: const InputDecoration(labelText: 'Field Name*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.fieldNameField}*'),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
                               controller: fieldLabelController,
-                              decoration: const InputDecoration(labelText: 'Field Label*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.fieldLabelField}*'),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
                               controller: sizeController,
-                              decoration: const InputDecoration(labelText: 'Size (hectares)*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.sizeHectares}*'),
                               keyboardType: TextInputType.number,
                             ),
                           ),
@@ -87,52 +88,52 @@ class AddFieldModal {
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: soilType,
-                              items: const [
-                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
-                                DropdownMenuItem(value: 'Clay', child: Text('Clay')),
-                                DropdownMenuItem(value: 'Sandy', child: Text('Sandy')),
-                                DropdownMenuItem(value: 'Loam', child: Text('Loam')),
-                                DropdownMenuItem(value: 'Silt', child: Text('Silt')),
-                                DropdownMenuItem(value: 'Peat', child: Text('Peat')),
-                                DropdownMenuItem(value: 'Chalk', child: Text('Chalk')),
+                              items: [
+                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
+                                DropdownMenuItem(value: 'Clay', child: Text(context.l10n.clay)),
+                                DropdownMenuItem(value: 'Sandy', child: Text(context.l10n.sandy)),
+                                DropdownMenuItem(value: 'Loam', child: Text(context.l10n.loam)),
+                                DropdownMenuItem(value: 'Silt', child: Text(context.l10n.silt)),
+                                DropdownMenuItem(value: 'Peat', child: Text(context.l10n.peat)),
+                                DropdownMenuItem(value: 'Chalk', child: Text(context.l10n.chalk)),
                               ],
                               onChanged: (v) => modalState(() => soilType = v ?? 'Unknown'),
-                              decoration: const InputDecoration(labelText: 'Soil Type'),
+                              decoration: InputDecoration(labelText: context.l10n.soilType),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: growthStage,
-                              items: const [
-                                DropdownMenuItem(value: 'Germination', child: Text('Germination')),
-                                DropdownMenuItem(value: 'Seedling', child: Text('Seedling')),
-                                DropdownMenuItem(value: 'Vegetative Growth', child: Text('Vegetative Growth')),
-                                DropdownMenuItem(value: 'Flowering', child: Text('Flowering')),
-                                DropdownMenuItem(value: 'Fruit', child: Text('Fruit')),
-                                DropdownMenuItem(value: 'Maturity', child: Text('Maturity')),
-                                DropdownMenuItem(value: 'Harvest', child: Text('Harvest')),
+                              items: [
+                                DropdownMenuItem(value: 'Germination', child: Text(context.l10n.germination)),
+                                DropdownMenuItem(value: 'Seedling', child: Text(context.l10n.seedling)),
+                                DropdownMenuItem(value: 'Vegetative Growth', child: Text(context.l10n.vegetativeGrowth)),
+                                DropdownMenuItem(value: 'Flowering', child: Text(context.l10n.flowering)),
+                                DropdownMenuItem(value: 'Fruit', child: Text(context.l10n.fruit)),
+                                DropdownMenuItem(value: 'Maturity', child: Text(context.l10n.maturity)),
+                                DropdownMenuItem(value: 'Harvest', child: Text(context.l10n.harvest)),
                               ],
                               onChanged: (v) => modalState(() => growthStage = v ?? 'Germination'),
-                              decoration: const InputDecoration(labelText: 'Growth Stage'),
+                              decoration: InputDecoration(labelText: context.l10n.growthStage),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: DropdownButtonFormField<String>(
                               value: cropType,
-                              items: const [
-                                DropdownMenuItem(value: 'Unknown', child: Text('Unknown')),
-                                DropdownMenuItem(value: 'Maize', child: Text('Maize')),
-                                DropdownMenuItem(value: 'Wheat', child: Text('Wheat')),
-                                DropdownMenuItem(value: 'Rice', child: Text('Rice')),
-                                DropdownMenuItem(value: 'Soybean', child: Text('Soybean')),
-                                DropdownMenuItem(value: 'Cotton', child: Text('Cotton')),
-                                DropdownMenuItem(value: 'Coffee', child: Text('Coffee')),
-                                DropdownMenuItem(value: 'Tea', child: Text('Tea')),
-                                DropdownMenuItem(value: 'Vegetables', child: Text('Vegetables')),
-                                DropdownMenuItem(value: 'Fruits', child: Text('Fruits')),
-                                DropdownMenuItem(value: 'Other', child: Text('Other')),
+                              items: [
+                                DropdownMenuItem(value: 'Unknown', child: Text(context.l10n.unknown)),
+                                DropdownMenuItem(value: 'Maize', child: Text(context.l10n.maize)),
+                                DropdownMenuItem(value: 'Wheat', child: Text(context.l10n.wheat)),
+                                DropdownMenuItem(value: 'Rice', child: Text(context.l10n.rice)),
+                                DropdownMenuItem(value: 'Soybean', child: Text(context.l10n.soybean)),
+                                DropdownMenuItem(value: 'Cotton', child: Text(context.l10n.cotton)),
+                                DropdownMenuItem(value: 'Coffee', child: Text(context.l10n.coffee)),
+                                DropdownMenuItem(value: 'Tea', child: Text(context.l10n.tea)),
+                                DropdownMenuItem(value: 'Vegetables', child: Text(context.l10n.vegetables)),
+                                DropdownMenuItem(value: 'Fruits', child: Text(context.l10n.fruits)),
+                                DropdownMenuItem(value: 'Other', child: Text(context.l10n.other)),
                               ],
                               onChanged: (v) => modalState(() => cropType = v ?? 'Unknown'),
                               decoration: const InputDecoration(labelText: 'Crop Type'),
@@ -141,22 +142,22 @@ class AddFieldModal {
                           if (cropType == 'Other')
                             SizedBox(
                               width: fieldWidth,
-                              child: TextField(
+                                child: TextField(
                                 controller: cropTypeOtherController,
-                                decoration: const InputDecoration(labelText: 'Specify Crop Type*'),
+                                decoration: InputDecoration(labelText: '${context.l10n.other}*'),
                               ),
                             ),
                           SizedBox(
                             width: fieldWidth,
                             child: TextField(
                               controller: ownerController,
-                              decoration: const InputDecoration(labelText: 'Owner*'),
+                              decoration: InputDecoration(labelText: '${context.l10n.ownerManagerName}*'),
                             ),
                           ),
                           SizedBox(
                             width: fieldWidth,
                             child: SwitchListTile(
-                              title: const Text('Organic Farming'),
+                              title: Text(context.l10n.organicFarming),
                               value: isOrganic,
                               onChanged: (value) => modalState(() => isOrganic = value),
                               contentPadding: EdgeInsets.zero,
@@ -167,7 +168,7 @@ class AddFieldModal {
                             child: TextField(
                               controller: descriptionController,
                               maxLines: 3,
-                              decoration: const InputDecoration(labelText: 'Description'),
+                              decoration: InputDecoration(labelText: context.l10n.description),
                             ),
                           ),
                           // Map picker section - simplified for non-Fields screen use
@@ -177,14 +178,14 @@ class AddFieldModal {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Location (Optional)', style: Theme.of(context).textTheme.labelLarge),
+                                  Text(context.l10n.location, style: Theme.of(context).textTheme.labelLarge),
                                   const SizedBox(height: 8),
                                   Row(
                                     children: [
                                       Expanded(
                                         child: TextField(
                                           controller: latController,
-                                          decoration: const InputDecoration(labelText: 'Latitude'),
+                                          decoration: InputDecoration(labelText: context.l10n.latitude),
                                           keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                                         ),
                                       ),
@@ -192,7 +193,7 @@ class AddFieldModal {
                                       Expanded(
                                         child: TextField(
                                           controller: lngController,
-                                          decoration: const InputDecoration(labelText: 'Longitude'),
+                                          decoration: InputDecoration(labelText: context.l10n.longitude),
                                           keyboardType: const TextInputType.numberWithOptions(decimal: true, signed: true),
                                         ),
                                       ),
@@ -209,12 +210,12 @@ class AddFieldModal {
                   const SizedBox(height: 24),
                   Row(
                     children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          onPressed: () => Get.back(),
-                          child: const Text('Cancel'),
-                        ),
-                      ),
+                          Expanded(
+                            child: OutlinedButton(
+                              onPressed: () => Get.back(),
+                              child: Text(context.l10n.cancelButton),
+                            ),
+                          ),
                       const SizedBox(width: 16),
                       Expanded(
                         child: ElevatedButton(
@@ -290,14 +291,14 @@ class AddFieldModal {
 
                             if (success) {
                               fieldCreated = true;
-                              Get.snackbar('Success', 'Field ${isEditing ? 'updated' : 'added'} successfully.',
+                              Get.snackbar(context.l10n.success, isEditing ? context.l10n.fieldUpdatedSuccess(field!.label ?? '') : context.l10n.fieldAddedSuccess,
                                   icon: const Icon(Icons.check_circle, color: Colors.green));
                             } else {
-                              Get.snackbar('Error', 'Failed to save field.',
+                              Get.snackbar(context.l10n.error, context.l10n.failedCreateField,
                                   icon: const Icon(Icons.error, color: Colors.red));
                             }
                           },
-                          child: const Text('Save'),
+                          child: Text(context.l10n.saveButton),
                         ),
                       ),
                     ],
