@@ -34,6 +34,7 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, dynamic>> _forecast5Day = [];
   double? _avgSoilMoisture; // Add field
   double _weeklyWaterUsage = 0.0;
+  double _dailyWaterUsage = 0.0;
   double _weeklySavings = 0.0;
   String _selectedFarmId = 'farm1'; // Will be replaced by first field id
   List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name}]
@@ -201,6 +202,7 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, dynamic>> get forecast5Day => _forecast5Day;
   double? get avgSoilMoisture => _avgSoilMoisture;
   double get weeklyWaterUsage => _weeklyWaterUsage;
+  double get dailyWaterUsage => _dailyWaterUsage;
   double get weeklySavings => _weeklySavings;
   String get selectedFarmId => _selectedFarmId;
   List<Map<String, String>> get fields => _fields;
@@ -302,7 +304,8 @@ class DashboardProvider with ChangeNotifier {
         subscribeToLiveFieldData(userId);
       }
       await _refreshDailySoilAverage();
-      await _refreshWeeklyWaterUsage();
+      await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
       // Start background status sync every 60s (auto-start due + auto-complete)
       _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
         try {
@@ -576,11 +579,26 @@ class DashboardProvider with ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<void> _refreshDailyWaterUsage({String? userId}) async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfToday();
+      double total = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+      }
+      _dailyWaterUsage = total;
+      notifyListeners();
+    } catch (_) {}
+  }
+
   void _startAggTimer(String userId) {
     _aggTimer?.cancel();
     _aggTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
       await _refreshDailySoilAverage();
-      await _refreshWeeklyWaterUsage();
+      await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
     });
   }
 
@@ -605,6 +623,7 @@ class DashboardProvider with ChangeNotifier {
       // update local latest + aggregates
       _latestFlowDataPerField[fieldId] = test;
       await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
       notifyListeners();
       return true;
     } catch (e) {
@@ -633,11 +652,15 @@ class DashboardProvider with ChangeNotifier {
       // Flow meter optional: ignore if collection doesn't exist
       _flowMeterService.getLatestReading(fieldId, userId: userId).then((flowData) {
         _latestFlowDataPerField[fieldId] = flowData;
+        // update aggregates when latest flow reading arrives
+        _refreshWeeklyWaterUsage(userId: userId);
+        _refreshDailyWaterUsage(userId: userId);
         notifyListeners();
       }).catchError((_) {});
       _flowMeterService.streamLatestReading(fieldId, userId: userId).listen((flowData) {
         _latestFlowDataPerField[fieldId] = flowData;
         _refreshWeeklyWaterUsage(userId: userId);
+        _refreshDailyWaterUsage(userId: userId);
         notifyListeners();
       }, onError: (_) {});
     }

@@ -18,7 +18,7 @@
   "enterFirstName": "Enter your first name",
   "lastName": "Last Name",
   "enterLastName": "Enter your last name",
-  "phoneNumber": "Phone Number (Optional)",
+  "phoneNumber": "Phone Number",
   "enterPhoneNumber": "Enter your phone number",
   "confirmPassword": "Confirm Password",
   "reEnterPassword": "Re-enter your password",

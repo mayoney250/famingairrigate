@@ -85,9 +85,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordController.text,
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim().isEmpty ? null : _phoneController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
         province: _selectedProvince ?? '',
         district: _selectedDistrict ?? '',
+        address: _addressController.text.trim(),
       );
       if (success && mounted) {
         // If user indicated cooperative membership, save cooperative data and create verification request
@@ -239,11 +240,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 
-                // Email/Phone/Cooperative ID
+                // Email
                 CustomTextField(
                   controller: _emailController,
-                  label: 'Email, Phone, or Cooperative ID',
-                  hintText: 'email@example.com, +250123456789, or COOP-ID-123',
+                  label: 'Email',
+                  hintText: 'email@example.com',
                   keyboardType: TextInputType.emailAddress,
                   prefixIcon: Icons.person_outline,
                   validator: (value) {
@@ -258,30 +259,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       return null;
                     }
                     
-                    // Check if it's a phone number (starts with + or has 10+ digits)
-                    if (email.startsWith('+') || 
-                        (email.replaceAll(RegExp(r'\D'), '').length >= 10 && 
-                         email.contains(RegExp(r'\d')))) {
-                      return null;
-                    }
-                    
-                    // Check if it's a cooperative ID (alphanumeric with hyphens, 5+ chars)
-                    if (RegExp(r'^[A-Z0-9-]{5,}$', caseSensitive: false).hasMatch(email)) {
-                      return null;
-                    }
-                    
-                    return 'Please enter a valid email, phone number (+250123456789), or cooperative ID (e.g., COOP-ID-123)';
+                    return 'Please enter a valid email';
                   },
                 ),
                 const SizedBox(height: 16),
                 
-                // Phone (optional)
+                // Phone (required)
                 CustomTextField(
                   controller: _phoneController,
                   label: context.l10n.phoneNumber,
                   hintText: context.l10n.enterPhoneNumber,
                   keyboardType: TextInputType.phone,
                   prefixIcon: Icons.phone_outlined,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return context.l10n.pleaseEnterPhoneNumber ?? 'Please enter phone number';
+                    }
+                    // basic length check
+                    final digitsOnly = value.replaceAll(RegExp(r'[^0-9+]'), '');
+                    if (digitsOnly.length < 7) return 'Enter a valid phone number';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 16),
                 // Province
@@ -326,25 +324,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   disabledHint: Text(context.l10n.chooseProvinceFirst),
                 ),
                 const SizedBox(height: 16),
-                // Address
+                // Address (required)
                 CustomTextField(
                   controller: _addressController,
-                  label: context.l10n.addressOptional,
+                  label: 'Address*',
                   hintText: context.l10n.addressHint,
                   prefixIcon: Icons.location_on_outlined,
                   keyboardType: TextInputType.streetAddress,
                   validator: (value) {
-                    if (value != null && value.trim().isNotEmpty) {
-                      if (value.trim().length < 5) return context.l10n.addressTooShort;
-                      if (value.length > 100) return context.l10n.addressTooLong;
-                    }
+                    if (value == null || value.trim().isEmpty) return 'Please enter your address';
+                    if (value.trim().length < 5) return context.l10n.addressTooShort;
+                    if (value.length > 100) return context.l10n.addressTooLong;
                     return null;
                   },
-                  onChanged: (value) {
-                    setState(() {
-                      // Store address value if needed to provider
-                    });
-                  },
+                  onChanged: (value) {},
                 ),
                 const SizedBox(height: 16),
                 
@@ -416,26 +409,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Government ID
+                        // Cooperative ID
                         CustomTextField(
                           controller: _coopGovIdController,
-                          label: 'Government ID*',
+                          label: 'Cooperative ID*',
                           hintText: 'Cooperative government registration ID',
                           prefixIcon: Icons.badge,
                           validator: _isInCooperative
-                              ? (value) => (value == null || value.isEmpty) ? 'Government ID required' : null
-                              : null,
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Member ID
-                        CustomTextField(
-                          controller: _memberIdController,
-                          label: 'Your Member ID*',
-                          hintText: 'Your membership ID in the cooperative',
-                          prefixIcon: Icons.person_add,
-                          validator: _isInCooperative
-                              ? (value) => (value == null || value.isEmpty) ? 'Member ID required' : null
+                              ? (value) => (value == null || value.isEmpty) ? 'Cooperative ID required' : null
                               : null,
                         ),
                         const SizedBox(height: 16),

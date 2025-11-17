@@ -13,8 +13,14 @@ service cloud.firestore {
     }
     
     // Users collection - users can read/write their own data
+    // NOTE: We allow reads here to enable identifier-based login (phone/cooperative ID)
+    // WARNING: Allowing unauthenticated reads of user documents may expose user contact
+    // information (emails, phone numbers). For production consider implementing a
+    // server-side lookup (Cloud Function) that performs this mapping securely.
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      // Allow reads so clients can resolve phone/cooperative identifiers to emails
+      // This makes the identifier->email login flow possible from unauthenticated clients.
+      allow read: if true;
       allow write: if isOwner(userId);
     }
     

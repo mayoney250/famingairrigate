@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:get/get.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/error_service.dart';
@@ -70,7 +71,7 @@ class AuthProvider with ChangeNotifier {
           }
         }
       } catch (e) {
-        print('❌ Load user data error (remote): $e');
+        dev.log('❌ Load user data error (remote): $e');
         // Try local cache
         final cached = await UserLocalService.getUser(userId);
         if (cached != null) {
@@ -117,18 +118,14 @@ class AuthProvider with ChangeNotifier {
       );
 
       if (userCredential != null) {
-        print('✅ Sign up successful! UID: ${userCredential.user!.uid}');
         dev.log('✅ Sign up successful! UID: ${userCredential.user!.uid}');
         await loadUserData(userCredential.user!.uid);
         return true;
       }
-      print('❌ Sign up returned null');
       dev.log('❌ Sign up returned null');
       _errorMessage = 'Registration failed - no user credential returned';
       return false;
     } catch (e) {
-      print('❌ Sign up error: $e');
-      print('❌ Error type: ${e.runtimeType}');
       dev.log('❌ Sign up error: $e');
       dev.log('❌ Error type: ${e.runtimeType}');
       _errorMessage = ErrorService.toMessage(e);
@@ -140,7 +137,7 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<bool> signIn({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     try {
@@ -148,27 +145,37 @@ class AuthProvider with ChangeNotifier {
       _errorMessage = null;
       notifyListeners();
 
-      print('🚀 Starting sign in for: $email');
-      dev.log('🚀 Starting sign in for: $email');
+      print('🚀 Starting sign in for identifier: $identifier');
+      dev.log('🚀 Starting sign in for identifier: $identifier');
+
+      String? emailToUse;
+
+      // If identifier looks like an email, sign-in directly
+      if (GetUtils.isEmail(identifier)) {
+        emailToUse = identifier;
+      } else {
+        // Try to resolve identifier (phone or cooperative id) to an email
+        emailToUse = await _authService.getEmailForIdentifier(identifier);
+        if (emailToUse == null) {
+          _errorMessage = 'No account found for that identifier';
+          return false;
+        }
+      }
 
       final userCredential = await _authService.signInWithEmailAndPassword(
-        email: email,
+        email: emailToUse,
         password: password,
       );
 
       if (userCredential != null) {
-        print('✅ Sign in successful! UID: ${userCredential.user!.uid}');
         dev.log('✅ Sign in successful! UID: ${userCredential.user!.uid}');
         await loadUserData(userCredential.user!.uid);
         return true;
       }
-      print('❌ Sign in returned null');
       dev.log('❌ Sign in returned null');
       _errorMessage = 'Login failed - no user credential returned';
       return false;
     } catch (e) {
-      print('❌ Sign in error: $e');
-      print('❌ Error type: ${e.runtimeType}');
       dev.log('❌ Sign in error: $e');
       dev.log('❌ Error type: ${e.runtimeType}');
       _errorMessage = ErrorService.toMessage(e);
@@ -193,8 +200,7 @@ class AuthProvider with ChangeNotifier {
       }
       return false;
     } catch (e) {
-      print('❌ Google sign-in error: $e');
-      dev.log('Google sign-in error: $e');
+      dev.log('❌ Google sign-in error: $e');
       _errorMessage = ErrorService.toMessage(e);
       return false;
     } finally {
@@ -212,7 +218,6 @@ class AuthProvider with ChangeNotifier {
       _currentUser = null;
       _errorMessage = null;
     } catch (e) {
-      print('❌ Sign out error: $e');
       dev.log('Sign out error: $e');
       _errorMessage = 'Failed to sign out';
     } finally {
@@ -230,7 +235,6 @@ class AuthProvider with ChangeNotifier {
       await _authService.sendPasswordResetEmail(email);
       return true;
     } catch (e) {
-      print('❌ Password reset error: $e');
       dev.log('Password reset error: $e');
       _errorMessage = ErrorService.toMessage(e);
       return false;
@@ -250,7 +254,6 @@ class AuthProvider with ChangeNotifier {
         await loadUserData(_currentUser!.userId);
       }
     } catch (e) {
-      print('❌ Update profile error: $e');
       dev.log('Update profile error: $e');
       _errorMessage = 'Failed to update profile';
     } finally {

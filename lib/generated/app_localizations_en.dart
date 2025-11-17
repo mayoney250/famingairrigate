@@ -63,7 +63,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enterLastName => 'Enter your last name';
 
   @override
-  String get phoneNumber => 'Phone Number (Optional)';
+  String get phoneNumber => 'Phone Number';
 
   @override
   String get enterPhoneNumber => 'Enter your phone number';

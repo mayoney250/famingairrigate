@@ -213,7 +213,7 @@ abstract class AppLocalizations {
   /// No description provided for @phoneNumber.
   ///
   /// In en, this message translates to:
-  /// **'Phone Number (Optional)'**
+  /// **'Phone Number'**
   String get phoneNumber;
 
   /// No description provided for @enterPhoneNumber.

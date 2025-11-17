@@ -35,7 +35,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       
       final success = await authProvider.signIn(
-        email: _emailController.text.trim(),
+        identifier: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
@@ -129,18 +129,15 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   const SizedBox(height: 48),
                   
-                  // Email field
+                  // Identifier field (Email | Cooperative ID | Phone)
                   CustomTextField(
                     controller: _emailController,
-                    label: context.l10n.email,
-                    hintText: context.l10n.enterEmail,
-                    keyboardType: TextInputType.emailAddress,
-                    prefixIcon: Icons.email_outlined,
+                    label: 'Email, Cooperative ID or Phone',
+                    hintText: 'email@example.com or +2507XXXXXXXX or COOP12345',
+                    keyboardType: TextInputType.text,
+                    prefixIcon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return context.l10n.enterEmail;
-                      }
-                      if (!GetUtils.isEmail(value)) {
                         return context.l10n.enterEmail;
                       }
                       return null;

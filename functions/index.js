@@ -492,8 +492,7 @@ exports.sendVerificationEmail = functions
     <h3>Cooperative Information:</h3>
     <ul>
       <li><strong>Cooperative Name:</strong> ${payload.coopName}</li>
-      <li><strong>Government ID:</strong> ${payload.coopGovId}</li>
-      <li><strong>Member ID:</strong> ${payload.memberId}</li>
+      <li><strong>Cooperative ID:</strong> ${payload.coopGovId}</li>
       <li><strong>Number of Farmers:</strong> ${payload.numFarmers}</li>
     </ul>
 
@@ -662,5 +661,52 @@ exports.retriggerVerificationEmail = functions
         'internal',
         error instanceof Error ? error.message : 'Failed to send email'
       );
+    }
+  });
+
+/**
+ * Callable function: resolveIdentifier
+ * Accepts { identifier: string }
+ * Tries to resolve identifier (phone number or cooperative ID) to a registered email.
+ * Returns { email: string|null, foundBy: 'phone'|'coopGovId'|'memberId'|null }
+ * This runs with admin privileges so it bypasses Firestore rules safely.
+ */
+exports.resolveIdentifier = functions
+  .region('us-central1')
+  .https.onCall(async (data, context) => {
+    const identifier = (data && data.identifier) ? String(data.identifier).trim() : '';
+    if (!identifier) {
+      throw new functions.https.HttpsError('invalid-argument', 'Missing identifier');
+    }
+
+    try {
+      console.log('resolveIdentifier called for:', identifier);
+
+      // Try phone lookup
+      const phoneQ = await db.collection('users').where('phoneNumber', '==', identifier).limit(1).get();
+      if (!phoneQ.empty) {
+        const u = phoneQ.docs[0].data();
+        return { email: u.email || null, foundBy: 'phone' };
+      }
+
+      // Try cooperative government id inside cooperative map
+      const coopGovQ = await db.collection('users').where('cooperative.coopGovId', '==', identifier).limit(1).get();
+      if (!coopGovQ.empty) {
+        const u = coopGovQ.docs[0].data();
+        return { email: u.email || null, foundBy: 'coopGovId' };
+      }
+
+      // Try cooperative member id
+      const coopMemberQ = await db.collection('users').where('cooperative.memberId', '==', identifier).limit(1).get();
+      if (!coopMemberQ.empty) {
+        const u = coopMemberQ.docs[0].data();
+        return { email: u.email || null, foundBy: 'memberId' };
+      }
+
+      // Not found
+      return { email: null, foundBy: null };
+    } catch (err) {
+      console.error('Error in resolveIdentifier:', err);
+      throw new functions.https.HttpsError('internal', 'Failed to resolve identifier');
     }
   });

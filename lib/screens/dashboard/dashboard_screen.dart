@@ -215,39 +215,80 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   _buildQuickActions(),
                   const SizedBox(height: 20),
 
-                  // Soil Moisture & Weather Cards Row
+                  // Weather + compact soil gauge
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final isWideScreen = constraints.maxWidth > 600;
-                      
+                      final avg = dashboardProvider.avgSoilMoisture;
+                      final daily = dashboardProvider.dailyWaterUsage;
+
+                      Widget gauge = Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: FamingaBrandColors.borderColor),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              height: 90,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
+                                    strokeWidth: 8,
+                                    backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
+                                    valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
+                                  ),
+                                  Text(
+                                    avg != null ? '${avg.round()}%' : '--',
+                                    style: const TextStyle(
+                                      color: FamingaBrandColors.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              context.l10n.soilMoisture,
+                              style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
+                              style: const TextStyle(color: FamingaBrandColors.textPrimary, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      );
+
                       if (isWideScreen) {
                         return Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                              flex: 1,
-                              child: _buildSoilMoistureCard(dashboardProvider),
-                            ),
+                            SizedBox(width: 120, child: gauge),
                             const SizedBox(width: 16),
-                            Flexible(
-                              flex: 2,
-                              child: _buildWeatherCard(dashboardProvider),
-                            ),
+                            Expanded(child: _buildWeatherCard(dashboardProvider)),
                           ],
                         );
                       } else {
                         return Column(
                           children: [
-                            _buildSoilMoistureCard(dashboardProvider),
-                            const SizedBox(height: 16),
+                            gauge,
+                            const SizedBox(height: 12),
                             _buildWeatherCard(dashboardProvider),
                           ],
                         );
                       }
                     },
                   ),
-                  const SizedBox(height: 20),
-                  _buildLiveFieldSensorSummaries(dashboardProvider),
                   const SizedBox(height: 20),
                   // simulation buttons removed
 
@@ -385,16 +426,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sensors = dashboardProvider.latestSensorDataPerField;
     double totalMoisture = 0.0;
     int moistureCount = 0;
+    double totalTemp = 0.0;
+    int tempCount = 0;
     sensors.forEach((_, sensor) {
       try {
-        if (sensor != null && sensor.soilMoisture != null) {
-          totalMoisture += sensor.soilMoisture;
-          moistureCount += 1;
+        if (sensor != null) {
+          if (sensor.soilMoisture != null) {
+            totalMoisture += sensor.soilMoisture;
+            moistureCount += 1;
+          }
+          if (sensor.temperature != null) {
+            totalTemp += sensor.temperature;
+            tempCount += 1;
+          }
         }
       } catch (_) {}
     });
 
     final double? avgMoisture = moistureCount > 0 ? totalMoisture / moistureCount : null;
+    final double? avgTemp = tempCount > 0 ? totalTemp / tempCount : null;
+    final dailyWater = dashboardProvider.dailyWaterUsage;
 
     String insight;
     String recommendation;
@@ -425,16 +476,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: const Icon(
-              Icons.person,
-              color: FamingaBrandColors.primaryOrange,
-              size: 28,
+          // Small user avatar (soil gauge moved next to weather)
+          CircleAvatar(
+            backgroundColor: FamingaBrandColors.primaryOrange,
+            radius: 22,
+            child: Text(
+              user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
+              style: const TextStyle(
+                color: FamingaBrandColors.white,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -450,7 +501,83 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
+                // Metrics row: Soil water, Temperature, Water today
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${l10n.soilWaterLabel}:',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            avgMoisture != null ? '${avgMoisture.toStringAsFixed(0)}%' : '--',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${l10n.tempLabel}:',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            avgTemp != null ? '${avgTemp.toStringAsFixed(1)}°C' : '--',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${l10n.waterUsedLabel}:',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textSecondary,
+                              fontSize: 11,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            dailyWater > 0 ? '${dailyWater.toStringAsFixed(2)} L' : '--',
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textPrimary,
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
                 Text(
                   insight,
                   style: const TextStyle(

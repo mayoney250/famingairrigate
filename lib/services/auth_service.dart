@@ -6,6 +6,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 import '../models/user_model.dart';
 
 class AuthService {
@@ -183,6 +184,45 @@ class AuthService {
     } catch (e) {
       log('Get user data error: $e');
       rethrow;
+    }
+  }
+
+  /// Find a user's email by identifier which can be a phone number or cooperative ID
+  /// Returns the user's email if found, or null otherwise.
+  Future<String?> getEmailForIdentifier(String identifier) async {
+    // First try the secure callable function
+    try {
+      log('🔍 Calling resolveIdentifier function for: $identifier');
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
+      final callable = functions.httpsCallable('resolveIdentifier');
+      final result = await callable.call(<String, dynamic>{'identifier': identifier});
+      final data = result.data as Map<String, dynamic>?;
+      if (data != null && data['email'] != null) {
+        final email = data['email'] as String?;
+        log('✅ resolveIdentifier returned email: $email (via ${data['foundBy']})');
+        return email;
+      }
+      log('🔎 resolveIdentifier returned no email for: $identifier');
+    } catch (e) {
+      log('⚠️ resolveIdentifier callable failed (falling back to client queries): $e');
+    }
+
+    // Fallback: try client-side queries (best-effort)
+    try {
+      log('🔍 Fallback: client-side lookup for identifier: $identifier');
+      final phoneQuery = await _firestore.collection('users').where('phoneNumber', isEqualTo: identifier).limit(1).get();
+      if (phoneQuery.docs.isNotEmpty) return phoneQuery.docs.first.data()['email'] as String?;
+
+      final coopGovQuery = await _firestore.collection('users').where('cooperative.coopGovId', isEqualTo: identifier).limit(1).get();
+      if (coopGovQuery.docs.isNotEmpty) return coopGovQuery.docs.first.data()['email'] as String?;
+
+      final coopMemberQuery = await _firestore.collection('users').where('cooperative.memberId', isEqualTo: identifier).limit(1).get();
+      if (coopMemberQuery.docs.isNotEmpty) return coopMemberQuery.docs.first.data()['email'] as String?;
+
+      return null;
+    } catch (e) {
+      log('❌ getEmailForIdentifier fallback error: $e');
+      return null;
     }
   }
 
