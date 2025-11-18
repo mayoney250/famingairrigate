@@ -2346,6 +2346,42 @@ abstract class AppLocalizations {
   /// **'View sensors'**
   String get userInsightViewSensors;
 
+  /// Headline summarizing farm-level averages
+  ///
+  /// In en, this message translates to:
+  /// **'Across {count} field(s), average soil moisture is {moisture} and average temperature is {temp}.'**
+  String userInsightFarmHeadline(int count, String moisture, String temp);
+
+  /// Short line describing liters irrigated today
+  ///
+  /// In en, this message translates to:
+  /// **'Today you have irrigated {liters} across your fields.'**
+  String userInsightWaterLine(String liters);
+
+  /// Prompt when user has no fields
+  ///
+  /// In en, this message translates to:
+  /// **'You have no fields yet — add a field to start receiving insights.'**
+  String get userInsightNoFields;
+
+  /// No description provided for @recommendationShortIrrigate.
+  ///
+  /// In en, this message translates to:
+  /// **'Irrigate'**
+  String get recommendationShortIrrigate;
+
+  /// No description provided for @recommendationShortDrainage.
+  ///
+  /// In en, this message translates to:
+  /// **'Drainage'**
+  String get recommendationShortDrainage;
+
+  /// No description provided for @recommendationShortNeutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get recommendationShortNeutral;
+
   /// No description provided for @searchByFieldName.
   ///
   /// In en, this message translates to:

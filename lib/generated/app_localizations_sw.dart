@@ -1203,6 +1203,29 @@ class AppLocalizationsSw extends AppLocalizations {
   String get userInsightViewSensors => 'Angalia sensa';
 
   @override
+  String userInsightFarmHeadline(int count, String moisture, String temp) {
+    return 'Across $count field(s), average soil moisture is $moisture and average temperature is $temp.';
+  }
+
+  @override
+  String userInsightWaterLine(String liters) {
+    return 'Today you have irrigated $liters across your fields.';
+  }
+
+  @override
+  String get userInsightNoFields =>
+      'You have no fields yet — add a field to start receiving insights.';
+
+  @override
+  String get recommendationShortIrrigate => 'Irrigate';
+
+  @override
+  String get recommendationShortDrainage => 'Drainage';
+
+  @override
+  String get recommendationShortNeutral => 'Neutral';
+
+  @override
   String get searchByFieldName => 'Tafuta kwa jina la shamba...';
 
   @override

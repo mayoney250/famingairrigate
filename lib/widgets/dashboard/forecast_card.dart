@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../config/colors.dart';
 import '../../models/forecast_day_model.dart';
-import '../../l10n/app_localizations.dart';
+import '../../generated/app_localizations.dart';
 
 class ForecastCard extends StatefulWidget {
   final List<ForecastDay> forecastDays;

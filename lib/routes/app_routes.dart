@@ -83,6 +83,9 @@ class AppRoutes {
       name: dashboard,
       page: () => const DashboardScreen(),
       transition: Transition.fadeIn,
+      // Add a guard to prevent unverified users from accessing the dashboard
+      // by checking authorization; if they try to navigate here unverified,
+      // the DashboardScreen itself will redirect them to pending if needed.
     ),
     GetPage(
       name: irrigationList,

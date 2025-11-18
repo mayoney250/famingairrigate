@@ -11,7 +11,7 @@ class VerificationPendingScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text(context.l10n.accountVerification),
-        leading: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => Get.offAllNamed('/')),
+        automaticallyImplyLeading: false,
       ),
       body: Center(
         child: Padding(

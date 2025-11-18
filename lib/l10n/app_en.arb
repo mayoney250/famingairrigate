@@ -495,6 +495,25 @@
       "@userInsightViewFields": { "description": "Button label to view user's fields" },
       "userInsightViewSensors": "View sensors",
       "@userInsightViewSensors": { "description": "Button label to view user's sensors" },
+      "userInsightFarmHeadline": "Across {count} field(s), average soil moisture is {moisture} and average temperature is {temp}.",
+      "@userInsightFarmHeadline": {
+        "description": "Headline summarizing farm-level averages",
+        "placeholders": {
+          "count": { "type": "int" },
+          "moisture": { "type": "String" },
+          "temp": { "type": "String" }
+        }
+      },
+      "userInsightWaterLine": "Today you have irrigated {liters} across your fields.",
+      "@userInsightWaterLine": {
+        "description": "Short line describing liters irrigated today",
+        "placeholders": { "liters": { "type": "String" } }
+      },
+      "userInsightNoFields": "You have no fields yet — add a field to start receiving insights.",
+      "@userInsightNoFields": { "description": "Prompt when user has no fields" },
+      "recommendationShortIrrigate": "Irrigate",
+      "recommendationShortDrainage": "Drainage",
+      "recommendationShortNeutral": "Neutral",
     "searchByFieldName": "Search by field name...",
     "fieldNameRequired": "Please enter a field name",
     "fieldSizeRequired": "Please enter field size",
@@ -783,4 +802,41 @@
   "verificationPendingTitle": "Account Being Verified",
   "verificationPendingMessage": "Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!",
   "goToHome": "Go to Home"
+  "emailAlreadyRegistered": "{email} is already registered",
+  "@emailAlreadyRegistered": {
+    "description": "Error message when email is already in use",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "phoneAlreadyRegistered": "Phone number {phone} is already registered",
+  "@phoneAlreadyRegistered": {
+    "description": "Error message when phone number is already in use",
+    "placeholders": {
+      "phone": {
+        "type": "String"
+      }
+    }
+  },
+  "cooperativeIdAlreadyRegistered": "Cooperative ID {coopId} is already registered",
+  "@cooperativeIdAlreadyRegistered": {
+    "description": "Error message when cooperative ID is already in use",
+    "placeholders": {
+      "coopId": {
+        "type": "String"
+      }
+    }
+  },
+  "verifyingRegistration": "Verifying registration...",
+  "registrationVerificationFailed": "Error verifying registration: {error}",
+  "@registrationVerificationFailed": {
+    "description": "Error message when verification process fails",
+    "placeholders": {
+      "error": {
+        "type": "String"
+      }
+    }
+  }
 }

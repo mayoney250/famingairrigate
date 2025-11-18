@@ -665,6 +665,120 @@ exports.retriggerVerificationEmail = functions
   });
 
 /**
+ * Cloud Function: Triggered when a new AI recommendation is created
+ * Persists an in-app alert and sends FCM push notifications to the user's devices
+ */
+exports.onAIRecommendationCreated = functions.firestore
+  .document('ai_recommendations/{recId}')
+  .onCreate(async (snap, context) => {
+    try {
+      const data = snap.data();
+      if (!data) {
+        console.log('[AI_FN] Empty recommendation document');
+        return null;
+      }
+
+      const userId = data.userId;
+      const fieldId = data.fieldId;
+      const recommendation = (data.recommendation || '').toString().toLowerCase();
+      const reasoning = data.reasoning || '';
+      const confidence = typeof data.confidence === 'number' ? data.confidence : (data.confidence || 0);
+
+      console.log(`[AI_FN] New AI recommendation for user=${userId} field=${fieldId} rec=${recommendation}`);
+
+      // Resolve field name
+      let fieldName = 'your field';
+      if (fieldId) {
+        try {
+          const fDoc = await db.collection('fields').doc(fieldId).get();
+          if (fDoc.exists) fieldName = fDoc.data().name || fieldName;
+        } catch (e) {
+          console.log('[AI_FN] Error resolving field name:', e);
+        }
+      }
+
+      // Create an in-app alert document for UI and audit
+      const alertPayload = {
+        userId: userId,
+        fieldId: fieldId,
+        fieldName: fieldName,
+        type: `ai_${recommendation}`,
+        severity: recommendation === 'alert' ? 'critical' : (recommendation === 'irrigate' ? 'high' : 'low'),
+        message: `AI recommends ${recommendation} for ${fieldName}. ${reasoning || ''}`,
+        recommendation: recommendation,
+        reason: reasoning,
+        confidence: confidence,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+        origin: 'ai',
+        read: false,
+      };
+
+      await db.collection('alerts').add(alertPayload);
+      console.log('[AI_FN] In-app alert created');
+
+      // Prepare FCM notification
+      let title = 'AI Recommendation';
+      let body = `AI suggests ${recommendation} for ${fieldName}.`;
+      const notificationType = `ai_${recommendation}`;
+      if (recommendation === 'irrigate') title = '💧 AI: Irrigate Now';
+      if (recommendation === 'hold') title = '⏸️ AI: Hold Irrigation';
+      if (recommendation === 'alert') title = '⚠️ AI Alert';
+      if (reasoning) body += ` ${reasoning}`;
+
+      // Load user tokens
+      const userDoc = await db.collection('users').doc(userId).get();
+      if (!userDoc.exists) {
+        console.log('[AI_FN] User doc not found, skipping push');
+        return null;
+      }
+
+      const userData = userDoc.data() || {};
+      const tokens = Array.isArray(userData.fcmTokens) ? userData.fcmTokens : [];
+
+      if (!tokens || tokens.length === 0) {
+        console.log('[AI_FN] No FCM tokens for user, skipping push');
+        return null;
+      }
+
+      const message = {
+        notification: {
+          title: title,
+          body: body,
+        },
+        data: {
+          type: notificationType,
+          fieldId: fieldId || '',
+          recId: context.params.recId,
+          confidence: String(confidence),
+        },
+        tokens: tokens,
+      };
+
+      const response = await messaging.sendMulticast(message);
+      console.log(`[AI_FN] FCM send result: success=${response.successCount} failure=${response.failureCount}`);
+
+      if (response.failureCount > 0) {
+        const failedTokens = [];
+        response.responses.forEach((resp, idx) => {
+          if (!resp.success) failedTokens.push(tokens[idx]);
+        });
+
+        if (failedTokens.length > 0) {
+          await db.collection('users').doc(userId).update({
+            fcmTokens: admin.firestore.FieldValue.arrayRemove(...failedTokens),
+          });
+          console.log('[AI_FN] Removed invalid FCM tokens:', failedTokens.length);
+        }
+      }
+
+      return null;
+    } catch (err) {
+      console.error('[AI_FN] Error handling AI recommendation:', err);
+      throw err;
+    }
+  });
+
+/**
  * Callable function: resolveIdentifier
  * Accepts { identifier: string }
  * Tries to resolve identifier (phone number or cooperative ID) to a registered email.

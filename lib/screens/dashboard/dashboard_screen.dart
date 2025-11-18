@@ -1,13 +1,16 @@
 import 'dart:async';
+import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
+import '../../widgets/dashboard/ai_recommendation_badge.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
@@ -41,11 +44,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Load dashboard data when screen loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    // Check verification status first - redirect if pending/not verified
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      // If user is authenticated, verify their verificationStatus in Firestore
+      if (authProvider.isAuthenticated) {
+        try {
+          final uid = authProvider.currentUser?.userId;
+          if (uid != null && uid.isNotEmpty) {
+            final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+            final data = doc.data();
+            final verificationStatus = data != null && data.containsKey('verificationStatus')
+                ? (data['verificationStatus'] as String?)
+                : null;
+
+            if (verificationStatus != null && verificationStatus.toLowerCase() == 'pending') {
+              Get.offAllNamed('/verification-pending');
+              return;
+            }
+          }
+        } catch (e) {
+          // If Firestore lookup fails, continue to load dashboard to avoid blocking UX
+        }
+      }
+
+      // Load dashboard data when screen loads
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
-      
       if (authProvider.currentUser != null) {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
       }
@@ -502,89 +527,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // Metrics row: Soil water, Temperature, Water today
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${l10n.soilWaterLabel}:',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            avgMoisture != null ? '${avgMoisture.toStringAsFixed(0)}%' : '--',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                // Narrative farm-level insight
+                Builder(builder: (ctx) {
+                  final farmCount = dashboardProvider.fields.length;
+                  final avgMoistureStr = avgMoisture != null ? '${avgMoisture.toStringAsFixed(0)}%' : 'no data';
+                  final avgTempStr = avgTemp != null ? '${avgTemp.toStringAsFixed(1)}°C' : 'no data';
+                  final dailyWaterStr = dailyWater > 0 ? '${dailyWater.toStringAsFixed(2)} L' : 'no data';
+
+                  final headline = farmCount > 0
+                      ? 'Across $farmCount field${farmCount > 1 ? 's' : ''}, average soil moisture is $avgMoistureStr and average temperature is $avgTempStr.'
+                      : 'You have no fields yet — add a field to start receiving insights.';
+
+                  final waterLine = farmCount > 0
+                      ? 'Today you have irrigated $dailyWaterStr across your fields.'
+                      : '';
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        headline,
+                        style: const TextStyle(
+                          color: FamingaBrandColors.textSecondary,
+                          fontSize: 13,
+                        ),
                       ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${l10n.tempLabel}:',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textSecondary,
-                              fontSize: 11,
-                            ),
+                      if (waterLine.isNotEmpty) const SizedBox(height: 6),
+                      if (waterLine.isNotEmpty)
+                        Text(
+                          waterLine,
+                          style: const TextStyle(
+                            color: FamingaBrandColors.textSecondary,
+                            fontSize: 13,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            avgTemp != null ? '${avgTemp.toStringAsFixed(1)}°C' : '--',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '${l10n.waterUsedLabel}:',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textSecondary,
-                              fontSize: 11,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            dailyWater > 0 ? '${dailyWater.toStringAsFixed(2)} L' : '--',
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textPrimary,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  insight,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
+                        ),
+                    ],
+                  );
+                }),
                 const SizedBox(height: 8),
                 Text(
                   recommendation,
@@ -594,6 +573,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
+                const SizedBox(height: 8),
+                // AI Recommendation Badge (standalone widget)
+                Builder(builder: (ctx) {
+                  final selectedFieldId = dashboardProvider.selectedFarmId;
+                  final latestReading = dashboardProvider.latestSensorDataPerField[selectedFieldId];
+                  final weather = dashboardProvider.weatherData;
+                  final hasSensor = latestReading != null;
+                  final hasWeather = weather != null;
+
+                  if (!hasSensor || !hasWeather) return const SizedBox.shrink();
+
+                  final soilMoisture = (latestReading?.soilMoisture ?? 0.0).toDouble();
+                  final temperature = (weather?.temperature ?? 0.0).toDouble();
+                  final humidity = (weather?.humidity ?? 0).toDouble();
+                  // cropType is optional in the provider; fall back to 'unknown'
+                  final cropType = 'unknown';
+
+                  return Align(
+                    alignment: Alignment.centerLeft,
+                    child: AIRecommendationBadge(
+                      userId: authProvider.currentUser?.userId ?? '',
+                      fieldId: selectedFieldId,
+                      soilMoisture: soilMoisture,
+                      temperature: temperature,
+                      humidity: humidity,
+                      cropType: cropType,
+                      onRecommendationReceived: () {
+                        dev.log('📊 AI recommendation received and displayed for field: $selectedFieldId');
+                      },
+                    ),
+                  );
+                }),
               ],
             ),
           ),
@@ -2084,80 +2095,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildLiveFieldSensorSummaries(DashboardProvider dashboardProvider) {
-    final fields = dashboardProvider.fields;
-    final sensors = dashboardProvider.latestSensorDataPerField;
-    final flows = dashboardProvider.latestFlowDataPerField;
-    if (fields.isEmpty) {
-    return Text(context.l10n.noFieldsFound, style: const TextStyle(color: Colors.grey));
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: fields.map((f) {
-        final sid = f['id']!;
-        final sensor = sensors[sid];
-        final flow = flows[sid];
-        // Determine semantic soil state (avoid substring checks on localized text)
-        String soilState = '';
-        String soilMsg = '';
-        if (sensor != null) {
-          if (sensor.soilMoisture < 50) {
-            soilState = 'dry';
-            soilMsg = context.l10n.soilDryMsg;
-          } else if (sensor.soilMoisture > 100) {
-            soilState = 'too_wet';
-            soilMsg = context.l10n.soilTooWetMsg;
-          } else {
-            soilState = 'optimal';
-            soilMsg = context.l10n.soilOptimalMsg;
-          }
-        }
-        // (Add more logic here if you want to flag abnormal water usage)
-
-        return Container(
-          margin: const EdgeInsets.only(bottom: 18),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: FamingaBrandColors.borderColor),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                f['name'] ?? sid,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-              ),
-              // Dev-only water test button removed per request
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(child: Text('${context.l10n.soilWaterLabel}: ' + (sensor != null ? '${sensor.soilMoisture.toStringAsFixed(1)}%' : '--'))),
-                  Expanded(child: Text('${context.l10n.tempLabel}: ' + (sensor != null ? '${sensor.temperature.toStringAsFixed(1)}°C' : '--'))),
-                  Expanded(child: Text('${context.l10n.waterUsedLabel}: ' + (flow != null ? '${flow.liters.toStringAsFixed(2)} L' : '--'))),
-                ],
-              ),
-              if (soilMsg.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    soilMsg,
-                    style: TextStyle(
-                      color: soilState == 'optimal'
-                          ? Colors.green
-                          : (soilState == 'dry' ? Colors.orange : Colors.blue),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        );
-      }).toList(),
-    );
-  }
+  // Per-field summary removed from dashboard; keep per-field view in Fields/Sensors pages.
 }
 
 class AlertCenterBottomSheet extends StatelessWidget {

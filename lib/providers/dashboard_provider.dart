@@ -1,4 +1,3 @@
-import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import '../models/irrigation_schedule_model.dart';
@@ -16,6 +15,10 @@ import '../services/sensor_data_service.dart';
 import '../models/flow_meter_model.dart';
 import '../services/flow_meter_service.dart';
 import 'dart:async';
+import 'dart:developer' as dev;
+import '../services/irrigation_ai_service.dart';
+import '../models/ai_recommendation_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
@@ -55,7 +58,7 @@ class DashboardProvider with ChangeNotifier {
       _weatherBox ??= await Hive.openBox('weather');
       await _loadCachedWeather();
     } catch (e) {
-      log('Error opening weather cache: $e');
+      dev.log('Error opening weather cache: $e');
     }
   }
   
@@ -69,11 +72,11 @@ class DashboardProvider with ChangeNotifier {
           _latitude = cached['lat'] as double?;
           _longitude = cached['lon'] as double?;
           notifyListeners();
-          log('Loaded cached weather: ${_weatherData?.location}');
+          dev.log('Loaded cached weather: ${_weatherData?.location}');
         }
       }
     } catch (e) {
-      log('Error loading cached weather: $e');
+      dev.log('Error loading cached weather: $e');
     }
   }
   
@@ -81,7 +84,7 @@ class DashboardProvider with ChangeNotifier {
     try {
       final servicesOn = await Geolocator.isLocationServiceEnabled();
       if (!servicesOn) {
-        log('Location services disabled');
+        dev.log('Location services disabled');
         return;
       }
       
@@ -89,13 +92,13 @@ class DashboardProvider with ChangeNotifier {
       if (perm == LocationPermission.denied) {
         perm = await Geolocator.requestPermission();
         if (perm == LocationPermission.denied) {
-          log('Location permission denied');
+          dev.log('Location permission denied');
           return;
         }
       }
       
       if (perm == LocationPermission.deniedForever) {
-        log('Location permission permanently denied');
+        dev.log('Location permission permanently denied');
         return;
       }
 
@@ -106,7 +109,7 @@ class DashboardProvider with ChangeNotifier {
       setLocation(pos.latitude, pos.longitude);
       await fetchAndSetLiveWeather();
     } catch (e) {
-      log('GPS error: $e');
+      dev.log('GPS error: $e');
     }
   }
 
@@ -172,10 +175,10 @@ class DashboardProvider with ChangeNotifier {
           });
           
           notifyListeners();
-          log('Weather updated and cached: ${weather.location}');
+          dev.log('Weather updated and cached: ${weather.location}');
         }
       } catch (e) {
-        log('Error fetching weather: $e - Using cached data');
+        dev.log('Error fetching weather: $e - Using cached data');
       }
     }
   }
@@ -189,7 +192,7 @@ class DashboardProvider with ChangeNotifier {
         await fetchAndSetLiveWeather();
       }
     } catch (e) {
-      log('Failed to geocode address: $e');
+      dev.log('Failed to geocode address: $e');
     }
   }
 
@@ -270,28 +273,28 @@ class DashboardProvider with ChangeNotifier {
       final results = await Future.wait([
         // Sync irrigation statuses before reading
         _statusService.startDueSchedules().catchError((e) {
-          log('Error in startDueSchedules: $e');
+          dev.log('Error in startDueSchedules: $e');
           return 0;
         }),
         _statusService.markDueIrrigationsCompleted().catchError((e) {
-          log('Error in markDueIrrigationsCompleted: $e');
+          dev.log('Error in markDueIrrigationsCompleted: $e');
           return 0;
         }),
         _loadUpcoming(userId).catchError((e) {
-          log('Error in _loadUpcoming: $e');
+          dev.log('Error in _loadUpcoming: $e');
           return null;
         }),
         _loadFields(userId).catchError((e) {
-          log('Error in _loadFields: $e');
+          dev.log('Error in _loadFields: $e');
           return null;
         }),
         _loadWeatherData().catchError((e) {
-          log('Error in _loadWeatherData: $e');
+          dev.log('Error in _loadWeatherData: $e');
           return null;
         }),
         // soil moisture now computed via sensorData in _refreshDailySoilAverage
         _loadWeeklyStats(userId).catchError((e) {
-          log('Error in _loadWeeklyStats: $e');
+          dev.log('Error in _loadWeeklyStats: $e');
           return null;
         }),
       ]);
@@ -316,7 +319,7 @@ class DashboardProvider with ChangeNotifier {
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
-      log('Error loading dashboard data: $e');
+      dev.log('Error loading dashboard data: $e');
       notifyListeners();
     }
   }
@@ -342,7 +345,7 @@ class DashboardProvider with ChangeNotifier {
         notifyListeners();
       });
     } catch (e) {
-      log('Error loading upcoming schedules: $e');
+      dev.log('Error loading upcoming schedules: $e');
     }
   }
 
@@ -367,7 +370,7 @@ class DashboardProvider with ChangeNotifier {
         }
       }
     } catch (e) {
-      log('Error loading fields: $e');
+      dev.log('Error loading fields: $e');
     }
   }
 
@@ -393,7 +396,7 @@ class DashboardProvider with ChangeNotifier {
         _weatherData = _getDefaultWeatherData();
       }
     } catch (e) {
-      log('Error loading weather data: $e');
+      dev.log('Error loading weather data: $e');
       _weatherData = _getDefaultWeatherData();
     }
   }
@@ -431,7 +434,7 @@ class DashboardProvider with ChangeNotifier {
         now,
       );
     } catch (e) {
-      log('Error loading weekly stats: $e');
+      dev.log('Error loading weekly stats: $e');
       // Use mock data
       _weeklyWaterUsage = 850.0;
       _weeklySavings = 1200.0;
@@ -461,7 +464,7 @@ class DashboardProvider with ChangeNotifier {
 
       return success;
     } catch (e) {
-      log('Error starting manual irrigation: $e');
+      dev.log('Error starting manual irrigation: $e');
       return false;
     }
   }
@@ -475,7 +478,7 @@ class DashboardProvider with ChangeNotifier {
       }
       return ok;
     } catch (e) {
-      log('Error starting scheduled cycle now: $e');
+      dev.log('Error starting scheduled cycle now: $e');
       return false;
     }
   }
@@ -489,7 +492,7 @@ class DashboardProvider with ChangeNotifier {
       }
       return ok;
     } catch (e) {
-      log('Error stopping cycle: $e');
+      dev.log('Error stopping cycle: $e');
       return false;
     }
   }
@@ -521,6 +524,10 @@ class DashboardProvider with ChangeNotifier {
   // Live/streamed sensor and flow meter values
   final SensorDataService _sensorDataService = SensorDataService();
   final FlowMeterService _flowMeterService = FlowMeterService();
+  final IrrigationAIService _aiService = IrrigationAIService();
+  AIRecommendation? _currentAIRecommendation;
+  DateTime? _lastAIRequestTime;
+  bool _aiRequestInProgress = false;
   final Map<String, SensorDataModel?> _latestSensorDataPerField = {};
   final Map<String, FlowMeterModel?> _latestFlowDataPerField = {};
   String? _lastActionError;
@@ -528,6 +535,8 @@ class DashboardProvider with ChangeNotifier {
   Map<String, SensorDataModel?> get latestSensorDataPerField => _latestSensorDataPerField;
   Map<String, FlowMeterModel?> get latestFlowDataPerField => _latestFlowDataPerField;
   String? get lastActionError => _lastActionError;
+  AIRecommendation? get currentAIRecommendation => _currentAIRecommendation;
+  bool get aiRequestInProgress => _aiRequestInProgress;
 
   Timer? _aggTimer;
   Timer? _statusTimer;
@@ -640,6 +649,8 @@ class DashboardProvider with ChangeNotifier {
       _sensorDataService.getLatestReading(fieldId).then((sensorData) {
         _latestSensorDataPerField[fieldId] = sensorData;
         _refreshDailySoilAverage();
+        // Trigger AI recommendation fetch for this field when new latest reading is available
+        _maybeFetchAIForField(fieldId);
         notifyListeners();
       }).catchError((_) {});
       // Sensor readings
@@ -647,6 +658,8 @@ class DashboardProvider with ChangeNotifier {
         _latestSensorDataPerField[fieldId] = sensorData;
         // Update live aggregates quickly from latest values
         _refreshDailySoilAverage();
+        // Trigger AI recommendation fetch for this field on each new reading (internal debounce will prevent excess calls)
+        _maybeFetchAIForField(fieldId);
         notifyListeners();
       });
       // Flow meter optional: ignore if collection doesn't exist
@@ -665,5 +678,71 @@ class DashboardProvider with ChangeNotifier {
       }, onError: (_) {});
     }
     _startAggTimer(userId);
+  }
+
+  // Decide whether to fetch AI recommendation for a field (debounced & non-blocking)
+  void _maybeFetchAIForField(String fieldId) {
+    try {
+      if (_aiRequestInProgress) return;
+      final sensor = _latestSensorDataPerField[fieldId];
+      final weather = _weatherData;
+      if (sensor == null || weather == null) return;
+
+      // Debounce: skip if last request was within 30 seconds
+      if (_lastAIRequestTime != null && DateTime.now().difference(_lastAIRequestTime!).inSeconds < 30) {
+        dev.log('AI: Skipping fetch for $fieldId - debounce active');
+        return;
+      }
+
+      // Fire and forget
+      _fetchAIRecommendation(fieldId, sensor.soilMoisture ?? 0.0, weather.temperature, weather.humidity.toDouble());
+    } catch (e) {
+      dev.log('AI: _maybeFetchAIForField error: $e');
+    }
+  }
+
+  Future<void> _fetchAIRecommendation(String fieldId, double soilMoisture, double temperature, double humidity) async {
+    if (_aiRequestInProgress) return;
+    _aiRequestInProgress = true;
+    notifyListeners();
+    _lastAIRequestTime = DateTime.now();
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final cropType = 'unknown'; // TODO: replace with actual field crop type if available
+
+      final rec = await _aiService.getIrrigationAdvice(
+        userId: userId,
+        fieldId: fieldId,
+        soilMoisture: soilMoisture,
+        temperature: temperature,
+        humidity: humidity,
+        cropType: cropType,
+      );
+
+      _currentAIRecommendation = rec;
+      notifyListeners();
+
+      // Persist recommendation to Firestore for downstream notification processing
+      await FirebaseFirestore.instance.collection('ai_recommendations').add({
+        'userId': userId,
+        'fieldId': fieldId,
+        'recommendation': rec.recommendation,
+        'reasoning': rec.reasoning,
+        'confidence': rec.confidence,
+        'soilMoisture': rec.soilMoisture,
+        'temperature': rec.temperature,
+        'humidity': rec.humidity,
+        'cropType': rec.cropType,
+        'timestamp': FieldValue.serverTimestamp(),
+        'origin': 'client',
+      });
+    } catch (e, st) {
+      dev.log('AI: _fetchAIRecommendation failed: $e');
+      dev.log(st.toString());
+    } finally {
+      _aiRequestInProgress = false;
+      notifyListeners();
+    }
   }
 }

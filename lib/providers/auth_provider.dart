@@ -25,6 +25,7 @@ class AuthProvider with ChangeNotifier {
   bool get isAuthenticated => _currentUser != null;
   bool get hasAuthChecked => _hasAuthChecked;
 
+  AuthService get authService => _authService;
   AuthProvider() {
     _initAuthListener();
   }

@@ -78,80 +78,114 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Future<void> _handleRegister() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.signUp(
-        email: _emailController.text.trim(),
-        password: _passwordController.text,
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        phoneNumber: _phoneController.text.trim(),
-        province: _selectedProvince ?? '',
-        district: _selectedDistrict ?? '',
-        address: _addressController.text.trim(),
-      );
-      if (success && mounted) {
-        // If user indicated cooperative membership, save cooperative data and create verification request
-        if (_isInCooperative) {
-          final verificationService = VerificationService();
-          // Prepare coop payload
-          final coopPayload = {
-            'type': 'cooperative',
-            'userEmail': _emailController.text.trim(),
-            'firstName': _firstNameController.text.trim(),
-            'lastName': _lastNameController.text.trim(),
-            'coopName': _coopNameController.text.trim(),
-            'coopGovId': _coopGovIdController.text.trim(),
-            'memberId': _memberIdController.text.trim(),
-            'numFarmers': int.tryParse(_numFarmersController.text.trim()) ?? 0,
-            'leaderName': _leaderNameController.text.trim(),
-            'leaderPhone': _leaderPhoneController.text.trim(),
-            'leaderEmail': _leaderEmailController.text.trim(),
-            'coopFieldSize': double.tryParse(_coopFieldSizeController.text.trim()) ?? 0.0,
-            'coopNumFields': int.tryParse(_coopNumFieldsController.text.trim()) ?? 0,
-          };
+    if (!_formKey.currentState!.validate()) return;
 
-          // Update user's Firestore profile with cooperative info and pending flag
-          try {
-            if (authProvider.currentUser != null) {
-              await authProvider.updateProfile({
-                'isCooperative': true,
-                'cooperative': coopPayload,
-                'verificationStatus': 'pending',
-              });
-            }
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-            // create verification request and include admin email
-            final adminEmail = await verificationService.getAdminEmail();
-            final requesterIdentifier = _emailController.text.trim();
-            final verificationDocId = await verificationService.createVerificationRequest(
-              {
-                'adminEmail': adminEmail,
-                'requesterUserId': authProvider.currentUser?.userId ?? '',
-                'payload': coopPayload,
-              },
-              requesterIdentifier: requesterIdentifier,
-            );
+    // Run uniqueness checks before attempting to create the account.
+    // Use server-side callable (resolveIdentifier) via AuthService.getEmailForIdentifier
+    // so we don't perform unauthenticated client-side reads that Firestore rules disallow.
+    try {
+      final phone = _phoneController.text.trim();
 
-            // Cloud Function triggers an email to admin automatically
-            // Verification document stored with identifier type for admin reference
-          } catch (e) {
-            // ignore errors but show snackbar
-            Get.snackbar(context.l10n.error, 'Failed to create verification request: $e');
-          }
-
-          // Show verification pending screen
-          Get.offAllNamed('/verification-pending');
+      // Check phone -> resolve to an existing email if present
+      if (phone.isNotEmpty) {
+        final resolved = await authProvider.authService.getEmailForIdentifier(phone);
+        if (resolved != null) {
+          _showErrorSnackBar('Phone number $phone is already registered');
           return;
         }
-
-        // Not cooperative: continue with normal email verification flow
-        _showSuccessDialog();
-      } else if (mounted) {
-        _showErrorSnackBar(authProvider.errorMessage ?? context.l10n.registrationFailed);
       }
+
+      // For cooperative identifiers, ask server to resolve coop ID
+      if (_isInCooperative) {
+        final coopId = _coopGovIdController.text.trim();
+        if (coopId.isNotEmpty) {
+          final resolved = await authProvider.authService.getEmailForIdentifier(coopId);
+          if (resolved != null) {
+            _showErrorSnackBar('Cooperative ID $coopId is already registered');
+            return;
+          }
+        }
+      }
+      // Note: For email duplicates we'll rely on Firebase Auth to raise
+      // 'email-already-in-use' during signUp — this avoids unauthenticated
+      // reads that Firestore rules block. AuthProvider.signUp handles errors.
+    } catch (e) {
+      _showErrorSnackBar('Error verifying registration: $e');
+      return;
+    }
+
+    // If uniqueness checks passed, proceed to sign up
+    final success = await authProvider.signUp(
+      email: _emailController.text.trim(),
+      password: _passwordController.text,
+      firstName: _firstNameController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      phoneNumber: _phoneController.text.trim(),
+      province: _selectedProvince ?? '',
+      district: _selectedDistrict ?? '',
+      address: _addressController.text.trim(),
+    );
+
+    if (success && mounted) {
+      // If user indicated cooperative membership, save cooperative data and create verification request
+      if (_isInCooperative) {
+        final verificationService = VerificationService();
+        // Prepare coop payload
+        final coopPayload = {
+          'type': 'cooperative',
+          'userEmail': _emailController.text.trim(),
+          'firstName': _firstNameController.text.trim(),
+          'lastName': _lastNameController.text.trim(),
+          'coopName': _coopNameController.text.trim(),
+          'coopGovId': _coopGovIdController.text.trim(),
+          'memberId': _memberIdController.text.trim(),
+          'numFarmers': int.tryParse(_numFarmersController.text.trim()) ?? 0,
+          'leaderName': _leaderNameController.text.trim(),
+          'leaderPhone': _leaderPhoneController.text.trim(),
+          'leaderEmail': _leaderEmailController.text.trim(),
+          'coopFieldSize': double.tryParse(_coopFieldSizeController.text.trim()) ?? 0.0,
+          'coopNumFields': int.tryParse(_coopNumFieldsController.text.trim()) ?? 0,
+        };
+
+        // Update user's Firestore profile with cooperative info and pending flag
+        try {
+          if (authProvider.currentUser != null) {
+            await authProvider.updateProfile({
+              'isCooperative': true,
+              'cooperative': coopPayload,
+              'verificationStatus': 'pending',
+            });
+          }
+
+          // create verification request and include admin email
+          final adminEmail = await verificationService.getAdminEmail();
+          final requesterIdentifier = _emailController.text.trim();
+          await verificationService.createVerificationRequest(
+            {
+              'adminEmail': adminEmail,
+              'requesterUserId': authProvider.currentUser?.userId ?? '',
+              'payload': coopPayload,
+            },
+            requesterIdentifier: requesterIdentifier,
+          );
+        } catch (e) {
+          Get.snackbar(context.l10n.error, 'Failed to create verification request: $e');
+        }
+
+        // Show verification pending screen
+        Get.offAllNamed('/verification-pending');
+        return;
+      }
+
+      // Not cooperative: continue with normal email verification flow
+      _showSuccessDialog();
+    } else if (mounted) {
+      _showErrorSnackBar(authProvider.errorMessage ?? context.l10n.registrationFailed);
     }
   }
+ 
 
   void _showSuccessDialog() {
     Get.offAllNamed(AppRoutes.emailVerification);

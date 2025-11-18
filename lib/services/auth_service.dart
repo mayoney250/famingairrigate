@@ -472,5 +472,166 @@ class AuthService {
       rethrow;
     }
   }
+
+  /// Check if email already exists in users or verifications collection
+  Future<bool> emailExists(String email) async {
+    try {
+      // Check users collection
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .where('email', isEqualTo: email.toLowerCase())
+          .limit(1)
+          .get();
+
+      if (usersSnapshot.docs.isNotEmpty) {
+        log('Email already exists in users collection: $email');
+        return true;
+      }
+
+      // Check verifications collection for pending requests
+      final verificationsSnapshot = await _firestore
+          .collection('verifications')
+          .where('payload.userEmail', isEqualTo: email.toLowerCase())
+          .where('status', isEqualTo: 'pending')
+          .limit(1)
+          .get();
+
+      if (verificationsSnapshot.docs.isNotEmpty) {
+        log('Email already exists in pending verifications: $email');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      log('Error checking email uniqueness: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if phone number already exists in users or verifications collection
+  Future<bool> phoneNumberExists(String phoneNumber) async {
+    try {
+      // Normalize phone number (remove spaces, dashes, etc.)
+      final normalizedPhone = phoneNumber.replaceAll(RegExp(r'\D'), '');
+
+      if (normalizedPhone.isEmpty || normalizedPhone.length < 10) {
+        log('Phone number too short: $phoneNumber');
+        return false;
+      }
+
+      // Check users collection
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .where('phoneNumber', isEqualTo: phoneNumber)
+          .limit(1)
+          .get();
+
+      if (usersSnapshot.docs.isNotEmpty) {
+        log('Phone number already exists in users collection: $phoneNumber');
+        return true;
+      }
+
+      // Also check against normalized phone numbers in users
+      final allUsers = await _firestore.collection('users').get();
+      for (final doc in allUsers.docs) {
+        final userPhone = (doc.data()['phoneNumber'] as String?)?.replaceAll(RegExp(r'\D'), '');
+        if (userPhone == normalizedPhone) {
+          log('Phone number (normalized) already exists in users: $phoneNumber');
+          return true;
+        }
+      }
+
+      // Check verifications collection for pending requests
+      final verificationsSnapshot = await _firestore
+          .collection('verifications')
+          .where('status', isEqualTo: 'pending')
+          .get();
+
+      for (final doc in verificationsSnapshot.docs) {
+        final verifyPhone = (doc.data()['payload']['leaderPhone'] as String?)?.replaceAll(RegExp(r'\D'), '');
+        if (verifyPhone == normalizedPhone) {
+          log('Phone number (normalized) already exists in verifications: $phoneNumber');
+          return true;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      log('Error checking phone uniqueness: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if cooperative ID already exists in verifications collection
+  Future<bool> cooperativeIdExists(String cooperativeId) async {
+    try {
+      // Check verifications collection for pending/approved requests
+      final verificationsSnapshot = await _firestore
+          .collection('verifications')
+          .where('payload.coopGovId', isEqualTo: cooperativeId.toUpperCase())
+          .get();
+
+      if (verificationsSnapshot.docs.isNotEmpty) {
+        log('Cooperative ID already exists: $cooperativeId');
+        return true;
+      }
+
+      // Check users collection for existing cooperative registrations
+      final usersSnapshot = await _firestore
+          .collection('users')
+          .where('cooperative.coopGovId', isEqualTo: cooperativeId.toUpperCase())
+          .get();
+
+      if (usersSnapshot.docs.isNotEmpty) {
+        log('Cooperative ID already exists in users: $cooperativeId');
+        return true;
+      }
+
+      return false;
+    } catch (e) {
+      log('Error checking cooperative ID uniqueness: $e');
+      rethrow;
+    }
+  }
+
+  /// Check if an identifier (email/phone/coop ID) already exists
+  /// Returns: {'exists': bool, 'type': 'email'|'phone'|'cooperative_id'|'unknown'}
+  Future<Map<String, dynamic>> checkIdentifierUniqueness(String identifier, bool isCooperative) async {
+    try {
+      // For cooperative registrations, check all three identifiers
+      if (isCooperative) {
+        // Could be email, phone, or cooperative ID
+        // Check email format
+        if (RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(identifier)) {
+          final exists = await emailExists(identifier);
+          return {'exists': exists, 'type': 'email', 'identifier': identifier};
+        }
+
+        // Check phone format
+        if (identifier.startsWith('+') || (identifier.replaceAll(RegExp(r'\D'), '').length >= 10)) {
+          final exists = await phoneNumberExists(identifier);
+          return {'exists': exists, 'type': 'phone', 'identifier': identifier};
+        }
+
+        // Check cooperative ID format
+        if (RegExp(r'^[A-Z0-9-]{5,}$', caseSensitive: false).hasMatch(identifier)) {
+          final exists = await cooperativeIdExists(identifier);
+          return {'exists': exists, 'type': 'cooperative_id', 'identifier': identifier};
+        }
+      } else {
+        // For regular users, typically email or phone
+        if (RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(identifier)) {
+          final exists = await emailExists(identifier);
+          return {'exists': exists, 'type': 'email', 'identifier': identifier};
+        }
+      }
+
+      return {'exists': false, 'type': 'unknown', 'identifier': identifier};
+    } catch (e) {
+      log('Error checking identifier uniqueness: $e');
+      // On error, don't block registration - return false
+      return {'exists': false, 'type': 'unknown', 'identifier': identifier, 'error': e.toString()};
+    }
+  }
 }
 

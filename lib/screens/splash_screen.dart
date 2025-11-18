@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config/colors.dart';
-import '../providers/auth_provider.dart';
+import '../providers/auth_provider.dart' as app_auth;
 import '../routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -45,9 +47,29 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
 
+    // If user is authenticated, check whether they have a pending verification
     if (authProvider.isAuthenticated) {
+      try {
+        final firebaseUser = FirebaseAuth.instance.currentUser;
+        if (firebaseUser != null) {
+          final doc = await FirebaseFirestore.instance.collection('users').doc(firebaseUser.uid).get();
+          final data = doc.data();
+          final verificationStatus = data != null && data.containsKey('verificationStatus')
+              ? (data['verificationStatus'] as String?)
+              : null;
+
+          if (verificationStatus != null && verificationStatus.toLowerCase() == 'pending') {
+            Get.offAllNamed('/verification-pending');
+            return;
+          }
+        }
+      } catch (e) {
+        // If anything goes wrong reading verification status we'll fall back to normal routing
+      }
+
+      // No pending verification found -> dashboard
       Get.offAllNamed(AppRoutes.dashboard);
     } else {
       Get.offAllNamed(AppRoutes.login);

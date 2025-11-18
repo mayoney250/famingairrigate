@@ -11,118 +11,137 @@ service cloud.firestore {
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
+
+    // Helper to ensure the authenticated user has been approved/verified by admin
+    function isVerified() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.verificationStatus == 'approved';
+    }
     
-    // Users collection - users can read/write their own data
-    // NOTE: We allow reads here to enable identifier-based login (phone/cooperative ID)
-    // WARNING: Allowing unauthenticated reads of user documents may expose user contact
-    // information (emails, phone numbers). For production consider implementing a
-    // server-side lookup (Cloud Function) that performs this mapping securely.
+    // Users collection - users can read/write their own profile document.
+    // Reading another user's profile is disallowed to protect personal info.
     match /users/{userId} {
-      // Allow reads so clients can resolve phone/cooperative identifiers to emails
-      // This makes the identifier->email login flow possible from unauthenticated clients.
-      allow read: if true;
+      // Allow the authenticated owner to read their own user doc so they can see
+      // verification status and other personal info. Do not allow public reads.
+      allow read: if isOwner(userId);
+      // Allow owners to create/update their own profile when authenticated.
       allow write: if isOwner(userId);
     }
     
     // Fields collection - authenticated users can read/write
     match /fields/{fieldId} {
-      allow read: if isAuthenticated();
+      // Only allow verified users to read field data (dashboard access).
+      allow read: if isVerified();
+      // Allow authenticated users to create fields (they may register while pending).
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         !('userId' in resource.data));
+      // Updates/deletes only allowed by verified owners (defense-in-depth)
+      allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
     
     // Irrigation systems
     match /irrigation/{irrigationId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         !('userId' in resource.data));
+      allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
     
     // Sensors
     match /sensors/{sensorId} {
-      allow read: if isAuthenticated();
+      // Only verified users may read sensor metadata (dashboard access).
+      allow read: if isVerified();
+      // Allow authenticated users to create sensors (pairing may happen pre-verification).
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         !('userId' in resource.data));
+      // Updates/deletes reserved for the verified owner.
+      allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
+
+      // Nested subcollections under sensors (e.g., latest/current)
+      match /{subCollection}/{docId} {
+        // Only the verified owner may read nested sensor documents (latest/current readings).
+        allow read: if isVerified() && get(/databases/$(database)/documents/sensors/$(sensorId)).data.userId == request.auth.uid;
+        allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+        allow update, delete: if isVerified() && get(/databases/$(database)/documents/sensors/$(sensorId)).data.userId == request.auth.uid;
+      }
     }
     
     // Irrigation schedules - FIXED FOR AUTO-START (camelCase)
     match /irrigationSchedules/{scheduleId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         !('userId' in resource.data) ||
-         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt', 'completedAt', 'stoppedAt', 'stoppedBy', 'updatedAt', 'isActive'])));
-      allow delete: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         !('userId' in resource.data));
+      allow update: if isVerified() && resource.data.userId == request.auth.uid ||
+        (isVerified() && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt', 'completedAt', 'stoppedAt', 'stoppedBy', 'updatedAt', 'isActive']));
+      allow delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
     
     // Irrigation schedules - snake_case version
     match /irrigation_schedules/{scheduleId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isVerified();
+      allow delete: if isVerified();
     }
     
     // Irrigation cycles - for tracking active irrigation
     match /irrigation_cycles/{cycleId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isVerified();
+      allow delete: if isVerified();
     }
     
     // Sensor readings - for all sensor data (supports both collection and collectionGroup)
     match /sensor_readings/{readingId} {
-      allow read: if isAuthenticated();
+      // Only verified users may read sensor readings (dashboard access).
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isVerified();
+      allow delete: if isVerified();
     }
     
     // Sensor readings - collectionGroup support (matches at any path depth)
     match /{path=**}/sensor_readings/{readingId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isVerified();
+      allow delete: if isVerified();
     }
     
     // Weather data
     match /weatherData/{weatherId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated();
+      allow update: if isVerified();
+      allow delete: if isVerified();
     }
     
     // Sensor data
     match /sensorData/{dataId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isVerified();
     }
     
     // Irrigation logs
     match /irrigationLogs/{logId} {
-      allow read: if isAuthenticated();
+      allow read: if isVerified();
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if isVerified();
     }
     
     // Alerts
     match /alerts/{alertId} {
-      allow read: if isAuthenticated();
+      // Only allow reading alerts that belong to the current, verified user
+      allow read: if isVerified() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
+    }
+    
+    // Verifications collection - allow authenticated (pending) users to create requests
+    match /verifications/{verificationId} {
+      // Only the system (Cloud Function) can read/update verification docs for security
+      allow read: if false;  // Admin console or custom functions handle this
+      // Allow authenticated users to create verification requests during registration
       allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated();
+      allow update, delete: if false;  // Use Cloud Functions for admin actions
     }
     
     // Connection tests (for diagnostics)
@@ -132,9 +151,8 @@ service cloud.firestore {
     
     // Irrigation zones - NEW: Enhanced for irrigation planning module
     match /irrigation_zones/{zoneId} {
-      allow read: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         request.auth.uid in resource.data.get('sharedWith', []));
+      allow read: if isVerified() &&
+        (resource.data.userId == request.auth.uid || request.auth.uid in resource.data.get('sharedWith', []));
       
       allow create: if isAuthenticated() && 
         request.resource.data.userId == request.auth.uid &&
@@ -144,13 +162,12 @@ service cloud.firestore {
         request.resource.data.drawingType is string &&
         request.resource.data.coordinates is list;
       
-      allow update: if isAuthenticated() && 
+      allow update: if isVerified() &&
         resource.data.userId == request.auth.uid &&
         request.resource.data.userId == resource.data.userId &&
         request.resource.data.fieldId == resource.data.fieldId;
       
-      allow delete: if isAuthenticated() && 
-        resource.data.userId == request.auth.uid;
+      allow delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
   }
 }
