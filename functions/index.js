@@ -1,6 +1,7 @@
 const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 admin.initializeApp();
 
@@ -11,8 +12,9 @@ const messaging = admin.messaging();
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.ADMIN_EMAIL_USER || 'your-email@gmail.com',
-    pass: process.env.ADMIN_EMAIL_PASSWORD || 'your-app-password',
+    // Prefer functions config, fall back to process.env
+    user: (functions.config().mail && functions.config().mail.user) || process.env.ADMIN_EMAIL_USER || 'your-email@gmail.com',
+    pass: (functions.config().mail && functions.config().mail.pass) || process.env.ADMIN_EMAIL_PASSWORD || 'your-app-password',
   },
 });
 
@@ -469,10 +471,21 @@ exports.sendVerificationEmail = functions
     console.log(`Requester email: ${requesterEmail}`);
 
     try {
+      // Generate a one-time approval token and save it to the verification doc
+      const approvalToken = crypto.randomBytes(24).toString('hex');
+      await snap.ref.update({
+        approvalToken: approvalToken,
+        approvalTokenCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
       // Determine registration type
       const registrationType = data.type || 'unknown';
       let emailBody = '';
       let emailSubject = '';
+
+      // Build an approval URL the admin can click. Use the GCLOUD_PROJECT env to form the function URL.
+      const projectId = process.env.GCLOUD_PROJECT || process.env.FIREBASE_CONFIG && JSON.parse(process.env.FIREBASE_CONFIG).projectId || '';
+      const approveBase = `https://us-central1-${projectId}.cloudfunctions.net/approveVerification`;
+      const approveUrl = `${approveBase}?verificationId=${verificationId}&token=${approvalToken}`;
 
       if (registrationType === 'cooperative') {
         emailSubject = `New Cooperative Registration for Verification - ${payload.coopName}`;
@@ -496,23 +509,13 @@ exports.sendVerificationEmail = functions
       <li><strong>Number of Farmers:</strong> ${payload.numFarmers}</li>
     </ul>
 
-    <h3>Leader Information:</h3>
-    <ul>
-      <li><strong>Leader Name:</strong> ${payload.leaderName}</li>
-      <li><strong>Leader Phone:</strong> ${payload.leaderPhone}</li>
-      <li><strong>Leader Email:</strong> ${payload.leaderEmail}</li>
-    </ul>
-
-    <h3>Land Information:</h3>
-    <ul>
-      <li><strong>Total Field Size:</strong> ${payload.coopFieldSize} hectares</li>
-      <li><strong>Number of Fields:</strong> ${payload.coopNumFields}</li>
-    </ul>
+    <p>
+      <strong>Approve registration:</strong>
+      <a href="${approveUrl}">Click here to approve</a>
+    </p>
 
     <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
     <p><strong>Verification ID:</strong> ${verificationId}</p>
-    <p>Log in to the Firebase Console to review and approve/reject this registration.</p>
-    <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
     
     <p style="color: #666; font-size: 12px;">
       This is an automated email from Faminga Irrigation System.
@@ -540,10 +543,13 @@ exports.sendVerificationEmail = functions
       <li><strong>District:</strong> ${payload.district || 'N/A'}</li>
     </ul>
 
+    <p>
+      <strong>Approve registration:</strong>
+      <a href="${approveUrl}">Click here to approve</a>
+    </p>
+
     <hr style="border: none; border-top: 1px solid #ccc; margin: 20px 0;">
     <p><strong>Verification ID:</strong> ${verificationId}</p>
-    <p>Log in to the Firebase Console to review and approve/reject this registration.</p>
-    <p><a href="https://console.firebase.google.com">Firebase Console</a></p>
     
     <p style="color: #666; font-size: 12px;">
       This is an automated email from Faminga Irrigation System.
@@ -824,3 +830,248 @@ exports.resolveIdentifier = functions
       throw new functions.https.HttpsError('internal', 'Failed to resolve identifier');
     }
   });
+
+  /**
+   * HTTP function: approveVerification
+   * Expects query params: verificationId, token
+   * Validates the token matches the verification doc, then sets verification status
+   * on the verification doc and updates the corresponding user document to set
+   * 'verificationStatus': 'approved'
+   * Includes token expiry (7 days) and audit logging.
+   */
+  exports.approveVerification = functions
+    .region('us-central1')
+    .https.onRequest(async (req, res) => {
+      try {
+        const verificationId = req.query.verificationId;
+        const token = req.query.token;
+
+        if (!verificationId || !token) {
+          res.status(400).send('Missing verificationId or token');
+          return;
+        }
+
+        const verRef = db.collection('verifications').doc(String(verificationId));
+        const verSnap = await verRef.get();
+        if (!verSnap.exists) {
+          res.status(404).send('Verification request not found');
+          return;
+        }
+
+        const ver = verSnap.data() || {};
+        if (!ver.approvalToken || ver.approvalToken !== String(token)) {
+          // Log potential token tampering attempt
+          await db.collection('approval_logs').add({
+            verificationId: verificationId,
+            status: 'failed_invalid_token',
+            failureReason: 'Token mismatch or missing',
+            attemptedAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+            userAgent: (req.get('user-agent') || 'unknown').substring(0, 256),
+          });
+          res.status(403).send('Invalid or expired token');
+          return;
+        }
+
+        // Check token expiry (7 days)
+        const tokenCreatedAt = ver.approvalTokenCreatedAt;
+        if (tokenCreatedAt) {
+          const now = admin.firestore.Timestamp.now();
+          const tokenAgeMs = now.toMillis() - tokenCreatedAt.toMillis();
+          const tokenAgeHours = tokenAgeMs / (1000 * 3600);
+          const tokenMaxHours = 7 * 24; // 7 days
+          if (tokenAgeHours > tokenMaxHours) {
+            console.warn(`✗ Token expired for verification ${verificationId}: age ${tokenAgeHours.toFixed(1)}h > ${tokenMaxHours}h`);
+            await db.collection('approval_logs').add({
+              verificationId: verificationId,
+              status: 'failed_expired_token',
+              failureReason: `Token expired after ${tokenAgeHours.toFixed(1)} hours`,
+              attemptedAt: admin.firestore.FieldValue.serverTimestamp(),
+              ipAddress: req.ip || 'unknown',
+            });
+            res.status(403).send('Token expired. Please request a new verification email.');
+            return;
+          }
+        }
+
+        // Check if already approved (idempotency)
+        if (ver.status === 'approved') {
+          console.log(`ℹ Verification ${verificationId} already approved at ${ver.approvedAt}`);
+          res.status(200).send('<html><body><h2>Already Approved</h2><p>This registration was already approved.</p></body></html>');
+          return;
+        }
+
+        // Check if rejected
+        if (ver.status === 'rejected') {
+          console.warn(`✗ Attempted to approve a rejected verification: ${verificationId}`);
+          await db.collection('approval_logs').add({
+            verificationId: verificationId,
+            status: 'failed_already_rejected',
+            failureReason: 'Verification previously rejected',
+            attemptedAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+          });
+          res.status(403).send('This registration has been rejected and cannot be approved.');
+          return;
+        }
+
+        // Mark verification as approved
+        await verRef.update({
+          status: 'approved',
+          approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+          approvedBy: ver.adminEmail || 'admin',
+          approvalIpAddress: req.ip || 'unknown',
+          approvalUserAgent: (req.get('user-agent') || 'unknown').substring(0, 256),
+        });
+
+        // Update user document. Prefer requesterUserId if present, otherwise try requesterEmail
+        let userId = null;
+        if (ver.requesterUserId) {
+          userId = ver.requesterUserId;
+          await db.collection('users').doc(ver.requesterUserId).update({ verificationStatus: 'approved' });
+        } else if (ver.requesterEmail) {
+          const q = await db.collection('users').where('email', '==', ver.requesterEmail).limit(1).get();
+          if (!q.empty) {
+            userId = q.docs[0].id;
+            await db.collection('users').doc(userId).update({ verificationStatus: 'approved' });
+          }
+        }
+
+        // Log successful approval for audit trail
+        if (userId) {
+          await db.collection('approval_logs').add({
+            verificationId: verificationId,
+            userId: userId,
+            userEmail: ver.requesterEmail,
+            status: 'success',
+            approvedAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+            userAgent: (req.get('user-agent') || 'unknown').substring(0, 256),
+          });
+          console.log(`✓ Approval successful: user ${userId}, verification ${verificationId}`);
+        } else {
+          console.warn(`⚠ Approval token valid but could not find user for verification ${verificationId}`);
+        }
+
+        // Return friendly confirmation page
+        res.status(200).send(`
+<html>
+  <head><title>Verification Approved</title></head>
+  <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+    <h2>✓ Registration Approved</h2>
+    <p>Your registration has been approved! You can now log in and access the dashboard.</p>
+    <p>If you have any issues logging in, please contact support.</p>
+  </body>
+</html>
+        `);
+      } catch (err) {
+        console.error('✗ approveVerification error:', err);
+        try {
+          await db.collection('approval_logs').add({
+            status: 'error',
+            errorMessage: (err instanceof Error ? err.message : String(err)).substring(0, 500),
+            errorAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+          });
+        } catch (logErr) {
+          console.error('Failed to log error:', logErr);
+        }
+        res.status(500).send('Internal error: ' + (err instanceof Error ? err.message : 'unknown'));
+      }
+    });
+
+  /**
+   * One-time protected migration: approve all existing users missing verificationStatus
+   * Protected by a secret key passed as query param 'secret'. Configure required secret
+   * with `firebase functions:config:set migrate.secret="YOUR_SECRET"` before deployment,
+   * then call: /migrateApproveMissing?secret=YOUR_SECRET
+   * Includes audit logging and detailed progress output.
+   */
+  exports.migrateApproveMissingVerification = functions
+    .region('us-central1')
+    .https.onRequest(async (req, res) => {
+      try {
+        const provided = req.query.secret || '';
+        const cfg = functions.config();
+        const required = (cfg.migrate && cfg.migrate.secret) || process.env.MIGRATE_SECRET || '';
+        
+        if (!required) {
+          console.error('✗ Migration secret not configured in Firebase functions config');
+          res.status(500).send('Migration not configured. Admin must set migrate.secret in Firebase config.');
+          return;
+        }
+        
+        if (!provided || String(provided) !== String(required)) {
+          await db.collection('approval_logs').add({
+            verificationId: 'migration_attempt',
+            status: 'failed_unauthorized',
+            failureReason: 'Invalid or missing secret',
+            attemptedAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+          });
+          console.warn(`✗ Migration unauthorized attempt from ${req.ip}`);
+          res.status(403).send('Forbidden: Invalid secret');
+          return;
+        }
+
+        console.log('🔄 Starting migration to approve missing verificationStatus fields...');
+        const usersSnap = await db.collection('users').get();
+        const batch = db.batch();
+        let updated = 0;
+        const updatedUserIds = [];
+        
+        usersSnap.docs.forEach(doc => {
+          const data = doc.data() || {};
+          if (!('verificationStatus' in data)) {
+            batch.update(doc.ref, { 
+              verificationStatus: 'approved',
+              migratedAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+            updated += 1;
+            updatedUserIds.push(doc.id);
+          }
+        });
+        
+        if (updated > 0) {
+          await batch.commit();
+          console.log(`✓ Migration completed: updated ${updated} user(s)`);
+        } else {
+          console.log('ℹ Migration completed: no users needed updating');
+        }
+
+        // Log successful migration
+        await db.collection('approval_logs').add({
+          verificationId: 'migration_batch',
+          status: 'success',
+          usersUpdated: updated,
+          migratedAt: admin.firestore.FieldValue.serverTimestamp(),
+          ipAddress: req.ip || 'unknown',
+        });
+
+        res.status(200).send(`
+<html>
+  <head><title>Migration Complete</title></head>
+  <body style="font-family: Arial, sans-serif; padding: 20px;">
+    <h2>✓ Migration Completed Successfully</h2>
+    <p><strong>Users Updated:</strong> ${updated}</p>
+    <p>All existing users have been marked as approved and can now access the dashboard.</p>
+  </body>
+</html>
+        `);
+      } catch (err) {
+        console.error('✗ migrateApproveMissingVerification error:', err);
+        try {
+          await db.collection('approval_logs').add({
+            verificationId: 'migration_error',
+            status: 'error',
+            errorMessage: (err instanceof Error ? err.message : String(err)).substring(0, 500),
+            errorAt: admin.firestore.FieldValue.serverTimestamp(),
+            ipAddress: req.ip || 'unknown',
+          });
+        } catch (logErr) {
+          console.error('Failed to log migration error:', logErr);
+        }
+        res.status(500).send('Internal error: ' + (err instanceof Error ? err.message : 'unknown'));
+      }
+    });
+
