@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'cache_repository.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -176,8 +177,20 @@ class AuthService {
   // Get user data from Firestore
   Future<UserModel?> getUserData(String userId) async {
     try {
+      final cache = CacheRepository();
+      final cacheKey = 'user_$userId';
+      final cached = cache.getCachedJson(cacheKey);
+      if (cached != null) {
+        try {
+          return UserModel.fromMap(cached);
+        } catch (_) {
+          // fall through to fetch
+        }
+      }
       final doc = await _firestore.collection('users').doc(userId).get();
       if (doc.exists) {
+        // cache profile
+        await cache.cacheJson(cacheKey, doc.data()!);
         return UserModel.fromFirestore(doc);
       }
       return null;

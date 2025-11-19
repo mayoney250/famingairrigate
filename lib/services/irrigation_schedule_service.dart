@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/irrigation_schedule_model.dart';
+import 'cache_repository.dart';
 
 class IrrigationScheduleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -21,15 +22,27 @@ class IrrigationScheduleService {
   // Get all schedules for a user
   Future<List<IrrigationScheduleModel>> getUserSchedules(String userId) async {
     try {
+      final cache = CacheRepository();
+      final cacheKey = 'schedules_user_$userId';
+      final cached = cache.getCachedList(cacheKey);
+      if (cached.isNotEmpty) {
+        return cached.map((m) => IrrigationScheduleModel.fromMap(m)).toList();
+      }
+
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
           .orderBy('startTime')
           .get();
 
-      return snapshot.docs
+      final list = snapshot.docs
           .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
           .toList();
+
+      // cache fetched schedules
+      await cache.cacheJsonList(cacheKey, list.map((s) => s.toMap()).toList());
+
+      return list;
     } catch (e) {
       log('Error fetching schedules: $e');
       rethrow;
@@ -38,14 +51,31 @@ class IrrigationScheduleService {
 
   // Stream of user schedules
   Stream<List<IrrigationScheduleModel>> streamUserSchedules(String userId) {
-    return _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: userId)
-        .orderBy('startTime')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
+    // stream with read-through cache: yield cached list first via a stream controller
+    final cache = CacheRepository();
+    final cacheKey = 'schedules_user_$userId';
+
+    // create an async* generator
+    return (() async* {
+      final cached = cache.getCachedList(cacheKey);
+      if (cached.isNotEmpty) {
+        yield cached.map((m) => IrrigationScheduleModel.fromMap(m)).toList();
+      }
+
+      await for (final snapshot in _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .orderBy('startTime')
+          .snapshots()) {
+        final list = snapshot.docs
             .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
-            .toList());
+            .toList();
+
+        await cache.cacheJsonList(cacheKey, list.map((s) => s.toMap()).toList());
+
+        yield list;
+      }
+    })();
   }
 
   // Get schedule by ID

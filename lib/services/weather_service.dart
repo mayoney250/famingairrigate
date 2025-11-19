@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/weather_data_model.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'cache_repository.dart';
 
 class WeatherService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -30,6 +31,10 @@ class WeatherService {
         // Create new
         final docRef = await _firestore.collection(_collection).add(weather.toMap());
         log('Weather data created: ${docRef.id}');
+        // cache today's weather
+        final cache = CacheRepository();
+        final cacheKey = 'weather_today_${weather.userId}';
+        await cache.cacheJson(cacheKey, weather.toMap());
         return docRef.id;
       }
     } catch (e) {
@@ -41,6 +46,16 @@ class WeatherService {
   // Get today's weather
   Future<WeatherDataModel?> getTodayWeather(String userId) async {
     try {
+      final cache = CacheRepository();
+      final cacheKey = 'weather_today_$userId';
+      final cached = cache.getCachedJson(cacheKey);
+      if (cached != null) {
+        try {
+          return WeatherDataModel.fromMap(cached);
+        } catch (_) {
+          // fall through to fetching live data
+        }
+      }
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
@@ -68,6 +83,8 @@ class WeatherService {
       if (todayWeather.isNotEmpty) {
         // Sort by timestamp and return most recent
         todayWeather.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+        // cache today's weather
+        await cache.cacheJson(cacheKey, todayWeather.first.toMap());
         return todayWeather.first;
       }
       
@@ -80,21 +97,38 @@ class WeatherService {
 
   // Stream of current weather
   Stream<WeatherDataModel?> streamCurrentWeather(String userId) {
-    final today = DateTime.now();
-    final startOfDay = DateTime(today.year, today.month, today.day);
+    final cache = CacheRepository();
+    final cacheKey = 'weather_today_$userId';
 
-    return _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: userId)
-        .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        return WeatherDataModel.fromFirestore(snapshot.docs.first);
+    // async* stream: yield cached first then live updates
+    return (() async* {
+      final cached = cache.getCachedJson(cacheKey);
+      if (cached != null) {
+        try {
+          yield WeatherDataModel.fromMap(cached);
+        } catch (_) {
+          // ignore
+        }
       }
-      return null;
-    });
+
+      final today = DateTime.now();
+      final startOfDay = DateTime(today.year, today.month, today.day);
+
+      await for (final snapshot in _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .limit(1)
+          .snapshots()) {
+        if (snapshot.docs.isNotEmpty) {
+          final model = WeatherDataModel.fromFirestore(snapshot.docs.first);
+          await cache.cacheJson(cacheKey, model.toMap());
+          yield model;
+        } else {
+          yield null;
+        }
+      }
+    })();
   }
 
   // Get weather history
@@ -123,9 +157,18 @@ class WeatherService {
 
   // Get last 7 days weather
   Future<List<WeatherDataModel>> getLast7DaysWeather(String userId) async {
+    final cache = CacheRepository();
+    final cacheKey = 'weather_7days_$userId';
+    final cached = cache.getCachedList(cacheKey);
+    if (cached.isNotEmpty) {
+      return cached.map((m) => WeatherDataModel.fromMap(m)).toList();
+    }
+
     final now = DateTime.now();
     final lastWeek = now.subtract(const Duration(days: 7));
-    return getWeatherHistory(userId, lastWeek, now);
+    final list = await getWeatherHistory(userId, lastWeek, now);
+    await cache.cacheJsonList(cacheKey, list.map((w) => w.toMap()).toList());
+    return list;
   }
 
   // Delete old weather data (keep last 30 days)

@@ -1,5 +1,6 @@
 import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'cache_repository.dart';
 import '../models/field_model.dart';
 
 class FieldService {
@@ -20,23 +21,47 @@ class FieldService {
   }
 
   // Get all fields for a user
-  Stream<List<FieldModel>> getUserFields(String userId) {
-    return _firestore
+  Stream<List<FieldModel>> getUserFields(String userId) async* {
+    // Use read-through cache: yield cached value first, then stream live updates
+    final cache = CacheRepository();
+
+    // yield cached list if available
+    final cacheKey = 'fields_user_$userId';
+    final cached = cache.getCachedList(cacheKey);
+    if (cached.isNotEmpty) {
+      final models = cached.map((m) => FieldModel.fromMap(m..['id'] = m['id'] ?? '')).toList();
+      models.sort((a, b) {
+        final aDt = DateTime.tryParse(a.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDt = DateTime.tryParse(b.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDt.compareTo(aDt);
+      });
+      yield models;
+    }
+
+    // then yield live updates and refresh cache
+    await for (final snapshot in _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
+        .snapshots()) {
       final fields = snapshot.docs.map((doc) {
         final data = doc.data();
         data['id'] = doc.id; // Add document ID
         return FieldModel.fromMap(data);
       }).toList();
 
-      // Sort by addedDate
-      fields.sort((a, b) => b.addedDate.compareTo(a.addedDate));
+      // Sort by addedDate (parse ISO strings defensively)
+      fields.sort((a, b) {
+        final aDt = DateTime.tryParse(a.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        final bDt = DateTime.tryParse(b.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+        return bDt.compareTo(aDt);
+      });
 
-      return fields;
-    });
+      // cache the list as JSON
+      final listMaps = fields.map((f) => f.toMap()).toList();
+      await cache.cacheJsonList(cacheKey, listMaps);
+
+      yield fields;
+    }
   }
 
   // Get single field

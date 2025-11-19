@@ -21,6 +21,7 @@ class CacheRepository {
   Box<SensorDataModel>? _sensorDataCacheBox;
   Box<FlowMeterModel>? _flowMeterCacheBox;
   Box? _metadataBox;
+  Box? _genericCacheBox; // for other collections (fields, schedules, weather, profiles, etc.)
 
   /// Initialize cache boxes
   Future<void> initialize() async {
@@ -28,12 +29,56 @@ class CacheRepository {
       _sensorDataCacheBox = await Hive.openBox<SensorDataModel>('sensorDataCache');
       _flowMeterCacheBox = await Hive.openBox<FlowMeterModel>('flowMeterCache');
       _metadataBox = await Hive.openBox('cacheMetadata');
+      _genericCacheBox = await Hive.openBox('genericCache');
       
       await _syncService.initialize();
       
       dev.log('✅ CacheRepository initialized');
     } catch (e) {
       dev.log('❌ Error initializing CacheRepository: $e');
+    }
+  }
+
+  /// Generic: cache a JSON-like map under a key (e.g. 'fields_user_{userId}')
+  Future<void> cacheJson(String key, Map<String, dynamic> data) async {
+    try {
+      await _genericCacheBox?.put(key, data);
+    } catch (e) {
+      dev.log('⚠️ Failed to cache json for $key: $e');
+    }
+  }
+
+  /// Generic: cache a list of JSON-like maps under a key
+  Future<void> cacheJsonList(String key, List<Map<String, dynamic>> list) async {
+    try {
+      await _genericCacheBox?.put(key, list);
+    } catch (e) {
+      dev.log('⚠️ Failed to cache json list for $key: $e');
+    }
+  }
+
+  /// Generic: retrieve cached map
+  Map<String, dynamic>? getCachedJson(String key) {
+    try {
+      final val = _genericCacheBox?.get(key);
+      if (val == null) return null;
+      return Map<String, dynamic>.from(val as Map);
+    } catch (e) {
+      dev.log('⚠️ Failed to read cached json for $key: $e');
+      return null;
+    }
+  }
+
+  /// Generic: retrieve cached list of maps
+  List<Map<String, dynamic>> getCachedList(String key) {
+    try {
+      final val = _genericCacheBox?.get(key);
+      if (val == null) return [];
+      final list = List.from(val as List);
+      return list.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+    } catch (e) {
+      dev.log('⚠️ Failed to read cached list for $key: $e');
+      return [];
     }
   }
 

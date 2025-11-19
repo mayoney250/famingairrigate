@@ -64,17 +64,47 @@ class FieldModel {
   }
 
   factory FieldModel.fromMap(Map<String, dynamic> map) {
+    // Normalize addedDate to an ISO-8601 string so callers can rely on a
+    // consistent representation whether Firestore returned a Timestamp,
+    // a DateTime or a String.
+    final rawAdded = map['addedDate'];
+    String addedDateStr;
+    if (rawAdded == null) {
+      addedDateStr = '';
+    } else if (rawAdded is String) {
+      addedDateStr = rawAdded;
+    } else if (rawAdded is DateTime) {
+      addedDateStr = rawAdded.toIso8601String();
+    } else if (rawAdded is Timestamp) {
+      addedDateStr = rawAdded.toDate().toIso8601String();
+    } else {
+      addedDateStr = rawAdded.toString();
+    }
+
     return FieldModel(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',
       label: map['label'] ?? '',
-      addedDate: map['addedDate'] ?? '',
+      addedDate: addedDateStr,
       borderCoordinates: (map['borderCoordinates'] as List<dynamic>?)
-              ?.map((coord) => GeoPoint(
-                    coord['latitude'] ?? 0.0,
-                    coord['longitude'] ?? 0.0,
-                  ))
-              .toList() ??
+              ?.map((coord) {
+        if (coord is GeoPoint) return coord;
+        if (coord is Map) {
+          final latRaw = coord['latitude'] ?? coord['lat'] ?? coord['Latitude'];
+          final lngRaw = coord['longitude'] ?? coord['lng'] ?? coord['Longitude'];
+          final lat = (latRaw is num) ? latRaw.toDouble() : double.tryParse(latRaw?.toString() ?? '') ?? 0.0;
+          final lng = (lngRaw is num) ? lngRaw.toDouble() : double.tryParse(lngRaw?.toString() ?? '') ?? 0.0;
+          return GeoPoint(lat, lng);
+        }
+        if (coord is List && coord.length >= 2) {
+          final latRaw = coord[0];
+          final lngRaw = coord[1];
+          final lat = (latRaw is num) ? latRaw.toDouble() : double.tryParse(latRaw?.toString() ?? '') ?? 0.0;
+          final lng = (lngRaw is num) ? lngRaw.toDouble() : double.tryParse(lngRaw?.toString() ?? '') ?? 0.0;
+          return GeoPoint(lat, lng);
+        }
+        return GeoPoint(0.0, 0.0);
+      }).toList() ??
           [],
       size: map['size']?.toDouble() ?? 0.0,
       color: map['color'] ?? '#4CAF50',
@@ -95,7 +125,9 @@ class FieldModel {
   }
 
   factory FieldModel.fromFirestore(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
+    final data = Map<String, dynamic>.from(doc.data() as Map<String, dynamic>);
+    // Ensure the doc id is available to the model
+    data['id'] = doc.id;
     return FieldModel.fromMap(data);
   }
 
