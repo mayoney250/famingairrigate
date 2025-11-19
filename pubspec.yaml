@@ -100,6 +100,7 @@ dev_dependencies:
   flutter_lints: ^3.0.1
   build_runner: ^2.4.7
   hive_generator: ^2.0.1
+  flutter_arb_translator: ^1.0.3
 
 # dependency_overrides:
   # Removed - image_cropper temporarily disabled for web compatibility

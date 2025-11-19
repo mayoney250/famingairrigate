@@ -213,6 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onRefresh: () async {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               if (authProvider.currentUser != null) {
+                // Refresh without showing full-screen loader (keep content visible)
                 await dashboardProvider.refresh(authProvider.currentUser!.userId);
               }
             },

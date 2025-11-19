@@ -102,48 +102,55 @@
     }
   },
   "hoursAgo": "{hours}h ago",
-  "@hoursAgo": {
-    "placeholders": {
-      "hours": {
-        "type": "int"
-      }
+"@hoursAgo": {
+  "description": "Time shown in hours ago",
+  "placeholders": {
+    "hours": {
+      "type": "int"
     }
-  },
-  "daysAgo": "{days}d ago",
-  "@daysAgo": {
-    "placeholders": {
-      "days": {
-        "type": "int"
-      }
+  }
+},
+"accountVerification": "Account Verification",
+"verificationPendingTitle": "Account Being Verified",
+"verificationPendingMessage": "Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!",
+"goToHome": "Go to Home",
+"emailAlreadyRegistered": "{email} is already registered",
+"@emailAlreadyRegistered": {
+  "description": "Error message when email is already in use",
+  "placeholders": {
+    "email": {
+      "type": "String"
     }
-  },
-  "manualStart": "Manual Start",
-  "farmInfo": "Farm Info",
-  "scheduled": "Scheduled",
-  "pleaseEnterFirstName": "Please enter your first name",
-  "pleaseEnterLastName": "Please enter your last name",
-  "pleaseEnterEmail": "Please enter your email",
-  "pleaseEnterPhoneNumber": "Please enter your phone number",
-  "pleaseEnterValidPhoneNumber": "Please enter a valid phone number",
-  "pleaseEnterValidEmail": "Please enter a valid email",
-  "pleaseEnterPassword": "Please enter your password",
-  "passwordMinLength": "Password must be at least 8 characters",
-  "province": "Province",
-  "district": "District",
-  "chooseProvince": "Choose a province",
-  "chooseDistrict": "Choose a district",
-  "chooseProvinceFirst": "Choose a province first",
-  "addressOptional": "Address (optional)",
-  "addressHint": "e.g., Village, Cell, Sector",
-  "addressTooShort": "Address too short",
-  "addressTooLong": "Address too long",
-  "pleaseConfirmPassword": "Please confirm your password",
-  "passwordsDoNotMatch": "Passwords do not match",
-  "registrationFailed": "Registration failed",
-  "failedToSendResetEmail": "Failed to send reset email",
-  "verifyEmail": "Verify Email",
-  "verifyYourEmail": "Verify Your Email",
-  "verificationEmailSentTo": "We've sent a verification email to:",
+  }
+},
+"phoneAlreadyRegistered": "Phone number {phone} is already registered",
+"@phoneAlreadyRegistered": {
+  "description": "Error message when phone number is already in use",
+  "placeholders": {
+    "phone": {
+      "type": "String"
+    }
+  }
+},
+    "cooperativeIdAlreadyRegistered": "Cooperative ID {coopId} is already registered",
+    "@cooperativeIdAlreadyRegistered": {
+      "description": "Error message when cooperative ID is already in use",
+      "placeholders": {
+        "coopId": {
+          "type": "String"
+        }
+      }
+    },
+    "verifyingRegistration": "Verifying registration..",
+    "registrationVerificationFailed": "Error verifying registration: {error}",
+    "@registrationVerificationFailed": {
+      "description": "Error message when verification process fails",
+      "placeholders": {
+        "error": {
+          "type": "String"
+        }
+      }
+    },
   "nextSteps": "Next Steps:",
   "checkEmailInbox": "1. Check your email inbox",
   "lookForFirebaseEmail": "2. Look for an email from Firebase",
@@ -665,23 +672,23 @@
   "removePhoto": "Remove Photo",
   "profilePictureUpdated": "Profile picture updated successfully!",
   "profilePictureRemoved": "Profile picture removed!",
-  "changePassword": "Change Password",
-  "secureYourAccount": "Secure Your Account",
-  "chooseStrongPassword": "Choose a strong password to protect your farming data",
-  "currentPassword": "Current Password",
-  "enterCurrentPassword": "Enter your current password",
-  "newPassword": "New Password",
-  "enterNewPassword": "Enter your new password",
-  "confirmNewPassword": "Confirm New Password",
-  "reEnterNewPassword": "Re-enter your new password",
-  "passwordStrength": "Password Strength",
-  "weakPassword": "Weak",
-  "mediumPassword": "Medium",
-  "strongPassword": "Strong",
-  "passwordRequirement8Chars": "At least 8 characters",
-  "passwordRequirementUppercase": "Contains uppercase letter",
-  "passwordRequirementLowercase": "Contains lowercase letter",
-  "passwordRequirementNumber": "Contains number",
+  "changePasswordTitle": "Change Password",
+  "secureYourAccountTitle": "Secure Your Account",
+  "securityTipsTitle": "Security Tips",
+  "failedDeleteSchedule": "Failed to delete schedule.",
+  "accountVerification": "Account Verification",
+  "verificationPendingTitle": "Account Being Verified",
+  "verificationPendingMessage": "Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!",
+  "goToHome": "Go to Home",
+  "emailAlreadyRegistered": "{email} is already registered",
+  "@emailAlreadyRegistered": {
+    "description": "Error message when email is already in use",
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
   "passwordRequirementSpecial": "Contains special character (!@#$%^&*)",
   "securityTips": "Security Tips",
   "tipUnique": "Use a unique password for your Faminga account",
@@ -801,42 +808,44 @@
   "accountVerification": "Account Verification",
   "verificationPendingTitle": "Account Being Verified",
   "verificationPendingMessage": "Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!",
-  "goToHome": "Go to Home"
-  "emailAlreadyRegistered": "{email} is already registered",
-  "@emailAlreadyRegistered": {
-    "description": "Error message when email is already in use",
-    "placeholders": {
-      "email": {
-        "type": "String"
-      }
-    }
-  },
-  "phoneAlreadyRegistered": "Phone number {phone} is already registered",
-  "@phoneAlreadyRegistered": {
-    "description": "Error message when phone number is already in use",
-    "placeholders": {
-      "phone": {
-        "type": "String"
-      }
-    }
-  },
-  "cooperativeIdAlreadyRegistered": "Cooperative ID {coopId} is already registered",
-  "@cooperativeIdAlreadyRegistered": {
-    "description": "Error message when cooperative ID is already in use",
-    "placeholders": {
-      "coopId": {
-        "type": "String"
-      }
-    }
-  },
-  "verifyingRegistration": "Verifying registration...",
-  "registrationVerificationFailed": "Error verifying registration: {error}",
-  "@registrationVerificationFailed": {
-    "description": "Error message when verification process fails",
-    "placeholders": {
-      "error": {
-        "type": "String"
-      }
-    }
-  }
+  "goToHome": "Go to Home",
+  "registrationFailed": "Registration failed. Please try again.",
+  "pleaseEnterFirstName": "Please enter your first name",
+  "pleaseEnterLastName": "Please enter your last name",
+  "pleaseEnterEmail": "Please enter a valid email",
+  "pleaseEnterPhoneNumber": "Please enter a valid phone number",
+  "province": "Province",
+  "chooseProvince": "Please choose a province",
+  "district": "District",
+  "chooseProvinceFirst": "Please choose a province first",
+  "chooseDistrict": "Please choose a district",
+  "addressHint": "Enter your address",
+  "addressTooShort": "Address must be at least 5 characters",
+  "addressTooLong": "Address cannot exceed 100 characters",
+  "pleaseEnterPassword": "Please enter a password",
+  "passwordMinLength": "Password must be at least 6 characters",
+  "pleaseConfirmPassword": "Please confirm your password",
+  "passwordsDoNotMatch": "Passwords do not match",
+  "manualStart": "Manual Start",
+  "farmInfo": "Farm Info",
+  "scheduled": "Scheduled",
+  "daysAgo": "{days}d ago",
+  "@daysAgo": { "description": "Time shown in days ago", "placeholders": { "days": { "type": "int" } } },
+  "changePassword": "Change Password",
+  "secureYourAccount": "Secure Your Account",
+  "currentPassword": "Current Password",
+  "newPassword": "New Password",
+  "confirmNewPassword": "Confirm New Password",
+  "weakPassword": "Weak",
+  "mediumPassword": "Medium",
+  "strongPassword": "Strong",
+  "enterCurrentPassword": "Enter your current password",
+  "enterNewPassword": "Enter your new password",
+  "passwordRequirement8Chars": "At least 8 characters",
+  "passwordRequirementUppercase": "Contains uppercase letter",
+  "passwordRequirementLowercase": "Contains lowercase letter",
+  "passwordRequirementNumber": "Contains a number",
+  "reEnterNewPassword": "Re-enter your new password",
+  "chooseStrongPassword": "Choose a strong password to protect your farm data",
+  "pleaseEnterValidPhoneNumber": "Please enter a valid phone number"
 }

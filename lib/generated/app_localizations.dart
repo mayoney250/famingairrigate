@@ -666,179 +666,65 @@ abstract class AppLocalizations {
   /// **'{minutes}min ago'**
   String minutesAgo(int minutes);
 
-  /// No description provided for @hoursAgo.
+  /// Time shown in hours ago
   ///
   /// In en, this message translates to:
   /// **'{hours}h ago'**
   String hoursAgo(int hours);
 
-  /// No description provided for @daysAgo.
+  /// No description provided for @accountVerification.
   ///
   /// In en, this message translates to:
-  /// **'{days}d ago'**
-  String daysAgo(int days);
+  /// **'Account Verification'**
+  String get accountVerification;
 
-  /// No description provided for @manualStart.
+  /// No description provided for @verificationPendingTitle.
   ///
   /// In en, this message translates to:
-  /// **'Manual Start'**
-  String get manualStart;
+  /// **'Account Being Verified'**
+  String get verificationPendingTitle;
 
-  /// No description provided for @farmInfo.
+  /// No description provided for @verificationPendingMessage.
   ///
   /// In en, this message translates to:
-  /// **'Farm Info'**
-  String get farmInfo;
+  /// **'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!'**
+  String get verificationPendingMessage;
 
-  /// No description provided for @scheduled.
+  /// No description provided for @goToHome.
   ///
   /// In en, this message translates to:
-  /// **'Scheduled'**
-  String get scheduled;
+  /// **'Go to Home'**
+  String get goToHome;
 
-  /// No description provided for @pleaseEnterFirstName.
+  /// Error message when email is already in use
   ///
   /// In en, this message translates to:
-  /// **'Please enter your first name'**
-  String get pleaseEnterFirstName;
+  /// **'{email} is already registered'**
+  String emailAlreadyRegistered(String email);
 
-  /// No description provided for @pleaseEnterLastName.
+  /// Error message when phone number is already in use
   ///
   /// In en, this message translates to:
-  /// **'Please enter your last name'**
-  String get pleaseEnterLastName;
+  /// **'Phone number {phone} is already registered'**
+  String phoneAlreadyRegistered(String phone);
 
-  /// No description provided for @pleaseEnterEmail.
+  /// Error message when cooperative ID is already in use
   ///
   /// In en, this message translates to:
-  /// **'Please enter your email'**
-  String get pleaseEnterEmail;
+  /// **'Cooperative ID {coopId} is already registered'**
+  String cooperativeIdAlreadyRegistered(String coopId);
 
-  /// No description provided for @pleaseEnterPhoneNumber.
+  /// No description provided for @verifyingRegistration.
   ///
   /// In en, this message translates to:
-  /// **'Please enter your phone number'**
-  String get pleaseEnterPhoneNumber;
+  /// **'Verifying registration..'**
+  String get verifyingRegistration;
 
-  /// No description provided for @pleaseEnterValidPhoneNumber.
+  /// Error message when verification process fails
   ///
   /// In en, this message translates to:
-  /// **'Please enter a valid phone number'**
-  String get pleaseEnterValidPhoneNumber;
-
-  /// No description provided for @pleaseEnterValidEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter a valid email'**
-  String get pleaseEnterValidEmail;
-
-  /// No description provided for @pleaseEnterPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Please enter your password'**
-  String get pleaseEnterPassword;
-
-  /// No description provided for @passwordMinLength.
-  ///
-  /// In en, this message translates to:
-  /// **'Password must be at least 8 characters'**
-  String get passwordMinLength;
-
-  /// No description provided for @province.
-  ///
-  /// In en, this message translates to:
-  /// **'Province'**
-  String get province;
-
-  /// No description provided for @district.
-  ///
-  /// In en, this message translates to:
-  /// **'District'**
-  String get district;
-
-  /// No description provided for @chooseProvince.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a province'**
-  String get chooseProvince;
-
-  /// No description provided for @chooseDistrict.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a district'**
-  String get chooseDistrict;
-
-  /// No description provided for @chooseProvinceFirst.
-  ///
-  /// In en, this message translates to:
-  /// **'Choose a province first'**
-  String get chooseProvinceFirst;
-
-  /// No description provided for @addressOptional.
-  ///
-  /// In en, this message translates to:
-  /// **'Address (optional)'**
-  String get addressOptional;
-
-  /// No description provided for @addressHint.
-  ///
-  /// In en, this message translates to:
-  /// **'e.g., Village, Cell, Sector'**
-  String get addressHint;
-
-  /// No description provided for @addressTooShort.
-  ///
-  /// In en, this message translates to:
-  /// **'Address too short'**
-  String get addressTooShort;
-
-  /// No description provided for @addressTooLong.
-  ///
-  /// In en, this message translates to:
-  /// **'Address too long'**
-  String get addressTooLong;
-
-  /// No description provided for @pleaseConfirmPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Please confirm your password'**
-  String get pleaseConfirmPassword;
-
-  /// No description provided for @passwordsDoNotMatch.
-  ///
-  /// In en, this message translates to:
-  /// **'Passwords do not match'**
-  String get passwordsDoNotMatch;
-
-  /// No description provided for @registrationFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Registration failed'**
-  String get registrationFailed;
-
-  /// No description provided for @failedToSendResetEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed to send reset email'**
-  String get failedToSendResetEmail;
-
-  /// No description provided for @verifyEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify Email'**
-  String get verifyEmail;
-
-  /// No description provided for @verifyYourEmail.
-  ///
-  /// In en, this message translates to:
-  /// **'Verify Your Email'**
-  String get verifyYourEmail;
-
-  /// No description provided for @verificationEmailSentTo.
-  ///
-  /// In en, this message translates to:
-  /// **'We\'ve sent a verification email to:'**
-  String get verificationEmailSentTo;
+  /// **'Error verifying registration: {error}'**
+  String registrationVerificationFailed(String error);
 
   /// No description provided for @nextSteps.
   ///
@@ -2760,6 +2646,24 @@ abstract class AppLocalizations {
   /// **'Sign in with Google'**
   String get googleSignIn;
 
+  /// No description provided for @verifyEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Email'**
+  String get verifyEmail;
+
+  /// No description provided for @verifyYourEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Verify Your Email'**
+  String get verifyYourEmail;
+
+  /// No description provided for @verificationEmailSentTo.
+  ///
+  /// In en, this message translates to:
+  /// **'We\'ve sent a verification email to:'**
+  String get verificationEmailSentTo;
+
   /// No description provided for @editProfile.
   ///
   /// In en, this message translates to:
@@ -3090,107 +2994,29 @@ abstract class AppLocalizations {
   /// **'Profile picture removed!'**
   String get profilePictureRemoved;
 
-  /// No description provided for @changePassword.
+  /// No description provided for @changePasswordTitle.
   ///
   /// In en, this message translates to:
   /// **'Change Password'**
-  String get changePassword;
+  String get changePasswordTitle;
 
-  /// No description provided for @secureYourAccount.
+  /// No description provided for @secureYourAccountTitle.
   ///
   /// In en, this message translates to:
   /// **'Secure Your Account'**
-  String get secureYourAccount;
+  String get secureYourAccountTitle;
 
-  /// No description provided for @chooseStrongPassword.
+  /// No description provided for @securityTipsTitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose a strong password to protect your farming data'**
-  String get chooseStrongPassword;
+  /// **'Security Tips'**
+  String get securityTipsTitle;
 
-  /// No description provided for @currentPassword.
+  /// No description provided for @failedDeleteSchedule.
   ///
   /// In en, this message translates to:
-  /// **'Current Password'**
-  String get currentPassword;
-
-  /// No description provided for @enterCurrentPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your current password'**
-  String get enterCurrentPassword;
-
-  /// No description provided for @newPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'New Password'**
-  String get newPassword;
-
-  /// No description provided for @enterNewPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter your new password'**
-  String get enterNewPassword;
-
-  /// No description provided for @confirmNewPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm New Password'**
-  String get confirmNewPassword;
-
-  /// No description provided for @reEnterNewPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Re-enter your new password'**
-  String get reEnterNewPassword;
-
-  /// No description provided for @passwordStrength.
-  ///
-  /// In en, this message translates to:
-  /// **'Password Strength'**
-  String get passwordStrength;
-
-  /// No description provided for @weakPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Weak'**
-  String get weakPassword;
-
-  /// No description provided for @mediumPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Medium'**
-  String get mediumPassword;
-
-  /// No description provided for @strongPassword.
-  ///
-  /// In en, this message translates to:
-  /// **'Strong'**
-  String get strongPassword;
-
-  /// No description provided for @passwordRequirement8Chars.
-  ///
-  /// In en, this message translates to:
-  /// **'At least 8 characters'**
-  String get passwordRequirement8Chars;
-
-  /// No description provided for @passwordRequirementUppercase.
-  ///
-  /// In en, this message translates to:
-  /// **'Contains uppercase letter'**
-  String get passwordRequirementUppercase;
-
-  /// No description provided for @passwordRequirementLowercase.
-  ///
-  /// In en, this message translates to:
-  /// **'Contains lowercase letter'**
-  String get passwordRequirementLowercase;
-
-  /// No description provided for @passwordRequirementNumber.
-  ///
-  /// In en, this message translates to:
-  /// **'Contains number'**
-  String get passwordRequirementNumber;
+  /// **'Failed to delete schedule.'**
+  String get failedDeleteSchedule;
 
   /// No description provided for @passwordRequirementSpecial.
   ///
@@ -3774,53 +3600,233 @@ abstract class AppLocalizations {
   /// **'Edit Profile'**
   String get editProfileTitle;
 
-  /// No description provided for @changePasswordTitle.
+  /// No description provided for @registrationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Registration failed. Please try again.'**
+  String get registrationFailed;
+
+  /// No description provided for @pleaseEnterFirstName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your first name'**
+  String get pleaseEnterFirstName;
+
+  /// No description provided for @pleaseEnterLastName.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter your last name'**
+  String get pleaseEnterLastName;
+
+  /// No description provided for @pleaseEnterEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid email'**
+  String get pleaseEnterEmail;
+
+  /// No description provided for @pleaseEnterPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid phone number'**
+  String get pleaseEnterPhoneNumber;
+
+  /// No description provided for @province.
+  ///
+  /// In en, this message translates to:
+  /// **'Province'**
+  String get province;
+
+  /// No description provided for @chooseProvince.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a province'**
+  String get chooseProvince;
+
+  /// No description provided for @district.
+  ///
+  /// In en, this message translates to:
+  /// **'District'**
+  String get district;
+
+  /// No description provided for @chooseProvinceFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a province first'**
+  String get chooseProvinceFirst;
+
+  /// No description provided for @chooseDistrict.
+  ///
+  /// In en, this message translates to:
+  /// **'Please choose a district'**
+  String get chooseDistrict;
+
+  /// No description provided for @addressHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your address'**
+  String get addressHint;
+
+  /// No description provided for @addressTooShort.
+  ///
+  /// In en, this message translates to:
+  /// **'Address must be at least 5 characters'**
+  String get addressTooShort;
+
+  /// No description provided for @addressTooLong.
+  ///
+  /// In en, this message translates to:
+  /// **'Address cannot exceed 100 characters'**
+  String get addressTooLong;
+
+  /// No description provided for @pleaseEnterPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a password'**
+  String get pleaseEnterPassword;
+
+  /// No description provided for @passwordMinLength.
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMinLength;
+
+  /// No description provided for @pleaseConfirmPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Please confirm your password'**
+  String get pleaseConfirmPassword;
+
+  /// No description provided for @passwordsDoNotMatch.
+  ///
+  /// In en, this message translates to:
+  /// **'Passwords do not match'**
+  String get passwordsDoNotMatch;
+
+  /// No description provided for @manualStart.
+  ///
+  /// In en, this message translates to:
+  /// **'Manual Start'**
+  String get manualStart;
+
+  /// No description provided for @farmInfo.
+  ///
+  /// In en, this message translates to:
+  /// **'Farm Info'**
+  String get farmInfo;
+
+  /// No description provided for @scheduled.
+  ///
+  /// In en, this message translates to:
+  /// **'Scheduled'**
+  String get scheduled;
+
+  /// Time shown in days ago
+  ///
+  /// In en, this message translates to:
+  /// **'{days}d ago'**
+  String daysAgo(int days);
+
+  /// No description provided for @changePassword.
   ///
   /// In en, this message translates to:
   /// **'Change Password'**
-  String get changePasswordTitle;
+  String get changePassword;
 
-  /// No description provided for @secureYourAccountTitle.
+  /// No description provided for @secureYourAccount.
   ///
   /// In en, this message translates to:
   /// **'Secure Your Account'**
-  String get secureYourAccountTitle;
+  String get secureYourAccount;
 
-  /// No description provided for @securityTipsTitle.
+  /// No description provided for @currentPassword.
   ///
   /// In en, this message translates to:
-  /// **'Security Tips'**
-  String get securityTipsTitle;
+  /// **'Current Password'**
+  String get currentPassword;
 
-  /// No description provided for @failedDeleteSchedule.
+  /// No description provided for @newPassword.
   ///
   /// In en, this message translates to:
-  /// **'Failed to delete schedule.'**
-  String get failedDeleteSchedule;
+  /// **'New Password'**
+  String get newPassword;
 
-  /// No description provided for @accountVerification.
+  /// No description provided for @confirmNewPassword.
   ///
   /// In en, this message translates to:
-  /// **'Account Verification'**
-  String get accountVerification;
+  /// **'Confirm New Password'**
+  String get confirmNewPassword;
 
-  /// No description provided for @verificationPendingTitle.
+  /// No description provided for @weakPassword.
   ///
   /// In en, this message translates to:
-  /// **'Account Being Verified'**
-  String get verificationPendingTitle;
+  /// **'Weak'**
+  String get weakPassword;
 
-  /// No description provided for @verificationPendingMessage.
+  /// No description provided for @mediumPassword.
   ///
   /// In en, this message translates to:
-  /// **'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!'**
-  String get verificationPendingMessage;
+  /// **'Medium'**
+  String get mediumPassword;
 
-  /// No description provided for @goToHome.
+  /// No description provided for @strongPassword.
   ///
   /// In en, this message translates to:
-  /// **'Go to Home'**
-  String get goToHome;
+  /// **'Strong'**
+  String get strongPassword;
+
+  /// No description provided for @enterCurrentPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your current password'**
+  String get enterCurrentPassword;
+
+  /// No description provided for @enterNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your new password'**
+  String get enterNewPassword;
+
+  /// No description provided for @passwordRequirement8Chars.
+  ///
+  /// In en, this message translates to:
+  /// **'At least 8 characters'**
+  String get passwordRequirement8Chars;
+
+  /// No description provided for @passwordRequirementUppercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Contains uppercase letter'**
+  String get passwordRequirementUppercase;
+
+  /// No description provided for @passwordRequirementLowercase.
+  ///
+  /// In en, this message translates to:
+  /// **'Contains lowercase letter'**
+  String get passwordRequirementLowercase;
+
+  /// No description provided for @passwordRequirementNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Contains a number'**
+  String get passwordRequirementNumber;
+
+  /// No description provided for @reEnterNewPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Re-enter your new password'**
+  String get reEnterNewPassword;
+
+  /// No description provided for @chooseStrongPassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a strong password to protect your farm data'**
+  String get chooseStrongPassword;
+
+  /// No description provided for @pleaseEnterValidPhoneNumber.
+  ///
+  /// In en, this message translates to:
+  /// **'Please enter a valid phone number'**
+  String get pleaseEnterValidPhoneNumber;
 }
 
 class _AppLocalizationsDelegate

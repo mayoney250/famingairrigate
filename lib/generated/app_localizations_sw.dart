@@ -305,92 +305,40 @@ class AppLocalizationsSw extends AppLocalizations {
   }
 
   @override
-  String daysAgo(int days) {
-    return 'Siku $days zilizopita';
+  String get accountVerification => 'Uthibitisho wa Akaunti';
+
+  @override
+  String get verificationPendingTitle => 'Akaunti Inathibitishwa';
+
+  @override
+  String get verificationPendingMessage =>
+      'Usajili wako umewasilishwa kwa uthibitisho. Timu yetu ya wasimamizi itapitia maelezo ya ushirika wako na kuwasiliana nawe hivi karibuni. Asante kwa uvumilivu wako!';
+
+  @override
+  String get goToHome => 'Rudi Nyumbani';
+
+  @override
+  String emailAlreadyRegistered(String email) {
+    return '$email tayari imesajiliwa';
   }
 
   @override
-  String get manualStart => 'Anza kwa mkono';
+  String phoneAlreadyRegistered(String phone) {
+    return 'Nambari ya simu $phone tayari imesajiliwa';
+  }
 
   @override
-  String get farmInfo => 'Habari za shamba';
+  String cooperativeIdAlreadyRegistered(String coopId) {
+    return 'Kitambulisho cha ushirika $coopId tayari kimesajiliwa';
+  }
 
   @override
-  String get scheduled => 'Imewekwa ratiba';
+  String get verifyingRegistration => 'Kukagua usajili...';
 
   @override
-  String get pleaseEnterFirstName => 'Please enter your first name';
-
-  @override
-  String get pleaseEnterLastName => 'Please enter your last name';
-
-  @override
-  String get pleaseEnterEmail => 'Please enter your email';
-
-  @override
-  String get pleaseEnterPhoneNumber => 'Tafadhali ingiza nambari ya simu';
-
-  @override
-  String get pleaseEnterValidPhoneNumber =>
-      'Tafadhali ingiza nambari sahihi ya simu';
-
-  @override
-  String get pleaseEnterValidEmail => 'Please enter a valid email';
-
-  @override
-  String get pleaseEnterPassword => 'Please enter your password';
-
-  @override
-  String get passwordMinLength => 'Password must be at least 8 characters';
-
-  @override
-  String get province => 'Province';
-
-  @override
-  String get district => 'District';
-
-  @override
-  String get chooseProvince => 'Choose a province';
-
-  @override
-  String get chooseDistrict => 'Choose a district';
-
-  @override
-  String get chooseProvinceFirst => 'Choose a province first';
-
-  @override
-  String get addressOptional => 'Address (optional)';
-
-  @override
-  String get addressHint => 'e.g., Village, Cell, Sector';
-
-  @override
-  String get addressTooShort => 'Address too short';
-
-  @override
-  String get addressTooLong => 'Address too long';
-
-  @override
-  String get pleaseConfirmPassword => 'Please confirm your password';
-
-  @override
-  String get passwordsDoNotMatch => 'Passwords do not match';
-
-  @override
-  String get registrationFailed => 'Registration failed';
-
-  @override
-  String get failedToSendResetEmail => 'Failed to send reset email';
-
-  @override
-  String get verifyEmail => 'Thibitisha Barua pepe';
-
-  @override
-  String get verifyYourEmail => 'Thibitisha Barua Pepe Yako';
-
-  @override
-  String get verificationEmailSentTo =>
-      'Tumetuma barua pepe ya uthibitisho kwa:';
+  String registrationVerificationFailed(String error) {
+    return 'Kosa kuthibitisha usajili: $error';
+  }
 
   @override
   String get nextSteps => 'Hatua Inayofuata:';
@@ -686,14 +634,14 @@ class AppLocalizationsSw extends AppLocalizations {
       'Tengeneza ratiba yako ya kwanza ya umwagiliaji';
 
   @override
-  String get createSchedule => 'Create Schedule';
+  String get createSchedule => 'Tengeneza Ratiba';
 
   @override
   String get deleteSchedule => 'Futa Ratiba';
 
   @override
   String get deleteScheduleConfirmation =>
-      'Are you sure you want to delete this irrigation schedule?';
+      'Una uhakika unataka kufuta ratiba hii ya umwagiliaji?';
 
   @override
   String get stopIrrigation => 'Simamisha Umwagiliaji';
@@ -952,7 +900,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get addFirstField => 'Ongeza shamba lako la kwanza kuanza!';
 
   @override
-  String get addFirstFieldToStart => 'Add your first field to get started!';
+  String get addFirstFieldToStart => 'Ongeza shamba lako la kwanza kuanza!';
 
   @override
   String noFieldsFoundFor(String query) {
@@ -1204,26 +1152,26 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String userInsightFarmHeadline(int count, String moisture, String temp) {
-    return 'Across $count field(s), average soil moisture is $moisture and average temperature is $temp.';
+    return 'Kwenye $count shamba(au), unyevu wa udongo wa wastani ni $moisture na joto la wastani ni $temp.';
   }
 
   @override
   String userInsightWaterLine(String liters) {
-    return 'Today you have irrigated $liters across your fields.';
+    return 'Leo umevimba $liters katika mashamba yako.';
   }
 
   @override
   String get userInsightNoFields =>
-      'You have no fields yet — add a field to start receiving insights.';
+      'Huna mashamba bado — ongeza shamba ili kuanza kupokea taarifa.';
 
   @override
-  String get recommendationShortIrrigate => 'Irrigate';
+  String get recommendationShortIrrigate => 'Mwagilia';
 
   @override
-  String get recommendationShortDrainage => 'Drainage';
+  String get recommendationShortDrainage => 'Mtiririko';
 
   @override
-  String get recommendationShortNeutral => 'Neutral';
+  String get recommendationShortNeutral => 'Neutrali';
 
   @override
   String get searchByFieldName => 'Tafuta kwa jina la shamba...';
@@ -1409,16 +1357,26 @@ class AppLocalizationsSw extends AppLocalizations {
   String get nonOrganic => 'Si Organic';
 
   @override
-  String get noAlerts => 'No alerts';
+  String get noAlerts => 'Hakuna arifa';
 
   @override
-  String get alert => 'Alert';
+  String get alert => 'Arifa';
 
   @override
   String get or => 'AU';
 
   @override
   String get googleSignIn => 'Ingia kwa njia ya Google';
+
+  @override
+  String get verifyEmail => 'Thibitisha Barua pepe';
+
+  @override
+  String get verifyYourEmail => 'Thibitisha Barua Pepe Yako';
+
+  @override
+  String get verificationEmailSentTo =>
+      'Tumetuma barua pepe ya uthibitisho kwa:';
 
   @override
   String get editProfile => 'Hariri Wasifu';
@@ -1521,7 +1479,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get aboutFaminga => 'Kuhusu Faminga Irrigation';
 
   @override
-  String get aboutFamingaIrrigation => 'About Faminga Irrigation';
+  String get aboutFamingaIrrigation => 'Kuhusu Faminga Irrigation';
 
   @override
   String get accountActions => 'Hatua za Akaunti';
@@ -1530,7 +1488,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get signOut => 'Toka';
 
   @override
-  String get logout => 'Logout';
+  String get logout => 'Toka';
 
   @override
   String get logoutConfirmation => 'Toka';
@@ -1551,7 +1509,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get famingaVersion => 'Toleo 1.0.0';
 
   @override
-  String get version => 'Version 1.0.0';
+  String get version => 'Toleo 1.0.0';
 
   @override
   String get famingaDescription =>
@@ -1589,56 +1547,16 @@ class AppLocalizationsSw extends AppLocalizations {
   String get profilePictureRemoved => 'Picha ya wasifu imeondolewa!';
 
   @override
-  String get changePassword => 'Badilisha Nenosiri';
+  String get changePasswordTitle => 'Badilisha Nenosiri';
 
   @override
-  String get secureYourAccount => 'Salinda Akaunti Yako';
+  String get secureYourAccountTitle => 'Salinda Akaunti Yako';
 
   @override
-  String get chooseStrongPassword =>
-      'Chagua nenosiri wenye nguvu kuwalinda data yako ya ukulima';
+  String get securityTipsTitle => 'Vidokezo vya Usalama';
 
   @override
-  String get currentPassword => 'Nenosiri la Sasa';
-
-  @override
-  String get enterCurrentPassword => 'Weka nenosiri lako la sasa';
-
-  @override
-  String get newPassword => 'Nenosiri Jipya';
-
-  @override
-  String get enterNewPassword => 'Weka nenosiri jipya';
-
-  @override
-  String get confirmNewPassword => 'Thibitisha Nenosiri Jipya';
-
-  @override
-  String get reEnterNewPassword => 'Weka tena nenosiri jipya';
-
-  @override
-  String get passwordStrength => 'Nguvu ya Nenosiri';
-
-  @override
-  String get weakPassword => 'Dhaifu';
-
-  @override
-  String get mediumPassword => 'Katikati';
-
-  @override
-  String get strongPassword => 'Kali';
-
-  @override
-  String get passwordRequirement8Chars => 'Angalau herufi 8';
-
-  @override
-  String get passwordRequirementUppercase => 'Ina herufi kubwa';
-
-  @override
-  String get passwordRequirementLowercase => 'Ina herufi ndogo';
-
-  @override
-  String get passwordRequirementNumber => 'Ina nambari';
+  String get failedDeleteSchedule => 'Imeshindwa kufuta ratiba.';
 
   @override
   String get passwordRequirementSpecial => 'Ina alama maalum (!@#\$%^&*)';
@@ -1944,27 +1862,120 @@ class AppLocalizationsSw extends AppLocalizations {
   String get editProfileTitle => 'Hariri Wasifu';
 
   @override
-  String get changePasswordTitle => 'Badilisha Nenosiri';
+  String get registrationFailed => 'Usajili umeshindwa. Tafadhali jaribu tena.';
 
   @override
-  String get secureYourAccountTitle => 'Salinda Akaunti Yako';
+  String get pleaseEnterFirstName => 'Tafadhali weka jina lako la kwanza';
 
   @override
-  String get securityTipsTitle => 'Vidokezo vya Usalama';
+  String get pleaseEnterLastName => 'Tafadhali weka jina lako la ukoo';
 
   @override
-  String get failedDeleteSchedule => 'Imeshindwa kufuta ratiba.';
+  String get pleaseEnterEmail => 'Tafadhali weka barua pepe halali';
 
   @override
-  String get accountVerification => 'Account Verification';
+  String get pleaseEnterPhoneNumber => 'Tafadhali weka nambari halali ya simu';
 
   @override
-  String get verificationPendingTitle => 'Account Being Verified';
+  String get province => 'Kanda';
 
   @override
-  String get verificationPendingMessage =>
-      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+  String get chooseProvince => 'Tafadhali chagua kanda';
 
   @override
-  String get goToHome => 'Go to Home';
+  String get district => 'Wilaya';
+
+  @override
+  String get chooseProvinceFirst => 'Tafadhali chagua kanda kwanza';
+
+  @override
+  String get chooseDistrict => 'Tafadhali chagua wilaya';
+
+  @override
+  String get addressHint => 'Weka anwani yako';
+
+  @override
+  String get addressTooShort => 'Anwani lazima iwe na angalau herufi 5';
+
+  @override
+  String get addressTooLong => 'Anwani haiwezi kuzidi herufi 100';
+
+  @override
+  String get pleaseEnterPassword => 'Tafadhali weka nenosiri';
+
+  @override
+  String get passwordMinLength => 'Nenosiri lazima liwe na angalau herufi 6';
+
+  @override
+  String get pleaseConfirmPassword => 'Tafadhali thibitisha nenosiri lako';
+
+  @override
+  String get passwordsDoNotMatch => 'Nenosiri hazilingani';
+
+  @override
+  String get manualStart => 'Anza kwa mkono';
+
+  @override
+  String get farmInfo => 'Habari za shamba';
+
+  @override
+  String get scheduled => 'Imewekwa ratiba';
+
+  @override
+  String daysAgo(int days) {
+    return 'Siku $days zilizopita';
+  }
+
+  @override
+  String get changePassword => 'Badilisha nenosiri';
+
+  @override
+  String get secureYourAccount => 'Salinda akaunti yako';
+
+  @override
+  String get currentPassword => 'Nenosiri la sasa';
+
+  @override
+  String get newPassword => 'Nenosiri jipya';
+
+  @override
+  String get confirmNewPassword => 'Thibitisha nenosiri jipya';
+
+  @override
+  String get weakPassword => 'Dhaifu';
+
+  @override
+  String get mediumPassword => 'Wastani';
+
+  @override
+  String get strongPassword => 'Kali';
+
+  @override
+  String get enterCurrentPassword => 'Weka nenosiri lako la sasa';
+
+  @override
+  String get enterNewPassword => 'Weka nenosiri jipya';
+
+  @override
+  String get passwordRequirement8Chars => 'Angalau herufi 8';
+
+  @override
+  String get passwordRequirementUppercase => 'Ina herufi kubwa';
+
+  @override
+  String get passwordRequirementLowercase => 'Ina herufi ndogo';
+
+  @override
+  String get passwordRequirementNumber => 'Ina nambari';
+
+  @override
+  String get reEnterNewPassword => 'Weka tena nenosiri jipya';
+
+  @override
+  String get chooseStrongPassword =>
+      'Chagua nenosiri wenye nguvu kuwalinda data yako ya kilimo';
+
+  @override
+  String get pleaseEnterValidPhoneNumber =>
+      'Tafadhali weka nambari halali ya simu';
 }

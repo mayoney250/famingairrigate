@@ -307,93 +307,40 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
-  String daysAgo(int days) {
-    return 'Il y a ${days}j';
+  String get accountVerification => 'Vérification du compte';
+
+  @override
+  String get verificationPendingTitle => 'Compte en cours de vérification';
+
+  @override
+  String get verificationPendingMessage =>
+      'Votre inscription a été soumise pour vérification. Notre équipe d\'administration examinera les détails de votre coopérative et vous contactera sous peu. Merci de votre patience !';
+
+  @override
+  String get goToHome => 'Aller à l\'accueil';
+
+  @override
+  String emailAlreadyRegistered(String email) {
+    return '$email est déjà enregistré';
   }
 
   @override
-  String get manualStart => 'Démarrage manuel';
+  String phoneAlreadyRegistered(String phone) {
+    return 'Le numéro $phone est déjà enregistré';
+  }
 
   @override
-  String get farmInfo => 'Info de la ferme';
+  String cooperativeIdAlreadyRegistered(String coopId) {
+    return 'L\'ID de la coopérative $coopId est déjà enregistré';
+  }
 
   @override
-  String get scheduled => 'Programmé';
+  String get verifyingRegistration => 'Vérification de l\'inscription...';
 
   @override
-  String get pleaseEnterFirstName => 'Please enter your first name';
-
-  @override
-  String get pleaseEnterLastName => 'Please enter your last name';
-
-  @override
-  String get pleaseEnterEmail => 'Please enter your email';
-
-  @override
-  String get pleaseEnterPhoneNumber =>
-      'Veuillez entrer votre numéro de téléphone';
-
-  @override
-  String get pleaseEnterValidPhoneNumber =>
-      'Veuillez entrer un numéro de téléphone valide';
-
-  @override
-  String get pleaseEnterValidEmail => 'Please enter a valid email';
-
-  @override
-  String get pleaseEnterPassword => 'Please enter your password';
-
-  @override
-  String get passwordMinLength => 'Password must be at least 8 characters';
-
-  @override
-  String get province => 'Province';
-
-  @override
-  String get district => 'District';
-
-  @override
-  String get chooseProvince => 'Choose a province';
-
-  @override
-  String get chooseDistrict => 'Choose a district';
-
-  @override
-  String get chooseProvinceFirst => 'Choose a province first';
-
-  @override
-  String get addressOptional => 'Address (optional)';
-
-  @override
-  String get addressHint => 'e.g., Village, Cell, Sector';
-
-  @override
-  String get addressTooShort => 'Address too short';
-
-  @override
-  String get addressTooLong => 'Address too long';
-
-  @override
-  String get pleaseConfirmPassword => 'Please confirm your password';
-
-  @override
-  String get passwordsDoNotMatch => 'Passwords do not match';
-
-  @override
-  String get registrationFailed => 'Registration failed';
-
-  @override
-  String get failedToSendResetEmail => 'Failed to send reset email';
-
-  @override
-  String get verifyEmail => 'Vérifier l\'email';
-
-  @override
-  String get verifyYourEmail => 'Vérifiez votre email';
-
-  @override
-  String get verificationEmailSentTo =>
-      'Nous avons envoyé un email de vérification à :';
+  String registrationVerificationFailed(String error) {
+    return 'Erreur lors de la vérification de l\'inscription : $error';
+  }
 
   @override
   String get nextSteps => 'Étapes suivantes :';
@@ -693,14 +640,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Créez votre premier calendrier d\'irrigation';
 
   @override
-  String get createSchedule => 'Create Schedule';
+  String get createSchedule => 'Créer un calendrier';
 
   @override
   String get deleteSchedule => 'Supprimer le calendrier';
 
   @override
   String get deleteScheduleConfirmation =>
-      'Are you sure you want to delete this irrigation schedule?';
+      'Êtes-vous sûr de vouloir supprimer ce calendrier d\'irrigation ?';
 
   @override
   String get stopIrrigation => 'Arrêter l\'irrigation';
@@ -963,7 +910,8 @@ class AppLocalizationsFr extends AppLocalizations {
   String get addFirstField => 'Ajoutez votre premier champ pour commencer!';
 
   @override
-  String get addFirstFieldToStart => 'Add your first field to get started!';
+  String get addFirstFieldToStart =>
+      'Ajoutez votre premier champ pour commencer !';
 
   @override
   String noFieldsFoundFor(String query) {
@@ -1215,26 +1163,26 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String userInsightFarmHeadline(int count, String moisture, String temp) {
-    return 'Across $count field(s), average soil moisture is $moisture and average temperature is $temp.';
+    return 'Sur $count parcelle(s), l\'humidité moyenne du sol est de $moisture et la température moyenne est de $temp.';
   }
 
   @override
   String userInsightWaterLine(String liters) {
-    return 'Today you have irrigated $liters across your fields.';
+    return 'Aujourd\'hui, vous avez irrigué $liters sur vos parcelles.';
   }
 
   @override
   String get userInsightNoFields =>
-      'You have no fields yet — add a field to start receiving insights.';
+      'Vous n\'avez pas encore de parcelles — ajoutez-en pour commencer à recevoir des informations.';
 
   @override
-  String get recommendationShortIrrigate => 'Irrigate';
+  String get recommendationShortIrrigate => 'Irriguer';
 
   @override
   String get recommendationShortDrainage => 'Drainage';
 
   @override
-  String get recommendationShortNeutral => 'Neutral';
+  String get recommendationShortNeutral => 'Neutre';
 
   @override
   String get searchByFieldName => 'Rechercher par nom du champ...';
@@ -1420,16 +1368,26 @@ class AppLocalizationsFr extends AppLocalizations {
   String get nonOrganic => 'Non biologique';
 
   @override
-  String get noAlerts => 'No alerts';
+  String get noAlerts => 'Aucune alerte';
 
   @override
-  String get alert => 'Alert';
+  String get alert => 'Alerte';
 
   @override
   String get or => 'OU';
 
   @override
   String get googleSignIn => 'Se connecter avec Google';
+
+  @override
+  String get verifyEmail => 'Vérifier l\'email';
+
+  @override
+  String get verifyYourEmail => 'Vérifiez votre email';
+
+  @override
+  String get verificationEmailSentTo =>
+      'Nous avons envoyé un email de vérification à :';
 
   @override
   String get editProfile => 'Modifier le profil';
@@ -1534,7 +1492,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get aboutFaminga => 'À propos de Faminga Irrigation';
 
   @override
-  String get aboutFamingaIrrigation => 'About Faminga Irrigation';
+  String get aboutFamingaIrrigation => 'À propos de Faminga Irrigation';
 
   @override
   String get accountActions => 'Actions du compte';
@@ -1543,7 +1501,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get signOut => 'Se déconnecter';
 
   @override
-  String get logout => 'Logout';
+  String get logout => 'Se déconnecter';
 
   @override
   String get logoutConfirmation => 'Déconnexion';
@@ -1602,56 +1560,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get profilePictureRemoved => 'Photo de profil supprimée!';
 
   @override
-  String get changePassword => 'Changer le mot de passe';
+  String get changePasswordTitle => 'Changer le mot de passe';
 
   @override
-  String get secureYourAccount => 'Sécurisez votre compte';
+  String get secureYourAccountTitle => 'Sécurisez votre compte';
 
   @override
-  String get chooseStrongPassword =>
-      'Choisissez un mot de passe fort pour protéger vos données agricoles';
+  String get securityTipsTitle => 'Conseils de sécurité';
 
   @override
-  String get currentPassword => 'Mot de passe actuel';
-
-  @override
-  String get enterCurrentPassword => 'Entrez votre mot de passe actuel';
-
-  @override
-  String get newPassword => 'Nouveau mot de passe';
-
-  @override
-  String get enterNewPassword => 'Entrez votre nouveau mot de passe';
-
-  @override
-  String get confirmNewPassword => 'Confirmer le nouveau mot de passe';
-
-  @override
-  String get reEnterNewPassword => 'Rétapez votre nouveau mot de passe';
-
-  @override
-  String get passwordStrength => 'Force du mot de passe';
-
-  @override
-  String get weakPassword => 'Faible';
-
-  @override
-  String get mediumPassword => 'Moyen';
-
-  @override
-  String get strongPassword => 'Fort';
-
-  @override
-  String get passwordRequirement8Chars => 'Au moins 8 caractères';
-
-  @override
-  String get passwordRequirementUppercase => 'Contient une lettre majuscule';
-
-  @override
-  String get passwordRequirementLowercase => 'Contient une lettre minuscule';
-
-  @override
-  String get passwordRequirementNumber => 'Contient un chiffre';
+  String get failedDeleteSchedule => 'Échec de la suppression du calendrier.';
 
   @override
   String get passwordRequirementSpecial =>
@@ -1975,27 +1893,124 @@ class AppLocalizationsFr extends AppLocalizations {
   String get editProfileTitle => 'Modifier le profil';
 
   @override
-  String get changePasswordTitle => 'Changer le mot de passe';
+  String get registrationFailed =>
+      'L\'inscription a échoué. Veuillez réessayer.';
 
   @override
-  String get secureYourAccountTitle => 'Sécurisez votre compte';
+  String get pleaseEnterFirstName => 'Veuillez entrer votre prénom';
 
   @override
-  String get securityTipsTitle => 'Conseils de sécurité';
+  String get pleaseEnterLastName => 'Veuillez entrer votre nom de famille';
 
   @override
-  String get failedDeleteSchedule => 'Échec de la suppression du calendrier.';
+  String get pleaseEnterEmail => 'Veuillez entrer un email valide';
 
   @override
-  String get accountVerification => 'Account Verification';
+  String get pleaseEnterPhoneNumber =>
+      'Veuillez entrer un numéro de téléphone valide';
 
   @override
-  String get verificationPendingTitle => 'Account Being Verified';
+  String get province => 'Province';
 
   @override
-  String get verificationPendingMessage =>
-      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+  String get chooseProvince => 'Veuillez choisir une province';
 
   @override
-  String get goToHome => 'Go to Home';
+  String get district => 'District';
+
+  @override
+  String get chooseProvinceFirst => 'Veuillez d\'abord choisir une province';
+
+  @override
+  String get chooseDistrict => 'Veuillez choisir un district';
+
+  @override
+  String get addressHint => 'Entrez votre adresse';
+
+  @override
+  String get addressTooShort =>
+      'L\'adresse doit contenir au moins 5 caractères';
+
+  @override
+  String get addressTooLong => 'L\'adresse ne peut pas dépasser 100 caractères';
+
+  @override
+  String get pleaseEnterPassword => 'Veuillez entrer un mot de passe';
+
+  @override
+  String get passwordMinLength =>
+      'Le mot de passe doit contenir au moins 6 caractères';
+
+  @override
+  String get pleaseConfirmPassword => 'Veuillez confirmer votre mot de passe';
+
+  @override
+  String get passwordsDoNotMatch => 'Les mots de passe ne correspondent pas';
+
+  @override
+  String get manualStart => 'Démarrage manuel';
+
+  @override
+  String get farmInfo => 'Infos de la ferme';
+
+  @override
+  String get scheduled => 'Programmé';
+
+  @override
+  String daysAgo(int days) {
+    return 'Il y a ${days}j';
+  }
+
+  @override
+  String get changePassword => 'Changer le mot de passe';
+
+  @override
+  String get secureYourAccount => 'Sécurisez votre compte';
+
+  @override
+  String get currentPassword => 'Mot de passe actuel';
+
+  @override
+  String get newPassword => 'Nouveau mot de passe';
+
+  @override
+  String get confirmNewPassword => 'Confirmer le nouveau mot de passe';
+
+  @override
+  String get weakPassword => 'Faible';
+
+  @override
+  String get mediumPassword => 'Moyen';
+
+  @override
+  String get strongPassword => 'Fort';
+
+  @override
+  String get enterCurrentPassword => 'Entrez votre mot de passe actuel';
+
+  @override
+  String get enterNewPassword => 'Entrez votre nouveau mot de passe';
+
+  @override
+  String get passwordRequirement8Chars => 'Au moins 8 caractères';
+
+  @override
+  String get passwordRequirementUppercase => 'Contient une lettre majuscule';
+
+  @override
+  String get passwordRequirementLowercase => 'Contient une lettre minuscule';
+
+  @override
+  String get passwordRequirementNumber => 'Contient un chiffre';
+
+  @override
+  String get reEnterNewPassword => 'Ressaisissez votre nouveau mot de passe';
+
+  @override
+  String get chooseStrongPassword =>
+      'Choisissez un mot de passe fort pour protéger vos données agricoles';
+
+  @override
+  String get pleaseEnterValidPhoneNumber =>
+      'Veuillez entrer un numéro de téléphone valide';
 }

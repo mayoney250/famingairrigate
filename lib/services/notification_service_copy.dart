@@ -161,7 +161,7 @@ class NotificationService {
         },
       );
 
-      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      final AndroidNotificationChannel channel = AndroidNotificationChannel(
         'irrigation_alerts',
         'Irrigation Alerts',
         description: 'Critical irrigation and water level alerts',
@@ -1220,7 +1220,7 @@ class NotificationService {
         presentSound: true,
       );
 
-      const platformDetails = NotificationDetails(
+      final platformDetails = NotificationDetails(
         android: androidDetails,
         iOS: iosDetails,
       );

@@ -261,67 +261,122 @@ class DashboardProvider with ChangeNotifier {
   }
 
   // Load dashboard data
-  Future<void> loadDashboardData(String userId) async {
+  Future<void> loadDashboardData(String userId, {bool showLoader = true}) async {
     try {
-      _isLoading = true;
+      // Only show the full-screen loading shimmer when explicitly requested
+      if (showLoader) {
+        _isLoading = true;
+        notifyListeners();
+      }
       _errorMessage = null;
-      notifyListeners();
       
       await initWeatherCache();
 
-      // Load data in parallel, but don't let one failure stop the others
-      final results = await Future.wait([
-        // Sync irrigation statuses before reading
-        _statusService.startDueSchedules().catchError((e) {
-          dev.log('Error in startDueSchedules: $e');
-          return 0;
-        }),
-        _statusService.markDueIrrigationsCompleted().catchError((e) {
-          dev.log('Error in markDueIrrigationsCompleted: $e');
-          return 0;
-        }),
-        _loadUpcoming(userId).catchError((e) {
-          dev.log('Error in _loadUpcoming: $e');
-          return null;
-        }),
-        _loadFields(userId).catchError((e) {
-          dev.log('Error in _loadFields: $e');
-          return null;
-        }),
-        _loadWeatherData().catchError((e) {
-          dev.log('Error in _loadWeatherData: $e');
-          return null;
-        }),
-        // soil moisture now computed via sensorData in _refreshDailySoilAverage
-        _loadWeeklyStats(userId).catchError((e) {
-          dev.log('Error in _loadWeeklyStats: $e');
-          return null;
-        }),
+      // CRITICAL: Load only essential data that's needed for initial UI
+      // This should complete in <500ms
+      await Future.wait([
+        _loadFields(userId).catchError((_) {}),
       ]);
-      
-      await setLocationFromDevice();
 
-      _isLoading = false;
-      notifyListeners();
+      // Mark loading complete immediately so UI shows (with cached/partial data)
+      if (showLoader) {
+        _isLoading = false;
+        notifyListeners();
+      }
+      dev.log('✅ Dashboard initial load complete');
+
+      // NOW load remaining data in BACKGROUND (non-blocking)
+      // These operations won't freeze the UI
+      
+      // Setup live data streams
       if (_fields.isNotEmpty) {
         subscribeToLiveFieldData(userId);
       }
-      await _refreshDailySoilAverage();
-      await _refreshWeeklyWaterUsage(userId: userId);
-      await _refreshDailyWaterUsage(userId: userId);
-      // Start background status sync every 60s (auto-start due + auto-complete)
-      _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
-        try {
-          await _statusService.startDueSchedules();
-          await _statusService.markDueIrrigationsCompleted();
-        } catch (_) {}
-      });
+
+      // Background tasks - don't block UI
+      _loadUpcomingInBackground(userId);
+      _syncSchedulesInBackground();
+      _loadWeatherInBackground();
+      _loadWeeklyStatsInBackground(userId);
+      _loadLocationInBackground();
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
       dev.log('Error loading dashboard data: $e');
       notifyListeners();
     }
+  }
+
+  /// Load upcoming schedules in background (non-blocking)
+  void _loadUpcomingInBackground(String userId) {
+    Future(() async {
+      try {
+        await _loadUpcoming(userId);
+      } catch (e) {
+        dev.log('Background error loading upcoming: $e');
+      }
+    });
+  }
+
+  /// Sync status services in background
+  void _syncSchedulesInBackground() {
+    Future(() async {
+      try {
+        await _statusService.startDueSchedules();
+        await _statusService.markDueIrrigationsCompleted();
+        notifyListeners();
+        
+        // Start periodic sync every 60s
+        _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
+          try {
+            await _statusService.startDueSchedules();
+            await _statusService.markDueIrrigationsCompleted();
+          } catch (_) {}
+        });
+      } catch (e) {
+        dev.log('Background error syncing schedules: $e');
+      }
+    });
+  }
+
+  /// Load weather in background with timeout
+  void _loadWeatherInBackground() {
+    Future(() async {
+      try {
+        await fetchAndSetLiveWeather().timeout(const Duration(seconds: 8));
+      } catch (e) {
+        dev.log('Background error loading weather: $e - Using cached');
+      }
+    });
+  }
+
+  /// Load weekly stats in background
+  void _loadWeeklyStatsInBackground(String userId) {
+    Future(() async {
+      try {
+        final now = DateTime.now();
+        final weekAgo = now.subtract(const Duration(days: 7));
+        
+        _weeklyWaterUsage = await _irrigationService.getWaterUsage(userId, weekAgo, now);
+        _weeklySavings = await _irrigationService.calculateSavings(userId, weekAgo, now);
+        await _refreshWeeklyWaterUsage(userId: userId);
+        
+        notifyListeners();
+      } catch (e) {
+        dev.log('Background error loading weekly stats: $e');
+      }
+    });
+  }
+
+  /// Load location in background (non-blocking)
+  void _loadLocationInBackground() {
+    Future(() async {
+      try {
+        await setLocationFromDevice();
+      } catch (e) {
+        dev.log('Background error loading location: $e');
+      }
+    });
   }
 
   // Load upcoming scheduled irrigations (scoped by selected farm, with legacy fallback)
@@ -499,7 +554,9 @@ class DashboardProvider with ChangeNotifier {
 
   // Refresh dashboard
   Future<void> refresh(String userId) async {
-    await loadDashboardData(userId);
+    // For user-initiated refreshes (pull-to-refresh) don't show full-screen shimmer.
+    // The RefreshIndicator will show its own spinner, so load in foreground but keep UI content.
+    await loadDashboardData(userId, showLoader: false);
   }
 
   // Change selected farm

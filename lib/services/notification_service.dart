@@ -226,7 +226,7 @@ class NotificationService {
         onDidReceiveNotificationResponse: _onNotificationTapped,
       );
 
-      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      final AndroidNotificationChannel channel = AndroidNotificationChannel(
         'irrigation_alerts',
         'Irrigation Alerts',
         description: 'Critical irrigation and water level alerts',

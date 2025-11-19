@@ -305,90 +305,40 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String daysAgo(int days) {
-    return '${days}d ago';
+  String get accountVerification => 'Account Verification';
+
+  @override
+  String get verificationPendingTitle => 'Account Being Verified';
+
+  @override
+  String get verificationPendingMessage =>
+      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+
+  @override
+  String get goToHome => 'Go to Home';
+
+  @override
+  String emailAlreadyRegistered(String email) {
+    return '$email is already registered';
   }
 
   @override
-  String get manualStart => 'Manual Start';
+  String phoneAlreadyRegistered(String phone) {
+    return 'Phone number $phone is already registered';
+  }
 
   @override
-  String get farmInfo => 'Farm Info';
+  String cooperativeIdAlreadyRegistered(String coopId) {
+    return 'Cooperative ID $coopId is already registered';
+  }
 
   @override
-  String get scheduled => 'Scheduled';
+  String get verifyingRegistration => 'Verifying registration..';
 
   @override
-  String get pleaseEnterFirstName => 'Please enter your first name';
-
-  @override
-  String get pleaseEnterLastName => 'Please enter your last name';
-
-  @override
-  String get pleaseEnterEmail => 'Please enter your email';
-
-  @override
-  String get pleaseEnterPhoneNumber => 'Please enter your phone number';
-
-  @override
-  String get pleaseEnterValidPhoneNumber => 'Please enter a valid phone number';
-
-  @override
-  String get pleaseEnterValidEmail => 'Please enter a valid email';
-
-  @override
-  String get pleaseEnterPassword => 'Please enter your password';
-
-  @override
-  String get passwordMinLength => 'Password must be at least 8 characters';
-
-  @override
-  String get province => 'Province';
-
-  @override
-  String get district => 'District';
-
-  @override
-  String get chooseProvince => 'Choose a province';
-
-  @override
-  String get chooseDistrict => 'Choose a district';
-
-  @override
-  String get chooseProvinceFirst => 'Choose a province first';
-
-  @override
-  String get addressOptional => 'Address (optional)';
-
-  @override
-  String get addressHint => 'e.g., Village, Cell, Sector';
-
-  @override
-  String get addressTooShort => 'Address too short';
-
-  @override
-  String get addressTooLong => 'Address too long';
-
-  @override
-  String get pleaseConfirmPassword => 'Please confirm your password';
-
-  @override
-  String get passwordsDoNotMatch => 'Passwords do not match';
-
-  @override
-  String get registrationFailed => 'Registration failed';
-
-  @override
-  String get failedToSendResetEmail => 'Failed to send reset email';
-
-  @override
-  String get verifyEmail => 'Verify Email';
-
-  @override
-  String get verifyYourEmail => 'Verify Your Email';
-
-  @override
-  String get verificationEmailSentTo => 'We\'ve sent a verification email to:';
+  String registrationVerificationFailed(String error) {
+    return 'Error verifying registration: $error';
+  }
 
   @override
   String get nextSteps => 'Next Steps:';
@@ -1409,6 +1359,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get googleSignIn => 'Sign in with Google';
 
   @override
+  String get verifyEmail => 'Verify Email';
+
+  @override
+  String get verifyYourEmail => 'Verify Your Email';
+
+  @override
+  String get verificationEmailSentTo => 'We\'ve sent a verification email to:';
+
+  @override
   String get editProfile => 'Edit Profile';
 
   @override
@@ -1575,56 +1534,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get profilePictureRemoved => 'Profile picture removed!';
 
   @override
-  String get changePassword => 'Change Password';
+  String get changePasswordTitle => 'Change Password';
 
   @override
-  String get secureYourAccount => 'Secure Your Account';
+  String get secureYourAccountTitle => 'Secure Your Account';
 
   @override
-  String get chooseStrongPassword =>
-      'Choose a strong password to protect your farming data';
+  String get securityTipsTitle => 'Security Tips';
 
   @override
-  String get currentPassword => 'Current Password';
-
-  @override
-  String get enterCurrentPassword => 'Enter your current password';
-
-  @override
-  String get newPassword => 'New Password';
-
-  @override
-  String get enterNewPassword => 'Enter your new password';
-
-  @override
-  String get confirmNewPassword => 'Confirm New Password';
-
-  @override
-  String get reEnterNewPassword => 'Re-enter your new password';
-
-  @override
-  String get passwordStrength => 'Password Strength';
-
-  @override
-  String get weakPassword => 'Weak';
-
-  @override
-  String get mediumPassword => 'Medium';
-
-  @override
-  String get strongPassword => 'Strong';
-
-  @override
-  String get passwordRequirement8Chars => 'At least 8 characters';
-
-  @override
-  String get passwordRequirementUppercase => 'Contains uppercase letter';
-
-  @override
-  String get passwordRequirementLowercase => 'Contains lowercase letter';
-
-  @override
-  String get passwordRequirementNumber => 'Contains number';
+  String get failedDeleteSchedule => 'Failed to delete schedule.';
 
   @override
   String get passwordRequirementSpecial =>
@@ -1927,27 +1846,119 @@ class AppLocalizationsEn extends AppLocalizations {
   String get editProfileTitle => 'Edit Profile';
 
   @override
-  String get changePasswordTitle => 'Change Password';
+  String get registrationFailed => 'Registration failed. Please try again.';
 
   @override
-  String get secureYourAccountTitle => 'Secure Your Account';
+  String get pleaseEnterFirstName => 'Please enter your first name';
 
   @override
-  String get securityTipsTitle => 'Security Tips';
+  String get pleaseEnterLastName => 'Please enter your last name';
 
   @override
-  String get failedDeleteSchedule => 'Failed to delete schedule.';
+  String get pleaseEnterEmail => 'Please enter a valid email';
 
   @override
-  String get accountVerification => 'Account Verification';
+  String get pleaseEnterPhoneNumber => 'Please enter a valid phone number';
 
   @override
-  String get verificationPendingTitle => 'Account Being Verified';
+  String get province => 'Province';
 
   @override
-  String get verificationPendingMessage =>
-      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+  String get chooseProvince => 'Please choose a province';
 
   @override
-  String get goToHome => 'Go to Home';
+  String get district => 'District';
+
+  @override
+  String get chooseProvinceFirst => 'Please choose a province first';
+
+  @override
+  String get chooseDistrict => 'Please choose a district';
+
+  @override
+  String get addressHint => 'Enter your address';
+
+  @override
+  String get addressTooShort => 'Address must be at least 5 characters';
+
+  @override
+  String get addressTooLong => 'Address cannot exceed 100 characters';
+
+  @override
+  String get pleaseEnterPassword => 'Please enter a password';
+
+  @override
+  String get passwordMinLength => 'Password must be at least 6 characters';
+
+  @override
+  String get pleaseConfirmPassword => 'Please confirm your password';
+
+  @override
+  String get passwordsDoNotMatch => 'Passwords do not match';
+
+  @override
+  String get manualStart => 'Manual Start';
+
+  @override
+  String get farmInfo => 'Farm Info';
+
+  @override
+  String get scheduled => 'Scheduled';
+
+  @override
+  String daysAgo(int days) {
+    return '${days}d ago';
+  }
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get secureYourAccount => 'Secure Your Account';
+
+  @override
+  String get currentPassword => 'Current Password';
+
+  @override
+  String get newPassword => 'New Password';
+
+  @override
+  String get confirmNewPassword => 'Confirm New Password';
+
+  @override
+  String get weakPassword => 'Weak';
+
+  @override
+  String get mediumPassword => 'Medium';
+
+  @override
+  String get strongPassword => 'Strong';
+
+  @override
+  String get enterCurrentPassword => 'Enter your current password';
+
+  @override
+  String get enterNewPassword => 'Enter your new password';
+
+  @override
+  String get passwordRequirement8Chars => 'At least 8 characters';
+
+  @override
+  String get passwordRequirementUppercase => 'Contains uppercase letter';
+
+  @override
+  String get passwordRequirementLowercase => 'Contains lowercase letter';
+
+  @override
+  String get passwordRequirementNumber => 'Contains a number';
+
+  @override
+  String get reEnterNewPassword => 'Re-enter your new password';
+
+  @override
+  String get chooseStrongPassword =>
+      'Choose a strong password to protect your farm data';
+
+  @override
+  String get pleaseEnterValidPhoneNumber => 'Please enter a valid phone number';
 }

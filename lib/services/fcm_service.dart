@@ -93,7 +93,7 @@ class FCMService {
       onDidReceiveNotificationResponse: _onNotificationTap,
     );
 
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    final AndroidNotificationChannel channel = AndroidNotificationChannel(
       'irrigation_alerts',
       'Irrigation Alerts',
       description: 'Notifications for irrigation and water level alerts',
@@ -211,7 +211,7 @@ class FCMService {
             iOS: DarwinInitializationSettings(),
           );
           await plugin.initialize(init);
-          const channel = AndroidNotificationChannel(
+          final channel = AndroidNotificationChannel(
             'irrigation_alerts',
             'Irrigation Alerts',
             description: 'Notifications for irrigation and water level alerts',

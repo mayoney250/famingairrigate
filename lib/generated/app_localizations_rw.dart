@@ -307,92 +307,40 @@ class AppLocalizationsRw extends AppLocalizations {
   }
 
   @override
-  String daysAgo(int days) {
-    return 'Iminsi $days ishize';
+  String get accountVerification => 'Kwemeza Konti';
+
+  @override
+  String get verificationPendingTitle => 'Konti iri kwemezwa';
+
+  @override
+  String get verificationPendingMessage =>
+      'Iyandikwa ryawe ryashyikirijwe kwemezwa. Itsinda ryacu ry\'abayobozi rizasuzuma amakuru y\'ishyirahamwe ryawe kandi rizaguhamagara vuba. Urakoze ku bw\'ubwihangane bwawe!';
+
+  @override
+  String get goToHome => 'Jya ku Rugo';
+
+  @override
+  String emailAlreadyRegistered(String email) {
+    return '$email imaze kwiyandikisha';
   }
 
   @override
-  String get manualStart => 'Tangira ku buryo bw’intoki';
+  String phoneAlreadyRegistered(String phone) {
+    return 'Nimero ya telefoni $phone imaze kwiyandikisha';
+  }
 
   @override
-  String get farmInfo => 'Amakuru y’umurima';
+  String cooperativeIdAlreadyRegistered(String coopId) {
+    return 'ID y\'ishyirahamwe $coopId imaze kwiyandikisha';
+  }
 
   @override
-  String get scheduled => 'Byateguwe';
+  String get verifyingRegistration => 'Kurikirana kwiyandikisha...';
 
   @override
-  String get pleaseEnterFirstName => 'Please enter your first name';
-
-  @override
-  String get pleaseEnterLastName => 'Please enter your last name';
-
-  @override
-  String get pleaseEnterEmail => 'Please enter your email';
-
-  @override
-  String get pleaseEnterPhoneNumber => 'Nyamuneka injiza nimero ya telefoni';
-
-  @override
-  String get pleaseEnterValidPhoneNumber =>
-      'Nyamuneka injiza nimero ya telefoni ikwiye';
-
-  @override
-  String get pleaseEnterValidEmail => 'Please enter a valid email';
-
-  @override
-  String get pleaseEnterPassword => 'Please enter your password';
-
-  @override
-  String get passwordMinLength => 'Password must be at least 8 characters';
-
-  @override
-  String get province => 'Province';
-
-  @override
-  String get district => 'District';
-
-  @override
-  String get chooseProvince => 'Choose a province';
-
-  @override
-  String get chooseDistrict => 'Choose a district';
-
-  @override
-  String get chooseProvinceFirst => 'Choose a province first';
-
-  @override
-  String get addressOptional => 'Address (optional)';
-
-  @override
-  String get addressHint => 'e.g., Village, Cell, Sector';
-
-  @override
-  String get addressTooShort => 'Address too short';
-
-  @override
-  String get addressTooLong => 'Address too long';
-
-  @override
-  String get pleaseConfirmPassword => 'Please confirm your password';
-
-  @override
-  String get passwordsDoNotMatch => 'Passwords do not match';
-
-  @override
-  String get registrationFailed => 'Registration failed';
-
-  @override
-  String get failedToSendResetEmail => 'Failed to send reset email';
-
-  @override
-  String get verifyEmail => 'Emeza imeyili';
-
-  @override
-  String get verifyYourEmail => 'Emeza imeyili yawe';
-
-  @override
-  String get verificationEmailSentTo =>
-      'Twaguhereje imeyili yo kugufasha kwemeza konti yawe kuri:';
+  String registrationVerificationFailed(String error) {
+    return 'Ikosa mu kwemeza kwiyandikisha: $error';
+  }
 
   @override
   String get nextSteps => 'Intambwe zikurikira:';
@@ -1220,26 +1168,26 @@ class AppLocalizationsRw extends AppLocalizations {
 
   @override
   String userInsightFarmHeadline(int count, String moisture, String temp) {
-    return 'Across $count field(s), average soil moisture is $moisture and average temperature is $temp.';
+    return 'Ku mirima $count, unyunyuguzi bw\'ubutaka buri hagati ni $moisture kandi ubushyuhe buri hagati ni $temp.';
   }
 
   @override
   String userInsightWaterLine(String liters) {
-    return 'Today you have irrigated $liters across your fields.';
+    return 'Uyu munsi wateje litiro $liters mu mirima yawe.';
   }
 
   @override
   String get userInsightNoFields =>
-      'You have no fields yet — add a field to start receiving insights.';
+      'Nta mirima ufite — ongeraho umurima kugirango utangire kubona amakuru.';
 
   @override
-  String get recommendationShortIrrigate => 'Irrigate';
+  String get recommendationShortIrrigate => 'Kuhira';
 
   @override
-  String get recommendationShortDrainage => 'Drainage';
+  String get recommendationShortDrainage => 'Gusohora';
 
   @override
-  String get recommendationShortNeutral => 'Neutral';
+  String get recommendationShortNeutral => 'Bisanzwe';
 
   @override
   String get searchByFieldName => 'Shakisha izina ry’umurima...';
@@ -1424,16 +1372,26 @@ class AppLocalizationsRw extends AppLocalizations {
   String get nonOrganic => 'Si uburimyi bwa kinyabuzima';
 
   @override
-  String get noAlerts => 'No alerts';
+  String get noAlerts => 'Nta menyesho';
 
   @override
-  String get alert => 'Alert';
+  String get alert => 'Menyesho';
 
   @override
   String get or => 'CYANGWA';
 
   @override
   String get googleSignIn => 'Injira ukoresheje Google';
+
+  @override
+  String get verifyEmail => 'Emeza imeyili';
+
+  @override
+  String get verifyYourEmail => 'Emeza imeyili yawe';
+
+  @override
+  String get verificationEmailSentTo =>
+      'Twaguhereje imeyili yo kugufasha kwemeza konti yawe kuri:';
 
   @override
   String get editProfile => 'Hindura profayili';
@@ -1605,56 +1563,16 @@ class AppLocalizationsRw extends AppLocalizations {
   String get profilePictureRemoved => 'Ifoto yakuweho!';
 
   @override
-  String get changePassword => 'Hindura ijambo ry’ibanga';
+  String get changePasswordTitle => 'Hindura ijambo ry\'ibanga';
 
   @override
-  String get secureYourAccount => 'Rinda konti yawe';
+  String get secureYourAccountTitle => 'Rinda konti yawe';
 
   @override
-  String get chooseStrongPassword =>
-      'Hitamo ijambo ry’ibanga rikomeye kugira ngo urinde amakuru yawe';
+  String get securityTipsTitle => 'Ibibazo byo mahoro';
 
   @override
-  String get currentPassword => 'Ijambo ry’ibanga ukoresha ubu';
-
-  @override
-  String get enterCurrentPassword => 'Andika ijambo ry’ibanga ukoresha ubu';
-
-  @override
-  String get newPassword => 'Ijambo ry’ibanga rishya';
-
-  @override
-  String get enterNewPassword => 'Andika ijambo ry’ibanga rishya';
-
-  @override
-  String get confirmNewPassword => 'Emeza ijambo ry’ibanga rishya';
-
-  @override
-  String get reEnterNewPassword => 'Ongera wandike ijambo ry’ibanga rishya';
-
-  @override
-  String get passwordStrength => 'Imbaraga z’ijambo ry’ibanga';
-
-  @override
-  String get weakPassword => 'Ryoroshye';
-
-  @override
-  String get mediumPassword => 'Rihagaze neza';
-
-  @override
-  String get strongPassword => 'Rikomeye';
-
-  @override
-  String get passwordRequirement8Chars => 'Nibura inyuguti 8';
-
-  @override
-  String get passwordRequirementUppercase => 'Byibuze inyuguti nkuru 1';
-
-  @override
-  String get passwordRequirementLowercase => 'Byibuze inyuguti ntoya 1';
-
-  @override
-  String get passwordRequirementNumber => 'Byibuze umubare 1';
+  String get failedDeleteSchedule => 'Gusiba gahunda byanze.';
 
   @override
   String get passwordRequirementSpecial =>
@@ -1972,27 +1890,123 @@ class AppLocalizationsRw extends AppLocalizations {
   String get editProfileTitle => 'Hindura profayili';
 
   @override
-  String get changePasswordTitle => 'Hindura ijambo ry\'ibanga';
+  String get registrationFailed =>
+      'Iyandikwa ryanze. Nyamuneka ongera ugerageze.';
 
   @override
-  String get secureYourAccountTitle => 'Rinda konti yawe';
+  String get pleaseEnterFirstName => 'Nyamuneka andika izina ryawe';
 
   @override
-  String get securityTipsTitle => 'Ibibazo byo mahoro';
+  String get pleaseEnterLastName => 'Nyamuneka andika izina ry\'umuryango';
 
   @override
-  String get failedDeleteSchedule => 'Gusiba gahunda byanze.';
+  String get pleaseEnterEmail => 'Nyamuneka andika imeyili ikwiye';
 
   @override
-  String get accountVerification => 'Account Verification';
+  String get pleaseEnterPhoneNumber =>
+      'Nyamuneka andika nimero ya telefoni ikwiye';
 
   @override
-  String get verificationPendingTitle => 'Account Being Verified';
+  String get province => 'Intara';
 
   @override
-  String get verificationPendingMessage =>
-      'Your registration has been submitted for verification. Our admin team will review your cooperative details and contact you shortly. Thank you for your patience!';
+  String get chooseProvince => 'Nyamuneka hitamo intara';
 
   @override
-  String get goToHome => 'Go to Home';
+  String get district => 'Akarere';
+
+  @override
+  String get chooseProvinceFirst => 'Nyamuneka hitamo intara mbere';
+
+  @override
+  String get chooseDistrict => 'Nyamuneka hitamo akarere';
+
+  @override
+  String get addressHint => 'Andika aderesi yawe';
+
+  @override
+  String get addressTooShort => 'Aderesi igomba kugira nibura inyuguti 5';
+
+  @override
+  String get addressTooLong => 'Aderesi ntishobora kuziruka inyuguti 100';
+
+  @override
+  String get pleaseEnterPassword => 'Nyamuneka andika ijambo ry\'ibanga';
+
+  @override
+  String get passwordMinLength =>
+      'Ijambo ry\'ibanga rigomba kugira nibura inyuguti 6';
+
+  @override
+  String get pleaseConfirmPassword => 'Nyamuneka wemeze ijambo ry\'ibanga';
+
+  @override
+  String get passwordsDoNotMatch => 'Amagambo y\'ibanga ntahura';
+
+  @override
+  String get manualStart => 'Tangira ku buryo bw\'intoki';
+
+  @override
+  String get farmInfo => 'Amakuru y\'umurima';
+
+  @override
+  String get scheduled => 'Byateguwe';
+
+  @override
+  String daysAgo(int days) {
+    return 'Iminsi $days ishize';
+  }
+
+  @override
+  String get changePassword => 'Hindura ijambo ry\'ibanga';
+
+  @override
+  String get secureYourAccount => 'Rinda konti yawe';
+
+  @override
+  String get currentPassword => 'Ijambo ry\'ibanga ryigenekerezo';
+
+  @override
+  String get newPassword => 'Ijambo ry\'ibanga rishya';
+
+  @override
+  String get confirmNewPassword => 'Emeza ijambo ry\'ibanga rishya';
+
+  @override
+  String get weakPassword => 'Ryoroshye';
+
+  @override
+  String get mediumPassword => 'Rihagaze neza';
+
+  @override
+  String get strongPassword => 'Rikomeye';
+
+  @override
+  String get enterCurrentPassword => 'Andika ijambo ry\'ibanga ryigenekerezo';
+
+  @override
+  String get enterNewPassword => 'Andika ijambo ry\'ibanga rishya';
+
+  @override
+  String get passwordRequirement8Chars => 'Nibura inyuguti 8';
+
+  @override
+  String get passwordRequirementUppercase => 'Byibuze inyuguti nkuru';
+
+  @override
+  String get passwordRequirementLowercase => 'Byibuze inyuguti ntoya';
+
+  @override
+  String get passwordRequirementNumber => 'Byibuze umubare';
+
+  @override
+  String get reEnterNewPassword => 'Ongera wandike ijambo ry\'ibanga rishya';
+
+  @override
+  String get chooseStrongPassword =>
+      'Hitamo ijambo ry\'ibanga rikomeye kugira ngo urinde amakuru yawe y\'umurimyi';
+
+  @override
+  String get pleaseEnterValidPhoneNumber =>
+      'Nyamuneka andika nimero ya telefoni ikwiye';
 }

@@ -1,35 +1,37 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/sensor_data_model.dart';
+import 'cache_repository.dart';
 
 class SensorDataService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CacheRepository _cache = CacheRepository();
   final String _collection = 'sensorData';
 
   // Create sensor reading
   Future<String> createReading(SensorDataModel reading) async {
     try {
+      // Save locally first (instant response)
+      await _cache.saveSensorDataOffline(reading);
+      
+      // Try to sync immediately
       final docRef = await _firestore.collection(_collection).add(reading.toMap());
       log('Sensor reading created: ${docRef.id}');
       return docRef.id;
     } catch (e) {
-      log('Error creating sensor reading: $e');
+      // Already saved to cache/queue in saveSensorDataOffline
+      log('Error creating sensor reading (queued locally): $e');
       rethrow;
     }
   }
 
-  // Get latest reading for a field
+  // Get latest reading for a field (with cache)
   Future<SensorDataModel?> getLatestReading(String fieldId) async {
     try {
-      final snapshot = await _firestore
-          .collection(_collection)
-          .where('fieldId', isEqualTo: fieldId)
-          .orderBy('timestamp', descending: true)
-          .limit(1)
-          .get();
-
-      if (snapshot.docs.isNotEmpty) {
-        return SensorDataModel.fromFirestore(snapshot.docs.first);
+      // Return from cache immediately
+      final cached = await _cache.getSensorData(fieldId: fieldId, limit: 1);
+      if (cached.isNotEmpty) {
+        return cached.first;
       }
       return null;
     } catch (e) {
@@ -38,40 +40,60 @@ class SensorDataService {
     }
   }
 
-  // Stream latest sensor data
-  Stream<SensorDataModel?> streamLatestReading(String fieldId) {
-    return _firestore
-        .collection(_collection)
-        .where('fieldId', isEqualTo: fieldId)
-        .orderBy('timestamp', descending: true)
-        .limit(1)
-        .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isNotEmpty) {
-        return SensorDataModel.fromFirestore(snapshot.docs.first);
+  // Stream latest sensor data (with cache)
+  Stream<SensorDataModel?> streamLatestReading(String fieldId) async* {
+    try {
+      // Yield cached value immediately
+      final cached = await _cache.getSensorData(fieldId: fieldId, limit: 1);
+      if (cached.isNotEmpty) {
+        yield cached.first;
       }
-      return null;
-    });
+
+      // Then stream from Firebase
+      yield* _firestore
+          .collection(_collection)
+          .where('fieldId', isEqualTo: fieldId)
+          .orderBy('timestamp', descending: true)
+          .limit(1)
+          .snapshots()
+          .map((snapshot) {
+        if (snapshot.docs.isNotEmpty) {
+          final model = SensorDataModel.fromFirestore(snapshot.docs.first);
+          // Update cache with latest from Firebase
+          _cache.saveSensorDataOffline(model);
+          return model;
+        }
+        return null;
+      });
+    } catch (e) {
+      log('Error in streamLatestReading: $e');
+    }
   }
 
-  // Get readings for a time range
+  // Get readings for a time range (with cache + Firebase limit)
   Future<List<SensorDataModel>> getReadingsInRange(
     String fieldId,
     DateTime startDate,
     DateTime endDate,
   ) async {
     try {
-      final snapshot = await _firestore
-          .collection(_collection)
-          .where('fieldId', isEqualTo: fieldId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
-          .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
-          .orderBy('timestamp')
-          .get();
-
-      return snapshot.docs
-          .map((doc) => SensorDataModel.fromFirestore(doc))
-          .toList();
+      // Calculate days back for caching
+      final daysBack = DateTime.now().difference(startDate).inDays.abs();
+      
+      // Return from cache immediately (limits to 50 items, 7 days back)
+      final cached = await _cache.getSensorData(
+        fieldId: fieldId,
+        daysBack: daysBack > 7 ? 7 : daysBack,
+        limit: 50,
+      );
+      
+      if (cached.isNotEmpty) {
+        return cached.where((r) {
+          return r.timestamp.isAfter(startDate) && r.timestamp.isBefore(endDate);
+        }).toList();
+      }
+      
+      return [];
     } catch (e) {
       log('Error fetching readings in range: $e');
       rethrow;
@@ -82,18 +104,24 @@ class SensorDataService {
   Future<List<SensorDataModel>> getLast24Hours(
     String fieldId,
   ) async {
-    final now = DateTime.now();
-    final yesterday = now.subtract(const Duration(hours: 24));
-    return getReadingsInRange(fieldId, yesterday, now);
+    try {
+      return await _cache.getSensorData(fieldId: fieldId, limit: 50, daysBack: 1);
+    } catch (e) {
+      log('Error fetching last 24 hours: $e');
+      return [];
+    }
   }
 
   // Get last 7 days of readings
   Future<List<SensorDataModel>> getLast7Days(
     String fieldId,
   ) async {
-    final now = DateTime.now();
-    final lastWeek = now.subtract(const Duration(days: 7));
-    return getReadingsInRange(fieldId, lastWeek, now);
+    try {
+      return await _cache.getSensorData(fieldId: fieldId, limit: 50, daysBack: 7);
+    } catch (e) {
+      log('Error fetching last 7 days: $e');
+      return [];
+    }
   }
 
   // Get readings for chart (hourly averages)

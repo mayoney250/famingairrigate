@@ -9,14 +9,18 @@ import 'models/alert_model.dart';
 import 'models/sensor_model.dart';
 import 'models/sensor_reading_model.dart';
 import 'models/user_model.dart';
+import 'models/sync_queue_item_model.dart';
+import 'models/sync_queue_item_adapter.dart';
 import 'config/firebase_config.dart';
 import 'config/theme_config.dart';
 import 'providers/auth_provider.dart';
 import 'providers/dashboard_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
+import 'providers/connectivity_provider.dart';
 import 'routes/app_routes.dart';
 import 'services/fcm_service.dart';
+import 'services/cache_repository.dart';
 // FIXED: Changed import path to Flutter's generated location
 import 'generated/app_localizations.dart';
      
@@ -41,10 +45,15 @@ void main() async {
   Hive.registerAdapter(SensorModelAdapter());
   Hive.registerAdapter(SensorReadingModelAdapter());
   Hive.registerAdapter(UserModelAdapter());
+  Hive.registerAdapter(SyncQueueItemAdapter());
   await Hive.openBox<AlertModel>('alertsBox');
   await Hive.openBox<SensorModel>('sensorsBox');
   await Hive.openBox<SensorReadingModel>('readingsBox');
   await Hive.openBox<UserModel>('userBox');
+  
+  // Initialize offline-first cache system
+  final cacheRepo = CacheRepository();
+  await cacheRepo.initialize();
 
   runApp(const FamingaIrrigationApp());
 }
@@ -60,6 +69,13 @@ class FamingaIrrigationApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DashboardProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
         ChangeNotifierProvider(create: (_) => LanguageProvider()),
+        ChangeNotifierProvider(
+          create: (_) {
+            final provider = ConnectivityProvider();
+            provider.initialize();
+            return provider;
+          },
+        ),
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, themeProvider, languageProvider, _) {
