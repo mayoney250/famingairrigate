@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Google Maps API Test</title>
+  <style>
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+    #map { height: 500px; width: 100%; border: 2px solid #333; }
+    .status { padding: 10px; margin: 10px 0; border-radius: 5px; }
+    .success { background: #4CAF50; color: white; }
+    .error { background: #f44336; color: white; }
+    .info { background: #2196F3; color: white; }
+  </style>
+</head>
+<body>
+  <h1>🗺️ Google Maps API Test</h1>
+  
+  <div id="status" class="status info">Checking Google Maps API...</div>
+  
+  <h2>Test Map:</h2>
+  <div id="map"></div>
+  
+  <h2>Instructions:</h2>
+  <ol>
+    <li>If you see a map above ✅ - Your API is working!</li>
+    <li>If you see an error ❌ - Enable APIs in Google Cloud Console</li>
+    <li>Go to: <a href="https://console.cloud.google.com/apis/library" target="_blank">Google Cloud API Library</a></li>
+    <li>Enable: <strong>Maps JavaScript API</strong></li>
+    <li>Enable: <strong>Geocoding API</strong></li>
+    <li>Refresh this page</li>
+  </ol>
+
+  <!-- Google Maps JavaScript API -->
+  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCgsYvpfGIjDQnjYFmg6WyJm22cVEc-g2o"></script>
+  
+  <script>
+    const statusDiv = document.getElementById('status');
+    
+    // Check if Google Maps loaded
+    if (typeof google !== 'undefined' && google.maps) {
+      statusDiv.className = 'status success';
+      statusDiv.innerHTML = '✅ Google Maps JavaScript API loaded successfully!';
+      
+      // Initialize map
+      try {
+        const map = new google.maps.Map(document.getElementById('map'), {
+          center: { lat: -1.286389, lng: 36.817223 }, // Nairobi
+          zoom: 12,
+          mapTypeId: google.maps.MapTypeId.HYBRID
+        });
+        
+        // Add a marker
+        new google.maps.Marker({
+          position: { lat: -1.286389, lng: 36.817223 },
+          map: map,
+          title: 'Test Location'
+        });
+        
+        statusDiv.innerHTML += '<br>✅ Map rendered successfully!<br>✅ Your API key is working!';
+      } catch (error) {
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = '❌ Error creating map: ' + error.message;
+      }
+    } else {
+      statusDiv.className = 'status error';
+      statusDiv.innerHTML = `
+        ❌ Google Maps JavaScript API failed to load!<br><br>
+        <strong>Possible reasons:</strong><br>
+        1. APIs not enabled in Google Cloud Console<br>
+        2. Billing not set up<br>
+        3. API key is invalid<br>
+        4. Network connection issue<br><br>
+        <strong>Fix:</strong> Go to <a href="https://console.cloud.google.com/apis/library" target="_blank" style="color: white; text-decoration: underline;">Google Cloud API Library</a> and enable:<br>
+        - Maps JavaScript API<br>
+        - Geocoding API
+      `;
+    }
+  </script>
+</body>
+</html>

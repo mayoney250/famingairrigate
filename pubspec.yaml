@@ -1,0 +1,114 @@
+name: faminga_irrigation
+description: Smart Irrigation Management for Faminga - Empowering African farmers with IoT-powered precision irrigation
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+
+  
+  # Firebase
+  firebase_core: ^2.24.0
+  firebase_auth: ^4.15.0
+  cloud_firestore: ^4.13.0
+  firebase_storage: ^11.5.0
+  firebase_messaging: ^14.7.0
+  firebase_analytics: ^10.7.0
+  firebase_crashlytics: ^3.4.0
+  firebase_performance: ^0.9.3
+  google_sign_in: ^6.2.1
+  cloud_functions: ^4.4.0
+  
+  # State Management
+  provider: ^6.1.0
+  get: ^4.6.6
+  
+  # UI Components
+  google_fonts: ^6.1.0
+  cached_network_image: ^3.3.0
+  shimmer: ^3.0.0
+  lottie: ^2.7.0
+  flutter_svg: ^2.0.9
+  photo_view: ^0.14.0
+  
+  # Maps & Location
+  google_maps_flutter: ^2.5.0
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+  geolocator: ^10.1.0
+  geocoding: ^2.1.1
+  location: ^5.0.3
+  
+  # Charts & Visualization
+  fl_chart: ^0.65.0
+  
+  # AI/ML
+  google_generative_ai: ^0.2.0
+  image_picker: ^1.0.4
+  # image_cropper: ^5.0.1  # Temporarily disabled due to web compatibility issues
+  flutter_image_compress: ^2.1.0
+  
+  # Networking
+  http: ^1.1.0
+  dio: ^5.4.0
+  
+  # Storage & Cache
+  shared_preferences: ^2.2.2
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  
+  # Utilities
+  intl: any
+  url_launcher: ^6.2.2
+  share_plus: ^7.2.1
+  path_provider: ^2.1.1
+  permission_handler: ^11.1.0
+  connectivity_plus: ^5.0.2
+  device_info_plus: ^9.1.1
+  package_info_plus: ^5.0.1
+  
+  # Notifications
+  flutter_local_notifications: ^17.0.0
+  
+  # Forms & Input
+  flutter_form_builder: ^10.0.1
+  form_field_validator: ^1.1.0
+  
+  # Date & Time
+  table_calendar: ^3.0.9
+  
+  # PDF & Documents
+  pdf: ^3.10.7
+  printing: ^5.12.0
+  
+  # Other
+  uuid: ^4.2.2
+  crypto: ^3.0.3
+  webview_flutter: ^4.4.4
+  cupertino_icons: ^1.0.2
+  flutter_map_cancellable_tile_provider: ^2.0.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  build_runner: ^2.4.7
+  hive_generator: ^2.0.1
+
+# dependency_overrides:
+  # Removed - image_cropper temporarily disabled for web compatibility
+
+flutter:
+  uses-material-design: true
+  
+  generate: true
+  
+  assets:
+    - assets/images/
+    - assets/flags/
