@@ -414,11 +414,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
             tooltip: 'Export PDF',
           ),
           IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () {},
-            tooltip: 'Share Report',
-          ),
-          IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
             tooltip: 'Filters',
@@ -2249,7 +2244,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Export & Share', Icons.share, isDark),
+          _buildSectionTitle('Export', Icons.share, isDark),
           const SizedBox(height: 12),
           Row(
             children: [
@@ -2260,21 +2255,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   label: const Text('Export as PDF'),
                   style: ElevatedButton.styleFrom(backgroundColor: FamingaBrandColors.primaryOrange),
                 ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _exportToCSV,
-                  icon: const Icon(Icons.table_chart),
-                  label: const Text('Export CSV'),
-                  style: ElevatedButton.styleFrom(backgroundColor: FamingaBrandColors.primaryOrange),
-                ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: _shareReport,
-                icon: const Icon(Icons.share, color: FamingaBrandColors.primaryOrange),
-                tooltip: 'Share report',
               ),
             ],
           ),
@@ -2399,73 +2379,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   // Export & Share Methods
-  Future<void> _exportToCSV() async {
-    try {
-      final buffer = StringBuffer();
-      
-      // Header
-      buffer.writeln('Irrigation Report - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}');
-      buffer.writeln('Report Period: ${_selectedPeriod.name.toUpperCase()}');
-      if (_selectedDate != null) {
-        buffer.writeln('Date: ${DateFormat('MMM dd, yyyy').format(_selectedDate!)}');
-      }
-      buffer.writeln('Generated: ${DateFormat('MMM dd, yyyy hh:mm a').format(_reportGeneratedAt ?? DateTime.now())}');
-      buffer.writeln('');
-      
-      // Farm Overview
-      buffer.writeln('=== FARM OVERVIEW ===');
-      buffer.writeln('Farmer,${_user?.fullName ?? "N/A"}');
-      buffer.writeln('Primary Field,${_fields.isNotEmpty ? _fields.first['name'] : "N/A"}');
-      buffer.writeln('Total Fields,${_fields.length}');
-      buffer.writeln('');
-      
-      // Summary Metrics
-      buffer.writeln('=== SUMMARY ===');
-      buffer.writeln('Total Water Used (L),${_totalWaterUsed.toStringAsFixed(1)}');
-      buffer.writeln('Average Water Per Cycle (L),${_avgWaterPerCycle.toStringAsFixed(1)}');
-      buffer.writeln('Total Irrigations,${_scheduledCycles.length + _runningCycles.length + _manualCycles.length}');
-      buffer.writeln('Completion Rate (%),${_completionRate.toStringAsFixed(1)}');
-      buffer.writeln('Missed Cycles,${_missedCycles}');
-      buffer.writeln('');
-      
-      // Daily Water Usage
-      buffer.writeln('=== DAILY WATER USAGE ===');
-      buffer.writeln('Date,Water Used (L)');
-      final sortedDates = _dailyWaterUsage.keys.toList()..sort();
-      for (final date in sortedDates) {
-        buffer.writeln('$date,${_dailyWaterUsage[date]?.toStringAsFixed(1)}');
-      }
-      buffer.writeln('');
-      
-      // Irrigation Logs
-      buffer.writeln('=== IRRIGATION LOGS ===');
-      buffer.writeln('Date,Time,Zone,Duration (min),Water Used (L),Triggered By,Status');
-      final sortedLogs = _allLogs.toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-      for (final log in sortedLogs.take(100)) {
-        final date = DateFormat('MMM dd, yyyy').format(log.timestamp);
-        final time = DateFormat('hh:mm a').format(log.timestamp);
-        buffer.writeln('$date,$time,${log.zoneName},${log.durationMinutes ?? 0},${log.waterUsed?.toStringAsFixed(1) ?? 0},${log.triggeredBy ?? "unknown"},${log.action.name}');
-      }
-      
-      // Save to file
-      final dir = await getApplicationDocumentsDirectory();
-      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
-      final file = File('${dir.path}/report_$timestamp.csv');
-      await file.writeAsString(buffer.toString());
-      
-      // Share
-      await Share.shareXFiles([XFile(file.path)], text: 'Irrigation Report - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}');
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Report exported and shared successfully!')),
-      );
-    } catch (e) {
-      debugPrint('Error exporting CSV: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error exporting report: $e')),
-      );
-    }
-  }
 
   Future<void> _exportToPDF() async {
     try {
