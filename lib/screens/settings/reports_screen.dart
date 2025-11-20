@@ -118,7 +118,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _loadAlerts(user.uid, dateRange['start']!, dateRange['end']!),
       ]);
 
-      _startRealTimeRunningCyclesListener(user.uid, dateRange['start']!, dateRange['end']!);
       _calculateMetrics();
       
     } catch (e) {
@@ -409,7 +408,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: () {},
+            onPressed: () {
+              _exportToPDF();
+            },
             tooltip: 'Export PDF',
           ),
           IconButton(
