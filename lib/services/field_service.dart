@@ -63,28 +63,45 @@ class FieldService {
     }
 
     // then yield live updates and refresh cache
-    await for (final snapshot in _firestore
-        .collection(_collection)
-        .where('userId', isEqualTo: userId)
-        .snapshots()) {
-      final fields = snapshot.docs.map((doc) {
-        final data = doc.data();
-        data['id'] = doc.id; // Add document ID
-        return FieldModel.fromMap(data);
-      }).toList();
+    try {
+      await for (final snapshot in _firestore
+          .collection(_collection)
+          .where('userId', isEqualTo: userId)
+          .snapshots()) {
+        final fields = snapshot.docs.map((doc) {
+          final data = doc.data();
+          data['id'] = doc.id; // Add document ID
+          return FieldModel.fromMap(data);
+        }).toList();
 
-      // Sort by addedDate (parse ISO strings defensively)
-      fields.sort((a, b) {
-        final aDt = DateTime.tryParse(a.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
-        final bDt = DateTime.tryParse(b.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
-        return bDt.compareTo(aDt);
-      });
+        // Sort by addedDate (parse ISO strings defensively)
+        fields.sort((a, b) {
+          final aDt = DateTime.tryParse(a.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+          final bDt = DateTime.tryParse(b.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+          return bDt.compareTo(aDt);
+        });
 
-      // cache the list as JSON
-      final listMaps = fields.map((f) => f.toMap()).toList();
-      await cache.cacheJsonList(cacheKey, listMaps);
+        // cache the list as JSON
+        final listMaps = fields.map((f) => f.toMap()).toList();
+        await cache.cacheJsonList(cacheKey, listMaps);
 
-      yield fields;
+        yield fields;
+      }
+    } catch (e) {
+      // Offline or Firestore error: yield cached data if available
+      dev.log('⚠️ Firestore getUserFields error (offline?): $e');
+      final cached = cache.getCachedList(cacheKey);
+      if (cached.isNotEmpty) {
+        try {
+          final models = cached.map((m) => FieldModel.fromMap(m..['id'] = m['id'] ?? '')).toList();
+          models.sort((a, b) {
+            final aDt = DateTime.tryParse(a.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+            final bDt = DateTime.tryParse(b.addedDate) ?? DateTime.fromMillisecondsSinceEpoch(0);
+            return bDt.compareTo(aDt);
+          });
+          yield models;
+        } catch (_) {}
+      }
     }
   }
 

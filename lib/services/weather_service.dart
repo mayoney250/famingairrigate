@@ -127,27 +127,38 @@ class WeatherService {
       final today = DateTime.now();
       final startOfDay = DateTime(today.year, today.month, today.day);
 
-      await for (final snapshot in _firestore
-          .collection(_collection)
-          .where('userId', isEqualTo: userId)
-          .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-          .limit(1)
-          .snapshots()) {
-        if (snapshot.docs.isNotEmpty) {
-          final model = WeatherDataModel.fromFirestore(snapshot.docs.first);
-          // normalize timestamps for cache
-          final m = model.toMap();
-          final normalized = Map<String, dynamic>.from(m);
-          if (normalized['timestamp'] is Timestamp) {
-            normalized['timestamp'] = (normalized['timestamp'] as Timestamp).toDate().toIso8601String();
+      try {
+        await for (final snapshot in _firestore
+            .collection(_collection)
+            .where('userId', isEqualTo: userId)
+            .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .limit(1)
+            .snapshots()) {
+          if (snapshot.docs.isNotEmpty) {
+            final model = WeatherDataModel.fromFirestore(snapshot.docs.first);
+            // normalize timestamps for cache
+            final m = model.toMap();
+            final normalized = Map<String, dynamic>.from(m);
+            if (normalized['timestamp'] is Timestamp) {
+              normalized['timestamp'] = (normalized['timestamp'] as Timestamp).toDate().toIso8601String();
+            }
+            if (normalized['lastUpdated'] is Timestamp) {
+              normalized['lastUpdated'] = (normalized['lastUpdated'] as Timestamp).toDate().toIso8601String();
+            }
+            await cache.cacheJson(cacheKey, normalized);
+            yield model;
+          } else {
+            yield null;
           }
-          if (normalized['lastUpdated'] is Timestamp) {
-            normalized['lastUpdated'] = (normalized['lastUpdated'] as Timestamp).toDate().toIso8601String();
-          }
-          await cache.cacheJson(cacheKey, normalized);
-          yield model;
-        } else {
-          yield null;
+        }
+      } catch (e) {
+        // Offline or Firestore error: yield cached weather if available
+        log('⚠️ Firestore streamCurrentWeather error (offline?): $e');
+        final cached = cache.getCachedJson(cacheKey);
+        if (cached != null) {
+          try {
+            yield WeatherDataModel.fromMap(cached);
+          } catch (_) {}
         }
       }
     })();
