@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/irrigation_schedule_model.dart';
 import 'cache_repository.dart';
+import 'offline_sync_service.dart';
 
 class IrrigationScheduleService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -9,14 +10,58 @@ class IrrigationScheduleService {
 
   // Create a new schedule
   Future<String> createSchedule(IrrigationScheduleModel schedule) async {
+    final cache = CacheRepository();
+    final sync = OfflineSyncService();
+
     try {
       final docRef = await _firestore.collection(_collection).add(schedule.toMap());
       log('Schedule created: ${docRef.id}');
+
+      // Cache schedules for user
+      final cacheKey = 'schedules_user_${schedule.userId}';
+      final cached = cache.getCachedList(cacheKey);
+      final mapForCache = _scheduleMapForCache(schedule, includeId: true);
+      final updated = [...cached, mapForCache];
+      await cache.cacheJsonList(cacheKey, updated);
+
       return docRef.id;
     } catch (e) {
-      log('Error creating schedule: $e');
-      rethrow;
+      log('Error creating schedule (offline?): $e');
+
+      // Offline path: assign local id, cache and enqueue
+      final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final map = _scheduleMapForCache(schedule.copyWith(id: localId), includeId: true);
+      final cacheKey = 'schedules_user_${schedule.userId}';
+      final cached = cache.getCachedList(cacheKey);
+      final updated = [map, ...cached];
+      await cache.cacheJsonList(cacheKey, updated);
+
+      await sync.enqueueOperation(collection: _collection, operation: 'create', data: map, userId: schedule.userId);
+      return localId;
     }
+  }
+
+  // Helper to convert schedule to a JSON-friendly map for caching (timestamps -> ISO strings)
+  Map<String, dynamic> _scheduleMapForCache(IrrigationScheduleModel s, {bool includeId = false}) {
+    final m = <String, dynamic>{
+      'userId': s.userId,
+      'name': s.name,
+      'zoneId': s.zoneId,
+      'zoneName': s.zoneName,
+      'startTime': s.startTime.toIso8601String(),
+      'durationMinutes': s.durationMinutes,
+      'repeatDays': s.repeatDays,
+      'isActive': s.isActive,
+      'status': s.status,
+      'createdAt': s.createdAt.toIso8601String(),
+      'lastRun': s.lastRun?.toIso8601String(),
+      'nextRun': s.nextRun?.toIso8601String(),
+      'stoppedAt': s.stoppedAt?.toIso8601String(),
+      'stoppedBy': s.stoppedBy,
+      'isManual': s.isManual,
+    };
+    if (includeId && s.id.isNotEmpty) m['id'] = s.id;
+    return m;
   }
 
   // Get all schedules for a user

@@ -251,6 +251,7 @@ class AddFieldModal {
                               success = createdId != null;
                               if (success && createdId != null) {
                                 await fieldService.updateField(createdId, {
+                                  'userId': userId,
                                   'name': name,
                                   'soilType': soilType,
                                   'growthStage': growthStageController.text.trim(),

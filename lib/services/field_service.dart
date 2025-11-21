@@ -1,6 +1,7 @@
 import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'cache_repository.dart';
+import 'offline_sync_service.dart';
 import '../models/field_model.dart';
 
 class FieldService {
@@ -9,14 +10,37 @@ class FieldService {
 
   // Create new field
   Future<String?> createField(FieldModel field) async {
+    final cache = CacheRepository();
+    final sync = OfflineSyncService();
+
     try {
       final fieldData = field.toMap();
       final docRef = await _firestore.collection(_collection).add(fieldData);
       dev.log('Field created: ${docRef.id}');
+
+      // Update cached list for user
+      final cacheKey = 'fields_user_${field.userId}';
+      final cached = cache.getCachedList(cacheKey);
+      final fresh = [...cached, {...fieldData, 'id': docRef.id}];
+      await cache.cacheJsonList(cacheKey, fresh);
+
       return docRef.id;
     } catch (e) {
-      dev.log('Error creating field: $e');
-      return null;
+      dev.log('Error creating field (offline?): $e');
+
+      // Offline path: assign a local id and cache immediately, enqueue for sync
+      final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+      final map = {...field.toMap(), 'id': localId};
+
+      final cacheKey = 'fields_user_${field.userId}';
+      final cached = cache.getCachedList(cacheKey);
+      final updated = [map, ...cached];
+      await cache.cacheJsonList(cacheKey, updated);
+
+      // Enqueue for background creation
+      await sync.enqueueOperation(collection: _collection, operation: 'create', data: map, userId: field.userId);
+
+      return localId;
     }
   }
 
@@ -82,13 +106,51 @@ class FieldService {
 
   // Update field
   Future<bool> updateField(String fieldId, Map<String, dynamic> data) async {
+    final cache = CacheRepository();
+    final sync = OfflineSyncService();
+
     try {
       await _firestore.collection(_collection).doc(fieldId).update(data);
       dev.log('Field updated: $fieldId');
+
+      // Update cache entry if present
+      try {
+        // Attempt to find userId from cache entries (cheap but works)
+        // We'll scan cached lists for a match and update in-place
+        // NOTE: this is best-effort; if not found we skip cache update
+        final userId = data['userId'] as String?;
+        if (userId != null) {
+          final cacheKey = 'fields_user_$userId';
+          final cached = cache.getCachedList(cacheKey);
+          final updated = cached.map((m) {
+            if ((m['id'] ?? '') == fieldId) return {...m, ...data};
+            return m;
+          }).toList();
+          await cache.cacheJsonList(cacheKey, updated);
+        }
+      } catch (_) {}
+
       return true;
     } catch (e) {
-      dev.log('Error updating field: $e');
-      return false;
+      dev.log('Error updating field (offline?): $e');
+
+      // Offline: update cache and enqueue update
+      try {
+        final userId = data['userId'] as String?;
+        if (userId != null) {
+          final cacheKey = 'fields_user_$userId';
+          final cached = cache.getCachedList(cacheKey);
+          final updated = cached.map((m) {
+            if ((m['id'] ?? '') == fieldId) return {...m, ...data};
+            return m;
+          }).toList();
+          await cache.cacheJsonList(cacheKey, updated);
+        }
+      } catch (_) {}
+
+      // Enqueue for background update
+      await sync.enqueueOperation(collection: _collection, operation: 'update', data: {...data, 'id': fieldId});
+      return true;
     }
   }
 

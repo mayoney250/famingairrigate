@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as dev;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'cache_repository.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:hive/hive.dart';
 import '../models/sync_queue_item_model.dart';
@@ -113,7 +114,33 @@ class OfflineSyncService {
 
       switch (item.operation) {
         case 'create':
-          await collection.add(item.data);
+          final docRef = await collection.add(item.data);
+          // If we created a document which was cached locally with a temporary id,
+          // update local cache entries to replace the temp id with the real one.
+          try {
+            final cache = CacheRepository();
+            final localId = item.data['id'] as String?;
+            final userId = item.userId;
+            if (localId != null && userId != null) {
+              if (item.collection == 'fields') {
+                final key = 'fields_user_$userId';
+                final list = cache.getCachedList(key);
+                final updated = list.map((m) {
+                  if ((m['id'] ?? '') == localId) return {...m, 'id': docRef.id};
+                  return m;
+                }).toList();
+                await cache.cacheJsonList(key, updated);
+              } else if (item.collection == 'irrigationSchedules') {
+                final key = 'schedules_user_$userId';
+                final list = cache.getCachedList(key);
+                final updated = list.map((m) {
+                  if ((m['id'] ?? '') == localId) return {...m, 'id': docRef.id};
+                  return m;
+                }).toList();
+                await cache.cacheJsonList(key, updated);
+              }
+            }
+          } catch (_) {}
           break;
         case 'update':
           final docId = item.data['id'] ?? item.data['docId'];

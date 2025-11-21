@@ -38,6 +38,14 @@ class WeatherDataModel {
   }
 
   factory WeatherDataModel.fromMap(Map<String, dynamic> map) {
+    DateTime parseDate(dynamic v) {
+      if (v == null) return DateTime.now();
+      if (v is Timestamp) return v.toDate();
+      if (v is DateTime) return v;
+      if (v is String) return DateTime.tryParse(v) ?? DateTime.now();
+      return DateTime.now();
+    }
+
     return WeatherDataModel(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',
@@ -46,10 +54,8 @@ class WeatherDataModel {
       humidity: (map['humidity'] ?? 0.0).toDouble(),
       condition: map['condition'] ?? 'Clear',
       description: map['description'] ?? '',
-      timestamp: (map['timestamp'] as Timestamp).toDate(),
-      lastUpdated: map['lastUpdated'] != null 
-          ? (map['lastUpdated'] as Timestamp).toDate() 
-          : null,
+      timestamp: parseDate(map['timestamp']),
+      lastUpdated: map['lastUpdated'] != null ? parseDate(map['lastUpdated']) : null,
     );
   }
 

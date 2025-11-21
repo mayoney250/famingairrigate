@@ -31,10 +31,23 @@ class WeatherService {
         // Create new
         final docRef = await _firestore.collection(_collection).add(weather.toMap());
         log('Weather data created: ${docRef.id}');
-        // cache today's weather
+        // cache today's weather (serialize timestamps to ISO strings for Hive)
         final cache = CacheRepository();
         final cacheKey = 'weather_today_${weather.userId}';
-        await cache.cacheJson(cacheKey, weather.toMap());
+        final m = weather.toMap();
+        // normalize Timestamp fields
+        final normalized = Map<String, dynamic>.from(m);
+        if (normalized['timestamp'] is Timestamp) {
+          normalized['timestamp'] = (normalized['timestamp'] as Timestamp).toDate().toIso8601String();
+        } else if (normalized['timestamp'] is DateTime) {
+          normalized['timestamp'] = (normalized['timestamp'] as DateTime).toIso8601String();
+        }
+        if (normalized['lastUpdated'] is Timestamp) {
+          normalized['lastUpdated'] = (normalized['lastUpdated'] as Timestamp).toDate().toIso8601String();
+        } else if (normalized['lastUpdated'] is DateTime) {
+          normalized['lastUpdated'] = (normalized['lastUpdated'] as DateTime).toIso8601String();
+        }
+        await cache.cacheJson(cacheKey, normalized);
         return docRef.id;
       }
     } catch (e) {
@@ -122,7 +135,16 @@ class WeatherService {
           .snapshots()) {
         if (snapshot.docs.isNotEmpty) {
           final model = WeatherDataModel.fromFirestore(snapshot.docs.first);
-          await cache.cacheJson(cacheKey, model.toMap());
+          // normalize timestamps for cache
+          final m = model.toMap();
+          final normalized = Map<String, dynamic>.from(m);
+          if (normalized['timestamp'] is Timestamp) {
+            normalized['timestamp'] = (normalized['timestamp'] as Timestamp).toDate().toIso8601String();
+          }
+          if (normalized['lastUpdated'] is Timestamp) {
+            normalized['lastUpdated'] = (normalized['lastUpdated'] as Timestamp).toDate().toIso8601String();
+          }
+          await cache.cacheJson(cacheKey, normalized);
           yield model;
         } else {
           yield null;
@@ -167,7 +189,15 @@ class WeatherService {
     final now = DateTime.now();
     final lastWeek = now.subtract(const Duration(days: 7));
     final list = await getWeatherHistory(userId, lastWeek, now);
-    await cache.cacheJsonList(cacheKey, list.map((w) => w.toMap()).toList());
+    // Normalize maps to replace Timestamp with ISO strings for safe caching
+    final normalizedList = list.map((w) {
+      final m = w.toMap();
+      final nm = Map<String, dynamic>.from(m);
+      if (nm['timestamp'] is Timestamp) nm['timestamp'] = (nm['timestamp'] as Timestamp).toDate().toIso8601String();
+      if (nm['lastUpdated'] is Timestamp) nm['lastUpdated'] = (nm['lastUpdated'] as Timestamp).toDate().toIso8601String();
+      return nm;
+    }).toList();
+    await cache.cacheJsonList(cacheKey, normalizedList);
     return list;
   }
 

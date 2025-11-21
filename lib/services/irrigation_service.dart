@@ -1,6 +1,8 @@
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/irrigation_schedule_model.dart';
+import 'cache_repository.dart';
+import 'offline_sync_service.dart';
 
 class IrrigationService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -41,6 +43,16 @@ class IrrigationService {
       return schedules.first;
     } catch (e) {
       log('Error getting next schedule: $e');
+      // Fallback: try cached schedules
+      try {
+        final cache = CacheRepository();
+        final cached = cache.getCachedList('schedules_user_$userId');
+        if (cached.isNotEmpty) {
+          final list = cached.map((m) => IrrigationScheduleModel.fromMap(m)).toList();
+          list.sort((a, b) => (a.nextRun ?? a.startTime).compareTo(b.nextRun ?? b.startTime));
+          return list.first;
+        }
+      } catch (_) {}
       return null;
     }
   }
@@ -67,44 +79,93 @@ class IrrigationService {
     }
   }
 
-  // Get all schedules for a user
-  Stream<List<IrrigationScheduleModel>> getUserSchedules(String userId) {
-    return _firestore
+  // Get all schedules for a user (read-through cache: yield cached first, then live updates)
+  Stream<List<IrrigationScheduleModel>> getUserSchedules(String userId) async* {
+    final cache = CacheRepository();
+    final cacheKey = 'schedules_user_$userId';
+
+    // yield cached schedules first, if present
+    final cached = cache.getCachedList(cacheKey);
+    if (cached.isNotEmpty) {
+      try {
+        final list = cached.map((m) => IrrigationScheduleModel.fromMap(m)).toList();
+        list.sort((a, b) => a.startTime.compareTo(b.startTime));
+        yield list;
+      } catch (_) {}
+    }
+
+    // then yield live updates
+    await for (final snapshot in _firestore
         .collection('irrigationSchedules')
         .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
+        .snapshots()) {
       final schedules = snapshot.docs
           .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
           .toList();
-      
-      // Sort in memory by startTime
+
       schedules.sort((a, b) => a.startTime.compareTo(b.startTime));
-      
-      return schedules;
-    });
+
+      // cache for offline use
+      try {
+        final toCache = schedules.map((s) => {
+          'id': s.id,
+          'userId': s.userId,
+          'name': s.name,
+          'zoneId': s.zoneId,
+          'zoneName': s.zoneName,
+          'startTime': s.startTime.toIso8601String(),
+          'durationMinutes': s.durationMinutes,
+          'repeatDays': s.repeatDays,
+          'isActive': s.isActive,
+          'status': s.status,
+          'createdAt': s.createdAt.toIso8601String(),
+          'lastRun': s.lastRun?.toIso8601String(),
+          'nextRun': s.nextRun?.toIso8601String(),
+          'stoppedAt': s.stoppedAt?.toIso8601String(),
+          'stoppedBy': s.stoppedBy,
+          'isManual': s.isManual,
+        }).toList();
+        await cache.cacheJsonList(cacheKey, toCache);
+      } catch (_) {}
+
+      yield schedules;
+    }
   }
 
-  // Get only upcoming scheduled and active cycles for a user
-  Stream<List<IrrigationScheduleModel>> getUpcomingScheduled(String userId) {
-    return _firestore
+  // Get only upcoming scheduled and active cycles for a user (read-through)
+  Stream<List<IrrigationScheduleModel>> getUpcomingScheduled(String userId) async* {
+    final cache = CacheRepository();
+    final cacheKey = 'schedules_user_$userId';
+
+    // yield cached filtered list first
+    final cached = cache.getCachedList(cacheKey);
+    if (cached.isNotEmpty) {
+      try {
+        final now = DateTime.now();
+        final list = cached.map((m) => IrrigationScheduleModel.fromMap(m)).where((s) {
+          final effective = s.nextRun ?? s.startTime;
+          return s.isActive && (s.status == 'scheduled' || s.status == 'scheduleId') && effective.isAfter(now);
+        }).toList();
+        list.sort((a, b) => (a.nextRun ?? a.startTime).compareTo(b.nextRun ?? b.startTime));
+        yield list;
+      } catch (_) {}
+    }
+
+    // then live updates
+    await for (final snapshot in _firestore
         .collection('irrigationSchedules')
         .where('userId', isEqualTo: userId)
-        .snapshots()
-        .map((snapshot) {
+        .snapshots()) {
       final now = DateTime.now();
       DateTime effectiveTime(IrrigationScheduleModel s) => s.nextRun ?? s.startTime;
       final schedules = snapshot.docs
           .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
-          .where((s) =>
-            s.isActive &&
-            (s.status == 'scheduled' || s.status == 'scheduleId') &&
-            effectiveTime(s).isAfter(now))
+          .where((s) => s.isActive && (s.status == 'scheduled' || s.status == 'scheduleId') && effectiveTime(s).isAfter(now))
           .toList();
 
       schedules.sort((a, b) => effectiveTime(a).compareTo(effectiveTime(b)));
-      return schedules;
-    });
+      yield schedules;
+    }
   }
 
   // Start irrigation manually
@@ -181,12 +242,59 @@ class IrrigationService {
           .add(scheduleData);
 
       log('[IrrigationService] Schedule created with ID: ${docRef.id}');
+
+      // Cache schedule for offline use
+      try {
+        final cache = CacheRepository();
+        final cacheKey = 'schedules_user_${schedule.userId}';
+        final cached = cache.getCachedList(cacheKey);
+        final map = _normalizeScheduleMap(schedule.copyWith(id: docRef.id));
+        final updated = [...cached, map];
+        await cache.cacheJsonList(cacheKey, updated);
+      } catch (_) {}
+
       return true;
     } catch (e, stackTrace) {
       log('[IrrigationService] Error creating schedule: $e');
       log('[IrrigationService] Stack trace: $stackTrace');
-      return false;
+      // Offline path: cache locally and enqueue for sync
+      try {
+        final cache = CacheRepository();
+        final sync = OfflineSyncService();
+        final localId = 'local_${DateTime.now().millisecondsSinceEpoch}';
+        final localSchedule = schedule.copyWith(id: localId);
+        final map = _normalizeScheduleMap(localSchedule);
+        final cacheKey = 'schedules_user_${schedule.userId}';
+        final cached = cache.getCachedList(cacheKey);
+        final updated = [map, ...cached];
+        await cache.cacheJsonList(cacheKey, updated);
+        await sync.enqueueOperation(collection: 'irrigationSchedules', operation: 'create', data: map, userId: schedule.userId);
+        return true;
+      } catch (_) {
+        return false;
+      }
     }
+  }
+
+  Map<String, dynamic> _normalizeScheduleMap(IrrigationScheduleModel s) {
+    return {
+      'id': s.id,
+      'userId': s.userId,
+      'name': s.name,
+      'zoneId': s.zoneId,
+      'zoneName': s.zoneName,
+      'startTime': s.startTime.toIso8601String(),
+      'durationMinutes': s.durationMinutes,
+      'repeatDays': s.repeatDays,
+      'isActive': s.isActive,
+      'status': s.status,
+      'createdAt': s.createdAt.toIso8601String(),
+      'lastRun': s.lastRun?.toIso8601String(),
+      'nextRun': s.nextRun?.toIso8601String(),
+      'stoppedAt': s.stoppedAt?.toIso8601String(),
+      'stoppedBy': s.stoppedBy,
+      'isManual': s.isManual,
+    };
   }
 
   // Update schedule status

@@ -469,6 +469,7 @@ class _FieldsScreenState extends State<FieldsScreen> {
                               success = createdId != null;
                               if (success && createdId != null) {
                                 await _fieldService.updateField(createdId, {
+                                  'userId': userId,
                                   'name': name,
                                   'soilType': soilType,
                                   'growthStage': growthStageController.text.trim(),

@@ -155,6 +155,7 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
         fieldId = await _fieldService.createField(field);
         if (fieldId != null) {
           await _fieldService.updateField(fieldId, {
+            'userId': userId,
             'soilType': _soilType,
             'growthStage': _growthStageController.text.trim(),
             'cropType': _cropTypeController.text.trim(),
