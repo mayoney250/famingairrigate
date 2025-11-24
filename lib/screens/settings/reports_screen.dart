@@ -4,6 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:printing/printing.dart';
 import '../../config/colors.dart';
 import '../../services/irrigation_log_service.dart';
 import '../../services/irrigation_schedule_service.dart';
@@ -15,7 +18,7 @@ import '../../models/user_model.dart';
 import '../../models/alert_model.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 
-enum ReportPeriod { daily, weekly, monthly }
+enum ReportPeriod { daily, weekly, monthly, custom }
 enum CycleTypeFilter { all, scheduled, manual }
 enum StatusFilter { all, scheduled, running, completed, stopped }
 
@@ -42,6 +45,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   DateTime? _reportGeneratedAt;
+  DateTimeRange? _customDateRange;
   
   // User & Metadata
   UserModel? _user;
@@ -347,9 +351,50 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ReportPeriod.monthly:
         start = DateTime(now.year, now.month, 1);
         break;
+      case ReportPeriod.custom:
+        if (_customDateRange != null) {
+          start = _customDateRange!.start;
+          end = _customDateRange!.end;
+        } else {
+          // Default to this week if custom selected but no range yet
+          start = now.subtract(const Duration(days: 7));
+        }
+        break;
     }
 
     return {'start': start, 'end': end};
+  }
+
+  Future<void> _selectDateRange() async {
+    final now = DateTime.now();
+    final picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: now, // Restrict to today
+      initialDateRange: _customDateRange ?? DateTimeRange(
+        start: now.subtract(const Duration(days: 7)),
+        end: now,
+      ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: FamingaBrandColors.primaryOrange,
+              onPrimary: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _customDateRange = picked;
+        _selectedPeriod = ReportPeriod.custom;
+      });
+      _loadReportData();
+    }
   }
 
   String _getErrorMessage(dynamic error) {
@@ -398,6 +443,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Irrigation Report'),
         actions: [
           IconButton(
+            icon: const Icon(Icons.picture_as_pdf),
+            onPressed: _exportToPdf,
+            tooltip: 'Export PDF',
+          ),
+          IconButton(
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
             tooltip: 'Filters',
@@ -431,15 +481,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       children: [
                         _buildPeriodSelector(isDark),
                         const SizedBox(height: 20),
-                        _buildDataSummaryBanner(isDark),
+                        _buildSummaryCard(isDark),
                         const SizedBox(height: 20),
                         _buildMetadataSection(isDark),
                         const SizedBox(height: 20),
                         _buildWaterUsageSummary(isDark),
                         const SizedBox(height: 20),
-                        _buildPerformanceMetrics(isDark),
+                        _buildRecommendationsSection(isDark),
                         const SizedBox(height: 20),
-                        _buildScheduledCyclesSection(isDark),
+                        _buildIrrigationTimeline(isDark),
+                        const SizedBox(height: 20),
+                        _buildChartsSection(isDark),
                         const SizedBox(height: 20),
                         _buildRunningCyclesCard(isDark),
                         const SizedBox(height: 20),
@@ -448,8 +500,6 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         _buildCompletedIrrigationsCard(isDark),
                         const SizedBox(height: 20),
                         _buildNotificationsSection(isDark),
-                        const SizedBox(height: 20),
-                        _buildChartsSection(isDark),
                       ],
                     ),
                   ),
@@ -607,17 +657,18 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           Expanded(child: _buildPeriodButton('Daily', ReportPeriod.daily, isDark, isFirst: true)),
           Expanded(child: _buildPeriodButton('Weekly', ReportPeriod.weekly, isDark)),
-          Expanded(child: _buildPeriodButton('Monthly', ReportPeriod.monthly, isDark, isLast: true)),
+          Expanded(child: _buildPeriodButton('Monthly', ReportPeriod.monthly, isDark)),
+          Expanded(child: _buildPeriodButton('Custom', ReportPeriod.custom, isDark, isLast: true, onTap: _selectDateRange)),
         ],
       ),
     );
   }
 
-  Widget _buildPeriodButton(String label, ReportPeriod period, bool isDark, {bool isFirst = false, bool isLast = false}) {
+  Widget _buildPeriodButton(String label, ReportPeriod period, bool isDark, {bool isFirst = false, bool isLast = false, VoidCallback? onTap}) {
     final isSelected = _selectedPeriod == period;
     
     return InkWell(
-      onTap: () {
+      onTap: onTap ?? () {
         setState(() => _selectedPeriod = period);
         _loadReportData();
       },
@@ -634,14 +685,23 @@ class _ReportsScreenState extends State<ReportsScreen> {
             right: isLast ? const Radius.circular(10) : Radius.zero,
           ),
         ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: isSelected ? Colors.white : (isDark ? Colors.white : FamingaBrandColors.darkGreen),
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 15,
-          ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: isSelected ? Colors.white : (isDark ? Colors.white : FamingaBrandColors.darkGreen),
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 13,
+              ),
+            ),
+            if (period == ReportPeriod.custom && isSelected) ...[
+              const SizedBox(width: 4),
+              const Icon(Icons.calendar_today, size: 12, color: Colors.white),
+            ],
+          ],
         ),
       ),
     );
@@ -1443,17 +1503,176 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildChartsSection(bool isDark) {
-    if (_dailyWaterUsage.isEmpty) return const SizedBox.shrink();
-    
     return _buildSectionCard(
       isDark: isDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Water Usage Trend', Icons.show_chart, isDark),
+          _buildSectionTitle('Analytics', Icons.analytics, isDark),
           const SizedBox(height: 24),
-          _buildBarChart(isDark),
+          if (_dailyWaterUsage.isNotEmpty) ...[
+            Text('Water Usage (L)', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+            const SizedBox(height: 16),
+            _buildBarChart(isDark),
+            const SizedBox(height: 32),
+          ],
+          Text('Soil Moisture Trends', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          const SizedBox(height: 16),
+          _buildMoistureChart(isDark),
+          const SizedBox(height: 32),
+          Text('Irrigation Duration (min)', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
+          const SizedBox(height: 16),
+          _buildDurationChart(isDark),
         ],
+      ),
+    );
+  }
+
+  Widget _buildDurationChart(bool isDark) {
+    final completedLogs = _allLogs.where((l) => l.action == IrrigationAction.completed).toList();
+    if (completedLogs.isEmpty) return const Center(child: Text('No duration data'));
+
+    final sortedLogs = completedLogs.take(7).toList(); // Last 7 logs
+
+    return SizedBox(
+      height: 200,
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: (sortedLogs.map((l) => l.durationMinutes ?? 0).fold<int>(0, (p, c) => p > c ? p : c) * 1.2).toDouble(),
+          barTouchData: BarTouchData(enabled: true),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  if (value.toInt() >= 0 && value.toInt() < sortedLogs.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        DateFormat('MM/dd').format(sortedLogs[value.toInt()].timestamp),
+                        style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          gridData: FlGridData(show: true, drawVerticalLine: false),
+          barGroups: List.generate(
+            sortedLogs.length,
+            (index) => BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  toY: (sortedLogs[index].durationMinutes ?? 0).toDouble(),
+                  color: Colors.blueAccent,
+                  width: 16,
+                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoistureChart(bool isDark) {
+    // Mock data for moisture
+    final spots = [
+      FlSpot(0, 60),
+      FlSpot(1, 58),
+      FlSpot(2, 65),
+      FlSpot(3, 62),
+      FlSpot(4, 70),
+      FlSpot(5, 68),
+      FlSpot(6, 65),
+    ];
+
+    return SizedBox(
+      height: 200,
+      child: LineChart(
+        LineChartData(
+          gridData: FlGridData(
+            show: true,
+            drawVerticalLine: false,
+            getDrawingHorizontalLine: (value) {
+              return FlLine(
+                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
+                strokeWidth: 1,
+              );
+            },
+          ),
+          titlesData: FlTitlesData(
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 1,
+                getTitlesWidget: (value, meta) {
+                  // Simple day labels
+                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                  if (value.toInt() >= 0 && value.toInt() < days.length) {
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Text(
+                        days[value.toInt()],
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Theme.of(context).textTheme.bodySmall?.color,
+                        ),
+                      ),
+                    );
+                  }
+                  return const SizedBox();
+                },
+              ),
+            ),
+            leftTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 20,
+                reservedSize: 30,
+                getTitlesWidget: (value, meta) {
+                  return Text(
+                    '${value.toInt()}%',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Theme.of(context).textTheme.bodySmall?.color,
+                    ),
+                  );
+                },
+              ),
+            ),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          ),
+          borderData: FlBorderData(show: false),
+          minX: 0,
+          maxX: 6,
+          minY: 0,
+          maxY: 100,
+          lineBarsData: [
+            LineChartBarData(
+              spots: spots,
+              isCurved: true,
+              color: Colors.teal,
+              barWidth: 3,
+              isStrokeCapRound: true,
+              dotData: const FlDotData(show: false),
+              belowBarData: BarAreaData(
+                show: true,
+                color: Colors.teal.withOpacity(0.2),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1767,52 +1986,99 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  Widget _buildDataSummaryBanner(bool isDark) {
-    final totalSchedules = _scheduledCycles.length + _runningCycles.length;
-    final totalCycles = totalSchedules + _manualCycles.length;
+  Widget _buildSummaryCard(bool isDark) {
+    // Calculate metrics
+    final nextSchedule = _scheduledCycles.isNotEmpty 
+        ? _scheduledCycles.first.nextRun ?? _scheduledCycles.first.startTime 
+        : null;
     
+    final lastLog = _allLogs.isNotEmpty 
+        ? _allLogs.reduce((a, b) => a.timestamp.isAfter(b.timestamp) ? a : b)
+        : null;
+
+    // Mock moisture for now as we don't have direct access to sensor history in this view yet
+    final currentMoisture = 65; 
+
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            FamingaBrandColors.primaryOrange,
-            FamingaBrandColors.primaryOrange.withOpacity(0.8),
-          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isDark 
+              ? [const Color(0xFF2C3E50), const Color(0xFF34495E)]
+              : [Colors.white, const Color(0xFFF5F7FA)],
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 10,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Overview',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: isDark ? Colors.white : FamingaBrandColors.darkGreen,
+            ),
+          ),
+          const SizedBox(height: 20),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.check_circle, color: Colors.white, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Data Loaded Successfully',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+              Expanded(
+                child: _buildSummaryMetric(
+                  'Next Irrigation',
+                  nextSchedule != null 
+                      ? DateFormat('MMM dd\nhh:mm a').format(nextSchedule)
+                      : 'None Scheduled',
+                  Icons.calendar_today,
+                  Colors.blue,
+                  isDark,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryMetric(
+                  'Last Irrigation',
+                  lastLog != null 
+                      ? DateFormat('MMM dd\nhh:mm a').format(lastLog.timestamp)
+                      : 'No Data',
+                  Icons.history,
+                  Colors.green,
+                  isDark,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 20),
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSummaryItem('Schedules', totalSchedules.toString(), Colors.white),
-              _buildSummaryItem('Logs', _allLogs.length.toString(), Colors.white),
-              _buildSummaryItem('Fields', _fields.length.toString(), Colors.white),
-              _buildSummaryItem('Alerts', _alerts.length.toString(), Colors.white),
+              Expanded(
+                child: _buildSummaryMetric(
+                  'Avg Moisture',
+                  '$currentMoisture%',
+                  Icons.water_drop,
+                  Colors.teal,
+                  isDark,
+                ),
+              ),
+              Expanded(
+                child: _buildSummaryMetric(
+                  'Total Water',
+                  '${_totalWaterUsed.toStringAsFixed(0)} L',
+                  Icons.opacity,
+                  Colors.indigo,
+                  isDark,
+                ),
+              ),
             ],
           ),
         ],
@@ -1820,25 +2086,389 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String label, String value, Color color) {
-    return Column(
+  Widget _buildSummaryMetric(String label, String value, IconData icon, Color color, bool isDark) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-            color: color,
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
           ),
+          child: Icon(icon, color: color, size: 20),
         ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: color.withOpacity(0.9),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: isDark ? Colors.white : Colors.black87,
+                  height: 1.2,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: isDark ? Colors.white70 : Colors.grey[600],
+                ),
+              ),
+            ],
           ),
         ),
       ],
+    );
+  }
+
+  Future<void> _exportToPdf() async {
+    final pdf = pw.Document();
+
+    pdf.addPage(
+      pw.MultiPage(
+        pageFormat: PdfPageFormat.a4,
+        build: (pw.Context context) {
+          return [
+            pw.Header(
+              level: 0,
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                children: [
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text('Irrigation Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
+                      pw.Text('Faminga Smart Irrigation', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
+                    ],
+                  ),
+                  pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.end,
+                    children: [
+                      pw.Text(DateFormat('MMM dd, yyyy').format(DateTime.now()), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
+                      pw.Text('Generated at ${DateFormat('HH:mm').format(DateTime.now())}', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 30),
+            
+            // Summary Section
+            pw.Container(
+              padding: const pw.EdgeInsets.all(15),
+              decoration: pw.BoxDecoration(
+                color: PdfColors.grey100,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
+              ),
+              child: pw.Row(
+                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
+                children: [
+                  _buildPdfMetric('Total Water Used', '${_totalWaterUsed.toStringAsFixed(1)} L'),
+                  _buildPdfMetric('Completed Cycles', _allLogs.where((l) => l.action == IrrigationAction.completed).length.toString()),
+                  _buildPdfMetric('Alerts', _alerts.length.toString()),
+                  _buildPdfMetric('Fields', _fields.length.toString()),
+                ],
+              ),
+            ),
+            pw.SizedBox(height: 30),
+
+            // Recommendations
+            if (_missedCycles > 0 || _alerts.isNotEmpty) ...[
+              pw.Text('Recommendations & Alerts', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+              pw.SizedBox(height: 10),
+              if (_missedCycles > 0)
+                pw.Bullet(text: 'Check schedule configuration: $_missedCycles missed cycles detected.'),
+              if (_alerts.isNotEmpty)
+                pw.Bullet(text: '${_alerts.length} active alerts requiring attention.'),
+              pw.SizedBox(height: 20),
+            ],
+
+            // Logs Table
+            pw.Text('Irrigation Log', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
+            pw.SizedBox(height: 10),
+            pw.Table.fromTextArray(
+              context: context,
+              headerDecoration: pw.BoxDecoration(color: PdfColors.blue100),
+              headerHeight: 30,
+              cellHeight: 35,
+              cellAlignments: {
+                0: pw.Alignment.centerLeft,
+                1: pw.Alignment.centerLeft,
+                2: pw.Alignment.center,
+                3: pw.Alignment.centerRight,
+                4: pw.Alignment.center,
+              },
+              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
+              headers: ['Date', 'Field', 'Type', 'Water (L)', 'Status'],
+              data: _allLogs.take(50).map((log) => [
+                DateFormat('MM/dd HH:mm').format(log.timestamp),
+                log.zoneName,
+                log.triggeredBy == 'manual' ? 'Manual' : 'Scheduled',
+                log.waterUsed?.toStringAsFixed(1) ?? '0',
+                log.action == IrrigationAction.completed ? 'Completed' : 'Stopped',
+              ]).toList(),
+            ),
+            
+            pw.SizedBox(height: 20),
+            pw.Divider(),
+            pw.Center(
+              child: pw.Text('End of Report', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
+            ),
+          ];
+        },
+      ),
+    );
+
+    await Printing.sharePdf(
+      bytes: await pdf.save(),
+      filename: 'Irrigation_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
+    );
+  }
+  pw.Widget _buildPdfMetric(String label, String value) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(value, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
+        pw.Text(label, style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
+      ],
+    );
+  }
+
+  Widget _buildRecommendationsSection(bool isDark) {
+    final recommendations = <Map<String, dynamic>>[];
+
+    if (_missedCycles > 0) {
+      recommendations.add({
+        'title': 'Check Schedule Configuration',
+        'desc': 'You have $_missedCycles missed cycles. Ensure your controller is online.',
+        'priority': 'high',
+      });
+    }
+
+    if (_alerts.any((a) => a.severity == 'high')) {
+      recommendations.add({
+        'title': 'Critical Alerts Detected',
+        'desc': 'There are high priority alerts requiring your attention.',
+        'priority': 'high',
+      });
+    }
+
+    // Mock recommendation if empty
+    if (recommendations.isEmpty) {
+      recommendations.add({
+        'title': 'Optimize Water Usage',
+        'desc': 'Consider reducing duration for Field A by 10% based on recent moisture levels.',
+        'priority': 'medium',
+      });
+    }
+
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Recommendations', Icons.lightbulb_outline, isDark),
+          const SizedBox(height: 16),
+          ...recommendations.map((rec) => Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: rec['priority'] == 'high' 
+                  ? Colors.red.withOpacity(0.1) 
+                  : Colors.blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: rec['priority'] == 'high' ? Colors.red.withOpacity(0.3) : Colors.blue.withOpacity(0.3),
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  rec['priority'] == 'high' ? Icons.warning_amber : Icons.info_outline,
+                  color: rec['priority'] == 'high' ? Colors.red : Colors.blue,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        rec['title'],
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isDark ? Colors.white : Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        rec['desc'],
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? Colors.white70 : Colors.black54,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildIrrigationTimeline(bool isDark) {
+    // Combine all events
+    final events = <Map<String, dynamic>>[];
+    
+    for (var s in _scheduledCycles) {
+      events.add({
+        'time': s.nextRun ?? s.startTime,
+        'type': 'Scheduled',
+        'status': 'scheduled',
+        'zone': s.zoneName,
+      });
+    }
+    
+    for (var r in _runningCycles) {
+      events.add({
+        'time': r.nextRun ?? r.startTime,
+        'type': 'Running',
+        'status': 'running',
+        'zone': r.zoneName,
+      });
+    }
+    
+    for (var l in _allLogs) {
+      events.add({
+        'time': l.timestamp,
+        'type': l.triggeredBy == 'manual' ? 'Manual' : 'Scheduled',
+        'status': l.action == IrrigationAction.completed ? 'completed' : 'stopped',
+        'zone': l.zoneName,
+      });
+    }
+
+    // Sort by time descending
+    events.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
+
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Irrigation Timeline', Icons.timeline, isDark),
+          const SizedBox(height: 20),
+          if (events.isEmpty)
+            const Center(child: Text('No events found'))
+          else
+            ListView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: events.take(10).length,
+              itemBuilder: (context, index) {
+                final event = events[index];
+                final isLast = index == events.take(10).length - 1;
+                return _buildTimelineItem(event, isLast, isDark);
+              },
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTimelineItem(Map<String, dynamic> event, bool isLast, bool isDark) {
+    final status = event['status'] as String;
+    Color color;
+    switch (status) {
+      case 'running': color = FamingaBrandColors.primaryOrange; break;
+      case 'completed': color = Colors.green; break;
+      case 'scheduled': color = Colors.blue; break;
+      default: color = Colors.grey;
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SizedBox(
+            width: 50,
+            child: Column(
+              children: [
+                Text(
+                  DateFormat('HH:mm').format(event['time']),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                Text(
+                  DateFormat('MMM dd').format(event['time']),
+                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            children: [
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
+                  boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4)],
+                ),
+              ),
+              if (!isLast)
+                Expanded(
+                  child: Container(
+                    width: 2,
+                    color: Colors.grey.withOpacity(0.2),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event['zone'],
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 15,
+                      color: isDark ? Colors.white : Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
