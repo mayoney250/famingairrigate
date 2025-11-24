@@ -1,16 +1,13 @@
 import 'dart:async';
-import 'dart:developer' as dev;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 import 'package:firebase_auth/firebase_auth.dart' as fb;
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
-import '../../widgets/dashboard/ai_recommendation_badge.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 import '../../providers/language_provider.dart';
 import '../../routes/app_routes.dart';
@@ -44,33 +41,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void initState() {
     super.initState();
-    // Check verification status first - redirect if pending/not verified
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    // Load dashboard data when screen loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      // If user is authenticated, verify their verificationStatus in Firestore
-      if (authProvider.isAuthenticated) {
-        try {
-          final uid = authProvider.currentUser?.userId;
-          if (uid != null && uid.isNotEmpty) {
-            final doc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
-            final data = doc.data();
-            final verificationStatus = data != null && data.containsKey('verificationStatus')
-                ? (data['verificationStatus'] as String?)
-                : null;
-
-            if (verificationStatus != null && verificationStatus.toLowerCase() == 'pending') {
-              Get.offAllNamed('/verification-pending');
-              return;
-            }
-          }
-        } catch (e) {
-          // If Firestore lookup fails, continue to load dashboard to avoid blocking UX
-        }
-      }
-
-      // Load dashboard data when screen loads
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
+      
       if (authProvider.currentUser != null) {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
       }
@@ -133,9 +108,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         title: Row(
           children: [
-            const Text(
-              'Faminga Irrigation System',
-              style: TextStyle(
+            Text(
+              context.l10n.appTitle,
+              style: const TextStyle(
                 color: FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
                 fontSize: 20,
@@ -162,18 +137,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                    ),
+                  ),
                     child: Text(
                       unreadCount.toString(),
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                 )
-            ],
-          ),
+          ],
+        ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
               final user = authProvider.currentUser;
@@ -216,324 +191,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 await dashboardProvider.refresh(authProvider.currentUser!.userId);
               }
             },
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 400;
-                final isLargeScreen = constraints.maxWidth > 800;
-                final double padding = isSmallScreen ? 12.0 : 16.0;
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // System Status Card
+                  _buildSystemStatusCard(dashboardProvider),
+                  const SizedBox(height: 20),
 
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: EdgeInsets.all(padding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isLargeScreen)
-                        _buildLargeScreenLayout(dashboardProvider)
-                      else
-                        _buildMobileLayout(dashboardProvider, isSmallScreen),
-                      
-                      const SizedBox(height: 24),
-                    ],
+                  // Quick Actions
+                  Text(
+                  context.l10n.quickActions,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
                   ),
-                );
-              },
+                  ),
+                  const SizedBox(height: 12),
+                  _buildQuickActions(),
+                  const SizedBox(height: 20),
+
+                  // Soil Moisture & Weather Cards Row
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWideScreen = constraints.maxWidth > 600;
+                      
+                      if (isWideScreen) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                              flex: 1,
+                              child: _buildSoilMoistureCard(dashboardProvider),
+                            ),
+                            const SizedBox(width: 16),
+                            Flexible(
+                              flex: 2,
+                              child: _buildWeatherCard(dashboardProvider),
+                            ),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            _buildSoilMoistureCard(dashboardProvider),
+                            const SizedBox(height: 16),
+                            _buildWeatherCard(dashboardProvider),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  _buildLiveFieldSensorSummaries(dashboardProvider),
+                  const SizedBox(height: 20),
+                  // simulation buttons removed
+
+                  // Next Schedule Cycle
+                  Text(
+                  context.l10n.nextScheduleCycle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildNextScheduleCard(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // Weekly Performance
+                  Text(
+                  context.l10n.weeklyPerformance,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWeeklyPerformance(dashboardProvider),
+                  const SizedBox(height: 24),
+                ],
+              ),
             ),
           );
         },
       ),
+      // Removed notification simulator FAB for production
       bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  Widget _buildMobileLayout(DashboardProvider dashboardProvider, bool isSmallScreen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // System Status Card
-        _buildSystemStatusCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildUserInsightCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Quick Actions
-        Text(
-          context.l10n.quickActions,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildQuickActions(),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Weather + compact soil gauge
-        _buildFullWidthSoilCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildWeatherCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Next Schedule Cycle
-        Text(
-          context.l10n.nextScheduleCycle,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildNextScheduleCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Weekly Performance
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
-      ],
-    );
-  }
-
-  Widget _buildLargeScreenLayout(DashboardProvider dashboardProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
-              child: Column(
-                children: [
-                  _buildSystemStatusCard(dashboardProvider),
-                  const SizedBox(height: 20),
-                  _buildUserInsightCard(dashboardProvider),
-                  const SizedBox(height: 20),
-                  Text(
-                    context.l10n.quickActions,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildQuickActions(),
-                ],
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildWeatherAndGauge(dashboardProvider, true),
-                  const SizedBox(height: 20),
-                  Text(
-                    context.l10n.nextScheduleCycle,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildNextScheduleCard(dashboardProvider),
-                ],
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
-      ],
-    );
-  }
-
-  Widget _buildWeatherAndGauge(DashboardProvider dashboardProvider, bool isWideScreen) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
-
-    Widget gauge = Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 90,
-            height: 90,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
-                  strokeWidth: 8,
-                  backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
-                ),
-                Text(
-                  avg != null ? '${avg.round()}%' : '--',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.soilMoisture,
-            style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
-            style: const TextStyle(color: FamingaBrandColors.textPrimary, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-
-    if (isWideScreen) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 140, child: gauge),
-          const SizedBox(width: 16),
-          Expanded(child: _buildWeatherCard(dashboardProvider)),
-        ],
-      );
-    } else {
-      return LayoutBuilder(builder: (context, constraints) {
-        if (constraints.maxWidth > 500) {
-           return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 120, child: gauge),
-              const SizedBox(width: 16),
-              Expanded(child: _buildWeatherCard(dashboardProvider)),
-            ],
-          );
-        }
-        return Column(
-          children: [
-            gauge,
-            const SizedBox(height: 12),
-            _buildWeatherCard(dashboardProvider),
-          ],
-        );
-      });
-    }
-  }
-
-  Widget _buildFullWidthSoilCard(DashboardProvider dashboardProvider) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
-                      strokeWidth: 10,
-                      backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
-                      valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
-                    ),
-                    Text(
-                      avg != null ? '${avg.round()}%' : '--',
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.soilMoisture,
-                style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Daily Usage',
-                style: TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                daily > 0 ? '${daily.toStringAsFixed(1)} L' : '--',
-                style: const TextStyle(
-                  color: FamingaBrandColors.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Status: ${avg != null && avg < 40 ? "Dry" : (avg != null && avg > 80 ? "Wet" : "Optimal")}',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.primaryOrange,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
@@ -622,194 +368,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
               shape: BoxShape.circle,
             ),
             child: Icon(cardIcon, color: Colors.white, size: 32),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildUserInsightCard(DashboardProvider dashboardProvider) {
-    // Greeting + short insight based on aggregated sensor data
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final user = authProvider.currentUser;
-    final name = user?.firstName ?? user?.email?.split('@').first ?? 'Farmer';
-
-    final sensors = dashboardProvider.latestSensorDataPerField;
-    double totalMoisture = 0.0;
-    int moistureCount = 0;
-    double totalTemp = 0.0;
-    int tempCount = 0;
-    sensors.forEach((_, sensor) {
-      try {
-        if (sensor != null) {
-          if (sensor.soilMoisture != null) {
-            totalMoisture += sensor.soilMoisture;
-            moistureCount += 1;
-          }
-          if (sensor.temperature != null) {
-            totalTemp += sensor.temperature;
-            tempCount += 1;
-          }
-        }
-      } catch (_) {}
-    });
-
-    final double? avgMoisture = moistureCount > 0 ? totalMoisture / moistureCount : null;
-    final double? avgTemp = tempCount > 0 ? totalTemp / tempCount : null;
-    final dailyWater = dashboardProvider.dailyWaterUsage;
-
-    String insight;
-    String recommendation;
-    final l10n = context.l10n;
-    if (avgMoisture == null) {
-      insight = l10n.userInsightNoData;
-      recommendation = l10n.userInsightNoDataRecommendation;
-    } else {
-      final avgStr = avgMoisture.toStringAsFixed(0);
-      if (avgMoisture < 40) {
-        insight = l10n.userInsightDryInsight(avgStr);
-        recommendation = l10n.userInsightDryRecommendation;
-      } else if (avgMoisture > 80) {
-        insight = l10n.userInsightWetInsight(avgStr);
-        recommendation = l10n.userInsightWetRecommendation;
-      } else {
-        insight = l10n.userInsightOptimalInsight(avgStr);
-        recommendation = l10n.userInsightOptimalRecommendation;
-      }
-    }
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
-      ),
-      child: Row(
-        children: [
-          // Small user avatar (soil gauge moved next to weather)
-          CircleAvatar(
-            backgroundColor: FamingaBrandColors.primaryOrange,
-            radius: 22,
-            child: Text(
-              user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
-              style: const TextStyle(
-                color: FamingaBrandColors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  l10n.userInsightGreeting(name),
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Narrative farm-level insight
-                Builder(builder: (ctx) {
-                  final farmCount = dashboardProvider.fields.length;
-                  final avgMoistureStr = avgMoisture != null ? '${avgMoisture.toStringAsFixed(0)}%' : 'no data';
-                  final avgTempStr = avgTemp != null ? '${avgTemp.toStringAsFixed(1)}°C' : 'no data';
-                  final dailyWaterStr = dailyWater > 0 ? '${dailyWater.toStringAsFixed(2)} L' : 'no data';
-
-                  final headline = farmCount > 0
-                      ? 'Across $farmCount field${farmCount > 1 ? 's' : ''}, average soil moisture is $avgMoistureStr and average temperature is $avgTempStr.'
-                      : 'You have no fields yet — add a field to start receiving insights.';
-
-                  final waterLine = farmCount > 0
-                      ? 'Today you have irrigated $dailyWaterStr across your fields.'
-                      : '';
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        headline,
-                        style: const TextStyle(
-                          color: FamingaBrandColors.textSecondary,
-                          fontSize: 13,
-                        ),
-                      ),
-                      if (waterLine.isNotEmpty) const SizedBox(height: 6),
-                      if (waterLine.isNotEmpty)
-                        Text(
-                          waterLine,
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textSecondary,
-                            fontSize: 13,
-                          ),
-                        ),
-                    ],
-                  );
-                }),
-                const SizedBox(height: 8),
-                Text(
-                  recommendation,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // AI Recommendation Badge (standalone widget)
-                Builder(builder: (ctx) {
-                  final selectedFieldId = dashboardProvider.selectedFarmId;
-                  final latestReading = dashboardProvider.latestSensorDataPerField[selectedFieldId];
-                  final weather = dashboardProvider.weatherData;
-                  final hasSensor = latestReading != null;
-                  final hasWeather = weather != null;
-
-                  if (!hasSensor || !hasWeather) return const SizedBox.shrink();
-
-                  final soilMoisture = (latestReading?.soilMoisture ?? 0.0).toDouble();
-                  final temperature = (weather?.temperature ?? 0.0).toDouble();
-                  final humidity = (weather?.humidity ?? 0).toDouble();
-                  // cropType is optional in the provider; fall back to 'unknown'
-                  final cropType = 'unknown';
-
-                  return Align(
-                    alignment: Alignment.centerLeft,
-                    child: AIRecommendationBadge(
-                      userId: authProvider.currentUser?.userId ?? '',
-                      fieldId: selectedFieldId,
-                      soilMoisture: soilMoisture,
-                      temperature: temperature,
-                      humidity: humidity,
-                      cropType: cropType,
-                      onRecommendationReceived: () {
-                        dev.log('📊 AI recommendation received and displayed for field: $selectedFieldId');
-                      },
-                    ),
-                  );
-                }),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Column(
-            children: [
-              ElevatedButton(
-                onPressed: () => Get.toNamed(AppRoutes.fields),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FamingaBrandColors.primaryOrange,
-                ),
-                child: Text(l10n.userInsightViewFields),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () => Get.toNamed(AppRoutes.sensors),
-                child: Text(l10n.userInsightViewSensors),
-              ),
-            ],
           ),
         ],
       ),
@@ -2281,126 +1839,86 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  // Per-field summary removed from dashboard; keep per-field view in Fields/Sensors pages.
+  Widget _buildLiveFieldSensorSummaries(DashboardProvider dashboardProvider) {
+    final fields = dashboardProvider.fields;
+    final sensors = dashboardProvider.latestSensorDataPerField;
+    final flows = dashboardProvider.latestFlowDataPerField;
+    if (fields.isEmpty) {
+    return Text(context.l10n.noFieldsFound, style: const TextStyle(color: Colors.grey));
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: fields.map((f) {
+        final sid = f['id']!;
+        final sensor = sensors[sid];
+        final flow = flows[sid];
+        // Determine semantic soil state (avoid substring checks on localized text)
+        String soilState = '';
+        String soilMsg = '';
+        if (sensor != null) {
+          if (sensor.soilMoisture < 50) {
+            soilState = 'dry';
+            soilMsg = context.l10n.soilDryMsg;
+          } else if (sensor.soilMoisture > 100) {
+            soilState = 'too_wet';
+            soilMsg = context.l10n.soilTooWetMsg;
+          } else {
+            soilState = 'optimal';
+            soilMsg = context.l10n.soilOptimalMsg;
+          }
+        }
+        // (Add more logic here if you want to flag abnormal water usage)
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 18),
+          padding: const EdgeInsets.all(14),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: FamingaBrandColors.borderColor),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                f['name'] ?? sid,
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              // Dev-only water test button removed per request
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(child: Text('${context.l10n.soilWaterLabel}: ' + (sensor != null ? '${sensor.soilMoisture.toStringAsFixed(1)}%' : '--'))),
+                  Expanded(child: Text('${context.l10n.tempLabel}: ' + (sensor != null ? '${sensor.temperature.toStringAsFixed(1)}°C' : '--'))),
+                  Expanded(child: Text('${context.l10n.waterUsedLabel}: ' + (flow != null ? '${flow.liters.toStringAsFixed(2)} L' : '--'))),
+                ],
+              ),
+              if (soilMsg.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8.0),
+                  child: Text(
+                    soilMsg,
+                    style: TextStyle(
+                      color: soilState == 'optimal'
+                          ? Colors.green
+                          : (soilState == 'dry' ? Colors.orange : Colors.blue),
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
 }
 
 class AlertCenterBottomSheet extends StatelessWidget {
   final List<AlertModel> alerts;
   final Future<void> Function(String id) onMarkRead;
   const AlertCenterBottomSheet({required this.alerts, required this.onMarkRead});
-  
-  void _showAlertDetails(BuildContext context, AlertModel alert) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              _getIconForType(alert.type),
-              color: _getColorForSeverity(alert.severity),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                alert.type.toUpperCase(),
-                style: const TextStyle(fontSize: 18),
-              ),
-            ),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                alert.message,
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              const Divider(),
-              const SizedBox(height: 8),
-              _buildDetailRow('Severity', alert.severity.toUpperCase()),
-              _buildDetailRow('Time', DateFormat('MMM dd, yyyy hh:mm a').format(alert.ts)),
-              _buildDetailRow('Status', alert.read ? 'Read' : 'Unread'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          if (!alert.read)
-            ElevatedButton.icon(
-              onPressed: () {
-                onMarkRead(alert.id);
-                Navigator.of(context).pop();
-              },
-              icon: const Icon(Icons.check, size: 18),
-              label: const Text('Mark as Read'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: FamingaBrandColors.darkGreen,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDetailRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 80,
-            child: Text(
-              '$label:',
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: FamingaBrandColors.textSecondary,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: FamingaBrandColors.textPrimary,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Color _getColorForSeverity(String severity) {
-    switch (severity.toLowerCase()) {
-      case 'high':
-      case 'critical':
-        return Colors.red;
-      case 'medium':
-        return Colors.orange;
-      default:
-        return Colors.green;
-    }
-  }
-
-  IconData _getIconForType(String type) {
-    if (type.contains('irrigation') || type.contains('VALVE')) {
-      return Icons.water_drop;
-    } else if (type.contains('sensor') || type.contains('OFFLINE')) {
-      return Icons.sensors;
-    } else if (type.contains('water')) {
-      return Icons.water;
-    } else {
-      return Icons.warning;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final mq = MediaQuery.of(context);
@@ -2422,90 +1940,25 @@ class AlertCenterBottomSheet extends StatelessWidget {
           separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (context, i) {
             final a = alerts[i];
-            Color iconColor = _getColorForSeverity(a.severity);
-            IconData icon = _getIconForType(a.type);
-            
-            return Dismissible(
-              key: Key(a.id),
-              direction: DismissDirection.endToStart,
-              background: Container(
-                alignment: Alignment.centerRight,
-                padding: const EdgeInsets.only(right: 20),
-                color: Colors.red,
-                child: const Icon(Icons.delete, color: Colors.white),
-              ),
-              confirmDismiss: (direction) async {
-                return await showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Delete Alert'),
-                    content: const Text('Are you sure you want to delete this alert?'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(context).pop(false),
-                        child: const Text('Cancel'),
-                      ),
-                      ElevatedButton(
-                        onPressed: () => Navigator.of(context).pop(true),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                        ),
-                        child: const Text('Delete'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              onDismissed: (direction) async {
-                await AlertLocalService.removeAlert(a.id);
-              },
-              child: ListTile(
-                leading: Icon(icon, color: iconColor),
-                title: Text(a.message,
-                    style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
-                subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts, context)}'),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (!a.read)
-                      IconButton(
-                        icon: const Icon(Icons.check, color: Colors.green),
-                        tooltip: context.l10n.markAsRead,
-                        onPressed: () => onMarkRead(a.id),
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      tooltip: 'Delete',
-                      onPressed: () async {
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Delete Alert'),
-                            content: const Text('Are you sure you want to delete this alert?'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.of(context).pop(false),
-                                child: const Text('Cancel'),
-                              ),
-                              ElevatedButton(
-                                onPressed: () => Navigator.of(context).pop(true),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.red,
-                                ),
-                                child: const Text('Delete'),
-                              ),
-                            ],
-                          ),
-                        );
-                        
-                        if (confirm == true) {
-                          await AlertLocalService.removeAlert(a.id);
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                onTap: () => _showAlertDetails(context, a),
+            Color iconColor = a.severity == 'high'
+                ? Colors.red
+                : a.severity == 'medium' ? Colors.orange : Colors.green;
+            IconData icon = a.type == 'OFFLINE'
+                ? Icons.sensor_door
+                : a.type == 'VALVE'
+                    ? Icons.water_drop
+                    : Icons.warning;
+            return ListTile(
+              leading: Icon(icon, color: iconColor),
+              title: Text(a.message,
+                  style: TextStyle(fontWeight: a.read ? FontWeight.normal : FontWeight.bold)),
+              subtitle: Text('${a.type} • ${a.severity} • ${timeAgo(a.ts, context)}'),
+              trailing: a.read
+              ? null
+              : IconButton(
+              icon: const Icon(Icons.check, color: Colors.green),
+              tooltip: context.l10n.markAsRead,
+              onPressed: () => onMarkRead(a.id),
               ),
             );
           },

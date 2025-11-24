@@ -72,214 +72,238 @@ class _LoginScreenState extends State<LoginScreen> {
       snackPosition: SnackPosition.BOTTOM,
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned(
-              top: 16,
-              right: 16,
-              child: _buildCompactLanguageSelector(),
-            ),
-            Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Logo
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: FamingaBrandColors.primaryOrange,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: const Icon(
-                      Icons.water_drop,
-                      size: 56,
-                      color: FamingaBrandColors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Welcome text
-                  Text(
-                    context.l10n.welcomeBack,
-                    style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    context.l10n.signInToManage,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                        ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 48),
-                  
-                  // Identifier field (Email | Cooperative ID | Phone)
-                  CustomTextField(
-                    controller: _emailController,
-                    label: 'Email, Cooperative ID or Phone',
-                    hintText: 'email@example.com or +2507XXXXXXXX or COOP12345',
-                    keyboardType: TextInputType.text,
-                    prefixIcon: Icons.person_outline,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.l10n.enterEmail;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-                  
-                  // Password field
-                  CustomTextField(
-                    controller: _passwordController,
-                    label: context.l10n.password,
-                    hintText: context.l10n.enterPassword,
-                    obscureText: _obscurePassword,
-                    prefixIcon: Icons.lock_outlined,
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_outlined
-                            : Icons.visibility_off_outlined,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        });
-                      },
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return context.l10n.enterPassword;
-                      }
-                      if (value.length < 8) {
-                        return context.l10n.enterPassword;
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Forgot password
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        Get.toNamed(AppRoutes.forgotPassword);
-                      },
-                      child: Text(
-                        context.l10n.forgotPassword,
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: FamingaBrandColors.primaryOrange,
-                              fontWeight: FontWeight.w600,
-                            ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Login button
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, _) {
-                      return CustomButton(
-                        text: context.l10n.login,
-                        onPressed: _handleLogin,
-                        isLoading: authProvider.isLoading,
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Divider with OR text
-                  Row(
-                    children: [
-                      const Expanded(child: Divider()),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(AppLocalizations.of(context)?.or ?? 'OR'),
-                      ),
-                      const Expanded(child: Divider()),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Google Sign-In button
-                  Consumer<AuthProvider>(
-                    builder: (context, authProvider, _) {
-                      return OutlinedButton.icon(
-                        onPressed: authProvider.isLoading
-                            ? null
-                            : _handleGoogleSignIn,
-                        icon: const Icon(
-                          Icons.g_mobiledata,
-                          size: 32,
-                          color: FamingaBrandColors.primaryOrange,
-                        ),
-                        label: Text(
-                          AppLocalizations.of(context)?.googleSignIn ?? 'Sign in with Google',
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          side: BorderSide(
-                            color: FamingaBrandColors.textPrimary.withOpacity(
-                              0.3,
-                            ),
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  
-                  // Register link
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        context.l10n.dontHaveAccount,
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
-                      TextButton(
-                        onPressed: () {
-                          Get.toNamed(AppRoutes.register);
-                        },
-                        child: Text(
-                          context.l10n.register,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: FamingaBrandColors.primaryOrange,
-                                    fontWeight: FontWeight.bold,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final isSmallScreen = constraints.maxWidth < 400;
+            final isLargeScreen = constraints.maxWidth > 800;
+            
+            // Calculate dynamic padding based on screen width
+            final double horizontalPadding = isSmallScreen ? 16.0 : (isLargeScreen ? 0.0 : 24.0);
+            final double contentWidth = isLargeScreen ? 500.0 : double.infinity;
+
+            return Stack(
+              children: [
+                Positioned(
+                  top: 16,
+                  right: 16,
+                  child: _buildCompactLanguageSelector(),
+                ),
+                Center(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: 24.0),
+                    child: Center(
+                      child: Container(
+                        constraints: BoxConstraints(maxWidth: contentWidth),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              // Logo
+                              Center(
+                                child: Container(
+                                  width: isSmallScreen ? 120 : 150,
+                                  height: isSmallScreen ? 120 : 150,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(20),
                                   ),
+                                  child: Image.asset(
+                                    'assets/images/splash_logo.png',
+                                    fit: BoxFit.contain,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isSmallScreen ? 16 : 24),
+                              
+                              // Welcome text
+                              Text(
+                                context.l10n.welcomeBack,
+                                style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                                      color: FamingaBrandColors.textPrimary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isSmallScreen ? 24 : 32,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                context.l10n.signInToManage,
+                                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                                      color: FamingaBrandColors.textPrimary,
+                                      fontSize: isSmallScreen ? 14 : 16,
+                                    ),
+                                textAlign: TextAlign.center,
+                              ),
+                              SizedBox(height: isSmallScreen ? 32 : 48),
+                              
+                              // Identifier field (Email | Cooperative ID | Phone)
+                              CustomTextField(
+                                controller: _emailController,
+                                label: 'Email, Cooperative ID or Phone',
+                                hintText: 'email@example.com or +2507XXXXXXXX or COOP12345',
+                                keyboardType: TextInputType.text,
+                                prefixIcon: Icons.person_outline,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return context.l10n.enterEmail;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              
+                              // Password field
+                              CustomTextField(
+                                controller: _passwordController,
+                                label: context.l10n.password,
+                                hintText: context.l10n.enterPassword,
+                                obscureText: _obscurePassword,
+                                prefixIcon: Icons.lock_outlined,
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    _obscurePassword
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _obscurePassword = !_obscurePassword;
+                                    });
+                                  },
+                                ),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return context.l10n.enterPassword;
+                                  }
+                                  if (value.length < 8) {
+                                    return context.l10n.enterPassword;
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Forgot password
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () {
+                                    Get.toNamed(AppRoutes.forgotPassword);
+                                  },
+                                  child: Text(
+                                    context.l10n.forgotPassword,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: FamingaBrandColors.primaryOrange,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: isSmallScreen ? 12 : 14,
+                                        ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: isSmallScreen ? 16 : 24),
+                              
+                              // Login button
+                              Consumer<AuthProvider>(
+                                builder: (context, authProvider, _) {
+                                  return CustomButton(
+                                    text: context.l10n.login,
+                                    onPressed: _handleLogin,
+                                    isLoading: authProvider.isLoading,
+                                  );
+                                },
+                              ),
+                              SizedBox(height: isSmallScreen ? 16 : 24),
+                              
+                              // Divider with OR text
+                              Row(
+                                children: [
+                                  const Expanded(child: Divider()),
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                                    child: Text(AppLocalizations.of(context)?.or ?? 'OR'),
+                                  ),
+                                  const Expanded(child: Divider()),
+                                ],
+                              ),
+                              SizedBox(height: isSmallScreen ? 16 : 24),
+                              
+                              // Google Sign-In button
+                              Consumer<AuthProvider>(
+                                builder: (context, authProvider, _) {
+                                  return OutlinedButton.icon(
+                                    onPressed: authProvider.isLoading
+                                        ? null
+                                        : _handleGoogleSignIn,
+                                    icon: Icon(
+                                      Icons.g_mobiledata,
+                                      size: isSmallScreen ? 24 : 32,
+                                      color: FamingaBrandColors.primaryOrange,
+                                    ),
+                                    label: Text(
+                                      AppLocalizations.of(context)?.googleSignIn ?? 'Sign in with Google',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: isSmallScreen ? 14 : 16,
+                                      ),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      padding: EdgeInsets.symmetric(vertical: isSmallScreen ? 12 : 16),
+                                      side: BorderSide(
+                                        color: FamingaBrandColors.textPrimary.withOpacity(
+                                          0.3,
+                                        ),
+                                      ),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                              SizedBox(height: isSmallScreen ? 16 : 24),
+                              
+                              // Register link
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    context.l10n.dontHaveAccount,
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      fontSize: isSmallScreen ? 12 : 14,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      Get.toNamed(AppRoutes.register);
+                                    },
+                                    child: Text(
+                                      context.l10n.register,
+                                      style:
+                                          Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                                color: FamingaBrandColors.primaryOrange,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: isSmallScreen ? 12 : 14,
+                                              ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ],
-              ),
-            ),
-          ),
-        ),
-          ],
+                ),
+              ],
+            );
+          },
         ),
       ),
     );

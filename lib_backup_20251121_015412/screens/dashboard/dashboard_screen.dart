@@ -162,18 +162,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   top: 8,
                   child: Container(
                     padding: const EdgeInsets.all(4),
-                    decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                       color: Colors.red,
                       shape: BoxShape.circle,
-                    ),
+                  ),
                     child: Text(
                       unreadCount.toString(),
                       style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
                     ),
                   ),
                 )
-            ],
-          ),
+          ],
+        ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, _) {
               final user = authProvider.currentUser;
@@ -213,327 +213,142 @@ class _DashboardScreenState extends State<DashboardScreen> {
             onRefresh: () async {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
               if (authProvider.currentUser != null) {
+                // Refresh without showing full-screen loader (keep content visible)
                 await dashboardProvider.refresh(authProvider.currentUser!.userId);
               }
             },
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 400;
-                final isLargeScreen = constraints.maxWidth > 800;
-                final double padding = isSmallScreen ? 12.0 : 16.0;
-
-                return SingleChildScrollView(
-                  controller: _scrollController,
-                  padding: EdgeInsets.all(padding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (isLargeScreen)
-                        _buildLargeScreenLayout(dashboardProvider)
-                      else
-                        _buildMobileLayout(dashboardProvider, isSmallScreen),
-                      
-                      const SizedBox(height: 24),
-                    ],
-                  ),
-                );
-              },
-            ),
-          );
-        },
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
-    );
-  }
-
-  Widget _buildMobileLayout(DashboardProvider dashboardProvider, bool isSmallScreen) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // System Status Card
-        _buildSystemStatusCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildUserInsightCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Quick Actions
-        Text(
-          context.l10n.quickActions,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildQuickActions(),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Weather + compact soil gauge
-        _buildFullWidthSoilCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildWeatherCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Next Schedule Cycle
-        Text(
-          context.l10n.nextScheduleCycle,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildNextScheduleCard(dashboardProvider),
-        SizedBox(height: isSmallScreen ? 16 : 20),
-
-        // Weekly Performance
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
-      ],
-    );
-  }
-
-  Widget _buildLargeScreenLayout(DashboardProvider dashboardProvider) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              flex: 2,
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(16.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // System Status Card
                   _buildSystemStatusCard(dashboardProvider),
                   const SizedBox(height: 20),
                   _buildUserInsightCard(dashboardProvider),
                   const SizedBox(height: 20),
+
+                  // Quick Actions
                   Text(
-                    context.l10n.quickActions,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  context.l10n.quickActions,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildQuickActions(),
-                ],
-              ),
-            ),
-            const SizedBox(width: 20),
-            Expanded(
-              flex: 3,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildWeatherAndGauge(dashboardProvider, true),
                   const SizedBox(height: 20),
-                  Text(
-                    context.l10n.nextScheduleCycle,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
+
+                  // Weather + compact soil gauge
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isWideScreen = constraints.maxWidth > 600;
+                      final avg = dashboardProvider.avgSoilMoisture;
+                      final daily = dashboardProvider.dailyWaterUsage;
+
+                      Widget gauge = Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: FamingaBrandColors.borderColor),
                         ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            SizedBox(
+                              width: 90,
+                              height: 90,
+                              child: Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  CircularProgressIndicator(
+                                    value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
+                                    strokeWidth: 8,
+                                    backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
+                                    valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
+                                  ),
+                                  Text(
+                                    avg != null ? '${avg.round()}%' : '--',
+                                    style: const TextStyle(
+                                      color: FamingaBrandColors.textPrimary,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              context.l10n.soilMoisture,
+                              style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
+                              style: const TextStyle(color: FamingaBrandColors.textPrimary, fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (isWideScreen) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(width: 120, child: gauge),
+                            const SizedBox(width: 16),
+                            Expanded(child: _buildWeatherCard(dashboardProvider)),
+                          ],
+                        );
+                      } else {
+                        return Column(
+                          children: [
+                            gauge,
+                            const SizedBox(height: 12),
+                            _buildWeatherCard(dashboardProvider),
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 20),
+                  // simulation buttons removed
+
+                  // Next Schedule Cycle
+                  Text(
+                  context.l10n.nextScheduleCycle,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
                   ),
                   const SizedBox(height: 12),
                   _buildNextScheduleCard(dashboardProvider),
+                  const SizedBox(height: 20),
+
+                  // Weekly Performance
+                  Text(
+                  context.l10n.weeklyPerformance,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  ),
+                  ),
+                  const SizedBox(height: 12),
+                  _buildWeeklyPerformance(dashboardProvider),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
-          ],
-        ),
-        const SizedBox(height: 20),
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
-        const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
-      ],
-    );
-  }
-
-  Widget _buildWeatherAndGauge(DashboardProvider dashboardProvider, bool isWideScreen) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
-
-    Widget gauge = Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(
-            width: 90,
-            height: 90,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CircularProgressIndicator(
-                  value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
-                  strokeWidth: 8,
-                  backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
-                ),
-                Text(
-                  avg != null ? '${avg.round()}%' : '--',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            context.l10n.soilMoisture,
-            style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
-            style: const TextStyle(color: FamingaBrandColors.textPrimary, fontWeight: FontWeight.w600),
-          ),
-        ],
-      ),
-    );
-
-    if (isWideScreen) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(width: 140, child: gauge),
-          const SizedBox(width: 16),
-          Expanded(child: _buildWeatherCard(dashboardProvider)),
-        ],
-      );
-    } else {
-      return LayoutBuilder(builder: (context, constraints) {
-        if (constraints.maxWidth > 500) {
-           return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(width: 120, child: gauge),
-              const SizedBox(width: 16),
-              Expanded(child: _buildWeatherCard(dashboardProvider)),
-            ],
           );
-        }
-        return Column(
-          children: [
-            gauge,
-            const SizedBox(height: 12),
-            _buildWeatherCard(dashboardProvider),
-          ],
-        );
-      });
-    }
-  }
-
-  Widget _buildFullWidthSoilCard(DashboardProvider dashboardProvider) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: FamingaBrandColors.borderColor),
+        },
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 100,
-                height: 100,
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CircularProgressIndicator(
-                      value: avg != null ? (avg / 100).clamp(0.0, 1.0) : 0.0,
-                      strokeWidth: 10,
-                      backgroundColor: FamingaBrandColors.borderColor.withOpacity(0.3),
-                      valueColor: const AlwaysStoppedAnimation<Color>(FamingaBrandColors.primaryOrange),
-                    ),
-                    Text(
-                      avg != null ? '${avg.round()}%' : '--',
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                context.l10n.soilMoisture,
-                style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 14),
-              ),
-            ],
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Daily Usage',
-                style: TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 14,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                daily > 0 ? '${daily.toStringAsFixed(1)} L' : '--',
-                style: const TextStyle(
-                  color: FamingaBrandColors.textPrimary,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Status: ${avg != null && avg < 40 ? "Dry" : (avg != null && avg > 80 ? "Wet" : "Optimal")}',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.primaryOrange,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+      // Removed notification simulator FAB for production
+      bottomNavigationBar: _buildBottomNavigationBar(),
     );
   }
 
