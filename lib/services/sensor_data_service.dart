@@ -19,11 +19,18 @@ class SensorDataService {
   }
 
   // Get latest reading for a field
+<<<<<<< HEAD
   Future<SensorDataModel?> getLatestReading(String userId, String fieldId) async {
     try {
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
+=======
+  Future<SensorDataModel?> getLatestReading(String fieldId) async {
+    try {
+      final snapshot = await _firestore
+          .collection(_collection)
+>>>>>>> hyacinthe
           .where('fieldId', isEqualTo: fieldId)
           .orderBy('timestamp', descending: true)
           .limit(1)
@@ -40,10 +47,16 @@ class SensorDataService {
   }
 
   // Stream latest sensor data
+<<<<<<< HEAD
   Stream<SensorDataModel?> streamLatestReading(String userId, String fieldId) {
     return _firestore
         .collection(_collection)
         .where('userId', isEqualTo: userId)
+=======
+  Stream<SensorDataModel?> streamLatestReading(String fieldId) {
+    return _firestore
+        .collection(_collection)
+>>>>>>> hyacinthe
         .where('fieldId', isEqualTo: fieldId)
         .orderBy('timestamp', descending: true)
         .limit(1)
@@ -58,7 +71,10 @@ class SensorDataService {
 
   // Get readings for a time range
   Future<List<SensorDataModel>> getReadingsInRange(
+<<<<<<< HEAD
     String userId,
+=======
+>>>>>>> hyacinthe
     String fieldId,
     DateTime startDate,
     DateTime endDate,
@@ -66,7 +82,10 @@ class SensorDataService {
     try {
       final snapshot = await _firestore
           .collection(_collection)
+<<<<<<< HEAD
           .where('userId', isEqualTo: userId)
+=======
+>>>>>>> hyacinthe
           .where('fieldId', isEqualTo: fieldId)
           .where('timestamp', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('timestamp', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
@@ -84,27 +103,44 @@ class SensorDataService {
 
   // Get last 24 hours of readings
   Future<List<SensorDataModel>> getLast24Hours(
+<<<<<<< HEAD
     String userId,
+=======
+>>>>>>> hyacinthe
     String fieldId,
   ) async {
     final now = DateTime.now();
     final yesterday = now.subtract(const Duration(hours: 24));
+<<<<<<< HEAD
     return getReadingsInRange(userId, fieldId, yesterday, now);
+=======
+    return getReadingsInRange(fieldId, yesterday, now);
+>>>>>>> hyacinthe
   }
 
   // Get last 7 days of readings
   Future<List<SensorDataModel>> getLast7Days(
+<<<<<<< HEAD
     String userId,
+=======
+>>>>>>> hyacinthe
     String fieldId,
   ) async {
     final now = DateTime.now();
     final lastWeek = now.subtract(const Duration(days: 7));
+<<<<<<< HEAD
     return getReadingsInRange(userId, fieldId, lastWeek, now);
+=======
+    return getReadingsInRange(fieldId, lastWeek, now);
+>>>>>>> hyacinthe
   }
 
   // Get readings for chart (hourly averages)
   Future<List<Map<String, dynamic>>> getHourlyAverages(
+<<<<<<< HEAD
     String userId,
+=======
+>>>>>>> hyacinthe
     String fieldId,
     DateTime date,
   ) async {
@@ -113,13 +149,17 @@ class SensorDataService {
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
       final readings = await getReadingsInRange(
+<<<<<<< HEAD
         userId,
+=======
+>>>>>>> hyacinthe
         fieldId,
         startOfDay,
         endOfDay,
       );
 
       // Group by hour and calculate averages
+<<<<<<< HEAD
       final Map<int, List<SensorDataModel>> hourlyReadings = {};
       for (final reading in readings) {
         final hour = reading.timestamp.hour;
@@ -156,6 +196,25 @@ class SensorDataService {
       return averages;
     } catch (e) {
       log('Error calculating hourly averages: $e');
+=======
+      final Map<int, List<SensorDataModel>> byHour = {};
+      for (final r in readings) {
+        final hour = r.timestamp.hour;
+        byHour.putIfAbsent(hour, () => []).add(r);
+      }
+
+      final results = <Map<String, dynamic>>[];
+      for (final entry in byHour.entries) {
+        final list = entry.value;
+        final avgMoisture = list.map((e) => e.soilMoisture).reduce((a, b) => a + b) / list.length;
+        final avgTemp = list.map((e) => e.temperature).reduce((a, b) => a + b) / list.length;
+        results.add({'hour': entry.key, 'moisture': avgMoisture, 'temperature': avgTemp});
+      }
+      results.sort((a, b) => (a['hour'] as int).compareTo(b['hour'] as int));
+      return results;
+    } catch (e) {
+      log('Error computing hourly averages: $e');
+>>>>>>> hyacinthe
       rethrow;
     }
   }

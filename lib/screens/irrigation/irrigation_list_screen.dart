@@ -1,13 +1,31 @@
+<<<<<<< HEAD
+=======
+import 'dart:async';
+>>>>>>> hyacinthe
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+<<<<<<< HEAD
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+>>>>>>> hyacinthe
 import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/dashboard_provider.dart';
 import '../../models/irrigation_schedule_model.dart';
+<<<<<<< HEAD
 import '../../services/irrigation_service.dart';
 import '../../routes/app_routes.dart';
+=======
+import '../../widgets/shimmer/shimmer_widgets.dart';
+import '../../services/irrigation_service.dart';
+import '../../services/irrigation_status_service.dart';
+import '../../routes/app_routes.dart';
+import '../../services/field_service.dart';
+import '../../utils/l10n_extensions.dart';
+import '../../providers/language_provider.dart';
+>>>>>>> hyacinthe
 
 class IrrigationListScreen extends StatefulWidget {
   const IrrigationListScreen({super.key});
@@ -18,7 +36,58 @@ class IrrigationListScreen extends StatefulWidget {
 
 class _IrrigationListScreenState extends State<IrrigationListScreen> {
   final IrrigationService _irrigationService = IrrigationService();
+<<<<<<< HEAD
   int _selectedIndex = 1;
+=======
+  final IrrigationStatusService _statusService = IrrigationStatusService();
+  int _selectedIndex = 1;
+  Timer? _statusTick;
+  final Set<String> _deletedIds = <String>{};
+
+  Future<List<Map<String, String>>> _fetchFieldOptions(BuildContext context) async {
+    try {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.currentUser == null) {
+        print('[SCHEDULE] No authenticated user found');
+        return [];
+      }
+      
+      final svc = FieldService();
+      final list = await svc.getUserFields(auth.currentUser!.userId).first;
+      print('[SCHEDULE] Fetched ${list.length} fields');
+      
+      if (list.isEmpty) {
+        print('[SCHEDULE] No fields available for user');
+        return [];
+      }
+      
+      return list.map((f) => {'id': f.id, 'name': f.label}).toList();
+    } catch (e) {
+      print('[SCHEDULE] Error fetching field options: $e');
+      return [];
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    // Run once on open
+    _statusService.startDueSchedules();
+    _statusService.markDueIrrigationsCompleted();
+    // Poll every 60s to auto-complete any overdue cycles
+    _statusTick = Timer.periodic(const Duration(seconds: 60), (_) {
+      _statusService.startDueSchedules();
+      _statusService.markDueIrrigationsCompleted();
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _statusTick?.cancel();
+    super.dispose();
+  }
+>>>>>>> hyacinthe
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +96,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
 
     if (!authProvider.hasAuthChecked) {
       return Scaffold(
+<<<<<<< HEAD
         appBar: AppBar(title: const Text('Irrigation Schedules')),
+=======
+          appBar: AppBar(title: Text(context.l10n.irrigationSchedulesTitle)),
+>>>>>>> hyacinthe
         body: const Center(
           child: CircularProgressIndicator(
             color: FamingaBrandColors.primaryOrange,
@@ -38,17 +111,29 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
 
     if (userId == null) {
       return Scaffold(
+<<<<<<< HEAD
         appBar: AppBar(title: const Text('Irrigation Schedules')),
         body: const Center(
           child: Text('Please log in to view schedules'),
+=======
+          appBar: AppBar(title: Text(context.l10n.irrigationSchedulesTitle)),
+        body: Center(
+            child: Text(context.l10n.pleaseLoginToViewSchedules),
+>>>>>>> hyacinthe
         ),
       );
     }
 
     return Scaffold(
+<<<<<<< HEAD
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
         title: const Text('Irrigation Schedules'),
+=======
+      backgroundColor: Theme.of(context).colorScheme.background,
+      appBar: AppBar(
+          title: Text(context.l10n.irrigationSchedulesTitle),
+>>>>>>> hyacinthe
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
@@ -60,10 +145,17 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         stream: _irrigationService.getUserSchedules(userId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
+<<<<<<< HEAD
             return const Center(
               child: CircularProgressIndicator(
                 color: FamingaBrandColors.primaryOrange,
               ),
+=======
+            return ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: 3,
+              itemBuilder: (context, index) => const ShimmerIrrigationCard(),
+>>>>>>> hyacinthe
             );
           }
 
@@ -112,8 +204,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     color: FamingaBrandColors.textSecondary,
                   ),
                   const SizedBox(height: 16),
+<<<<<<< HEAD
                   const Text(
                     'No Irrigation Schedules',
+=======
+                  Text(
+                      context.l10n.noIrrigationSchedules,
+>>>>>>> hyacinthe
                     style: TextStyle(
                       color: FamingaBrandColors.textPrimary,
                       fontSize: 18,
@@ -121,8 +218,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
+<<<<<<< HEAD
                   const Text(
                     'Create your first irrigation schedule',
+=======
+                  Text(
+                      context.l10n.createFirstSchedule,
+>>>>>>> hyacinthe
                     style: TextStyle(
                       color: FamingaBrandColors.textSecondary,
                       fontSize: 14,
@@ -132,7 +234,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ElevatedButton.icon(
                     onPressed: () => _openCreateSchedule(context, userId),
                     icon: const Icon(Icons.add),
+<<<<<<< HEAD
                     label: const Text('Create Schedule'),
+=======
+                      label: Text(context.l10n.createScheduleButton),
+>>>>>>> hyacinthe
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.primaryOrange,
                       padding: const EdgeInsets.symmetric(
@@ -152,9 +258,16 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
             },
             child: ListView.builder(
               padding: const EdgeInsets.all(16),
+<<<<<<< HEAD
               itemCount: schedules.length,
               itemBuilder: (context, index) {
                 final schedule = schedules[index];
+=======
+              itemCount: schedules.where((s) => !_deletedIds.contains(s.id)).length,
+              itemBuilder: (context, index) {
+                final visible = schedules.where((s) => !_deletedIds.contains(s.id)).toList();
+                final schedule = visible[index];
+>>>>>>> hyacinthe
                 return _buildScheduleCard(schedule);
               },
             ),
@@ -210,8 +323,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       children: [
                         Text(
                           schedule.name,
+<<<<<<< HEAD
                           style: const TextStyle(
                             color: FamingaBrandColors.textPrimary,
+=======
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : FamingaBrandColors.textPrimary,
+>>>>>>> hyacinthe
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -289,7 +407,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ],
                 ],
               ),
+<<<<<<< HEAD
               // Show stop button if irrigation is running
+=======
+              // Show action buttons based on status
+>>>>>>> hyacinthe
               if (schedule.status == 'running') ...[
                 const SizedBox(height: 16),
                 const Divider(),
@@ -299,7 +421,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   child: ElevatedButton.icon(
                     onPressed: () => _stopIrrigation(schedule),
                     icon: const Icon(Icons.stop, size: 18),
+<<<<<<< HEAD
                     label: const Text('Stop Irrigation'),
+=======
+                      label: Text(context.l10n.stopIrrigationButton),
+>>>>>>> hyacinthe
                     style: ElevatedButton.styleFrom(
                       backgroundColor: FamingaBrandColors.statusWarning,
                       foregroundColor: FamingaBrandColors.white,
@@ -311,6 +437,95 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ),
                 ),
               ],
+<<<<<<< HEAD
+=======
+              // Show start button for scheduled cycles
+              if (schedule.status == 'scheduled' && !schedule.isManual) ...[
+                const SizedBox(height: 16),
+                const Divider(),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _startScheduledCycleNow(schedule),
+                    icon: const Icon(Icons.play_arrow, size: 18),
+                      label: Text(context.l10n.startNowButton),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: FamingaBrandColors.statusSuccess,
+                      foregroundColor: FamingaBrandColors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+              // Actions row
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Update button (hide when running to avoid ambiguity)
+                  if (schedule.status != 'running')
+                    TextButton.icon(
+                      onPressed: () => _openEditSchedule(context, schedule),
+                      icon: const Icon(Icons.edit_outlined),
+                        label: Text(context.l10n.updateButton),
+                    ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      if (schedule.status == 'running') {
+                          Get.snackbar(context.l10n.notAllowed, context.l10n.stopCycleBeforeDeleting);
+                        return;
+                      }
+                      final confirmed = await Get.dialog<bool>(
+                        AlertDialog(
+                          title: Text(context.l10n.deleteSchedule),
+                          content: Text(context.l10n.areYouSureDelete),
+                          actions: [
+                              TextButton(onPressed: () => Get.back(result: false), child: Text(context.l10n.cancelButton)),
+                            TextButton(
+                              onPressed: () => Get.back(result: true),
+                              style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                                child: Text(context.l10n.deleteButton),
+                            ),
+                          ],
+                        ),
+                      );
+                      if (confirmed != true) return;
+                      try {
+                        if (schedule.id.isEmpty) {
+                            Get.snackbar(context.l10n.error, context.l10n.invalidScheduleId);
+                          return;
+                        }
+                        final ok = await _irrigationService.deleteSchedule(schedule.id);
+                        if (ok) {
+                          // Optimistic UI remove
+                          setState(() {
+                            _deletedIds.add(schedule.id);
+                          });
+                          Get.snackbar(
+                              context.l10n.success,
+                              context.l10n.scheduleDeletedSuccessfully,
+                            snackPosition: SnackPosition.BOTTOM,
+                            backgroundColor: Theme.of(context).colorScheme.surface,
+                            colorText: Theme.of(context).colorScheme.onSurface,
+                          );
+                        } else {
+                            Get.snackbar(context.l10n.error, context.l10n.failedDeleteSchedule);
+                        }
+                      } catch (e) {
+                          Get.snackbar(context.l10n.error, 'Delete failed: $e');
+                      }
+                    },
+                    style: TextButton.styleFrom(foregroundColor: Theme.of(context).colorScheme.error),
+                    icon: const Icon(Icons.delete_outline),
+                      label: Text(context.l10n.deleteButton),
+                  ),
+                ],
+              )
+>>>>>>> hyacinthe
             ],
           ),
         ),
@@ -329,8 +544,13 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         const SizedBox(width: 4),
         Text(
           text,
+<<<<<<< HEAD
           style: const TextStyle(
             color: FamingaBrandColors.textPrimary,
+=======
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark ? Colors.white : FamingaBrandColors.textPrimary,
+>>>>>>> hyacinthe
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
@@ -399,6 +619,68 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     );
   }
 
+<<<<<<< HEAD
+=======
+  /// Start a scheduled cycle immediately (manual trigger)
+  void _startScheduledCycleNow(IrrigationScheduleModel schedule) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text('Start Irrigation Now'),
+        content: Text(
+          'Start irrigation for ${schedule.zoneName} immediately?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Get.back();
+              
+              // Show loading
+              Get.dialog(
+                const Center(
+                  child: CircularProgressIndicator(
+                    color: FamingaBrandColors.primaryOrange,
+                  ),
+                ),
+                barrierDismissible: false,
+              );
+              
+              final success = await _statusService.startScheduledNow(schedule.id);
+              
+              Get.back(); // Close loading
+              
+              if (success) {
+                Get.snackbar(
+                  'Success',
+                  'Irrigation started successfully',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusSuccess,
+                  colorText: FamingaBrandColors.white,
+                );
+              } else {
+                Get.snackbar(
+                  'Error',
+                  'Failed to start irrigation. Please try again.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: FamingaBrandColors.statusWarning,
+                  colorText: FamingaBrandColors.white,
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: FamingaBrandColors.statusSuccess,
+            ),
+            child: const Text('Start Now'),
+          ),
+        ],
+      ),
+    );
+  }
+
+>>>>>>> hyacinthe
   void _showScheduleDetails(IrrigationScheduleModel schedule) {
     final repeatDaysText = schedule.repeatDays.isEmpty 
         ? 'One-time' 
@@ -450,6 +732,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
     );
   }
 
+<<<<<<< HEAD
   void _openCreateSchedule(BuildContext context, String userId) {
     final nameController = TextEditingController();
     final zoneController = TextEditingController();
@@ -476,12 +759,108 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   TextField(
                     controller: durationController,
                     decoration: const InputDecoration(labelText: 'Duration (minutes)'),
+=======
+  Future<void> _openCreateSchedule(BuildContext context, String userId) async {
+    // First check if user has any fields
+    final fields = await _fetchFieldOptions(context);
+    
+    if (fields.isEmpty) {
+      _showNoFieldsModal(context, userId);
+      return;
+    }
+
+    // User has fields, proceed with schedule creation
+    final nameController = TextEditingController();
+    final durationController = TextEditingController(text: '60');
+    DateTime selectedStart = DateTime.now().add(const Duration(minutes: 5));
+
+    final dash = Provider.of<DashboardProvider>(context, listen: false);
+    String selectedFieldId = dash.selectedFarmId;
+    final scheme = Theme.of(context).colorScheme;
+    final fieldsFuture = Future.value(fields); // Use already fetched fields
+
+    Get.dialog(
+      Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        backgroundColor: scheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            // Use FutureBuilder so we fetch fields dynamically once per open
+            // The rest of the form stays the same
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    Text(context.l10n.createScheduleName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                  TextField(
+                    controller: nameController,
+                      decoration: InputDecoration(labelText: context.l10n.scheduleName, border: const OutlineInputBorder()),
+                  ),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<Map<String,String>>>(
+                      future: fieldsFuture,
+                      builder: (context, snap) {
+                        final options = snap.data ?? <Map<String,String>>[];
+                        if (options.isEmpty) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            ),
+                            child: Text(context.l10n.noFieldsAvailableMessage),
+                          );
+                        }
+                        if (!options.any((f) => f['id'] == selectedFieldId)) {
+                          selectedFieldId = options.first['id']!;
+                        }
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedFieldId,
+                              icon: const Icon(Icons.arrow_drop_down),
+                              isExpanded: true,
+                              items: options
+                                  .map((f) => DropdownMenuItem<String>(
+                                        value: f['id'],
+                                        child: Text(f['name'] ?? f['id']!),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) => setState(() => selectedFieldId = val ?? selectedFieldId),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                  TextField(
+                    controller: durationController,
+                      decoration: InputDecoration(labelText: context.l10n.durationMinutes, border: const OutlineInputBorder()),
+>>>>>>> hyacinthe
                     keyboardType: TextInputType.number,
                   ),
                   const SizedBox(height: 12),
                   Row(
                     children: [
+<<<<<<< HEAD
                       const Text('Start Time: '),
+=======
+                        Text('${context.l10n.startTimeLabel}: ', style: Theme.of(context).textTheme.bodyMedium),
+>>>>>>> hyacinthe
                       Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
                       const Spacer(),
                       TextButton(
@@ -499,6 +878,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                           );
                           if (time == null) return;
                           setState(() {
+<<<<<<< HEAD
                             selectedStart = DateTime(
                               date.year,
                               date.month,
@@ -513,10 +893,100 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     ],
                   ),
                 ],
+=======
+                              selectedStart = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                          });
+                        },
+                        child: Text(context.l10n.pickButton),
+                      ),
+                    ],
+                  ),
+                    const SizedBox(height: 16),
+                    Row(
+                    children: [
+                        TextButton(onPressed: () => Get.back(), child: Text(context.l10n.cancelButton)),
+                        const Spacer(),
+          ElevatedButton(
+           onPressed: () async {
+             try {
+               print('[SCHEDULE] Creating new schedule...');
+               
+               final name = nameController.text.trim().isEmpty ? 'Scheduled Cycle' : nameController.text.trim();
+               final duration = int.tryParse(durationController.text.trim()) ?? 60;
+               
+               if (duration <= 0) {
+                 Get.snackbar('Invalid', 'Duration must be greater than 0');
+                 return;
+               }
+               
+               List<Map<String,String>> options = await fieldsFuture;
+               if (options.isEmpty) {
+                 Get.snackbar('Error', 'No fields available. Please create a field first.');
+                 return;
+               }
+               
+               final field = options.firstWhere(
+                 (f) => f['id'] == selectedFieldId, 
+                 orElse: () => options.first
+               );
+               
+               print('[SCHEDULE] Selected field: ${field['name']} (${field['id']})');
+               
+               final schedule = IrrigationScheduleModel(
+                 id: '',
+                 userId: userId,
+                 name: name,
+                 zoneId: field['id']!,
+                 zoneName: field['name'] ?? field['id']!,
+                 startTime: selectedStart,
+                 durationMinutes: duration,
+                 repeatDays: const <int>[],
+                 isActive: true,
+                 status: 'scheduled',
+                 createdAt: DateTime.now(),
+               );
+               
+               print('[SCHEDULE] Saving schedule: ${schedule.name}');
+               final ok = await _irrigationService.createSchedule(schedule);
+               
+               if (ok) {
+                 print('[SCHEDULE] Schedule created successfully');
+                 Get.back();
+                 Get.snackbar(
+                   'Success', 
+                   'Schedule created successfully',
+                   snackPosition: SnackPosition.BOTTOM,
+                 );
+               } else {
+                 print('[SCHEDULE] Failed to create schedule');
+                 Get.snackbar(
+                   'Error', 
+                   'Failed to save schedule. Please try again.',
+                   snackPosition: SnackPosition.BOTTOM,
+                 );
+               }
+             } catch (e) {
+               print('[SCHEDULE] Error creating schedule: $e');
+               Get.snackbar(
+                 'Error', 
+                 'An error occurred: $e',
+                 snackPosition: SnackPosition.BOTTOM,
+               );
+             }
+                         },
+                         style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),
+                         child: const Text('Save'),
+                       )
+                      ],
+                    )
+                  ],
+                ),
+>>>>>>> hyacinthe
               ),
             );
           },
         ),
+<<<<<<< HEAD
         actions: [
           TextButton(
             onPressed: () => Get.back(),
@@ -559,6 +1029,223 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
             child: const Text('Create'),
           ),
         ],
+=======
+      ),
+    );
+  }
+
+  void _openEditSchedule(BuildContext context, IrrigationScheduleModel schedule) {
+    final nameController = TextEditingController(text: schedule.name);
+    final durationController = TextEditingController(text: schedule.durationMinutes.toString());
+    DateTime selectedStart = schedule.startTime;
+
+    final dash = Provider.of<DashboardProvider>(context, listen: false);
+    String selectedFieldId = schedule.zoneId.isNotEmpty ? schedule.zoneId : dash.selectedFarmId;
+    final scheme = Theme.of(context).colorScheme;
+    final fieldsFuture = _fetchFieldOptions(context);
+
+    Get.dialog(
+      Dialog(
+        insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
+        backgroundColor: scheme.surface,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: StatefulBuilder(
+          builder: (context, setState) {
+            final fieldOptionsAsync = fieldsFuture;
+            return ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Update Irrigation Schedule', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: nameController,
+                      decoration: const InputDecoration(labelText: 'Schedule Name', border: OutlineInputBorder()),
+                    ),
+                    const SizedBox(height: 12),
+                    FutureBuilder<List<Map<String,String>>>(
+                      future: fieldOptionsAsync,
+                      builder: (context, snap) {
+                        final options = snap.data ?? <Map<String,String>>[];
+                        if (options.isEmpty) {
+                          return Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.surface,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                            ),
+                            child: const Text('No fields available'),
+                          );
+              }
+                        if (!options.any((f) => f['id'] == selectedFieldId)) {
+                          selectedFieldId = options.first['id']!;
+                        }
+                        return Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.surface,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: selectedFieldId,
+                              icon: const Icon(Icons.arrow_drop_down),
+                              isExpanded: true,
+                              items: options
+                                  .map((f) => DropdownMenuItem<String>(
+                                        value: f['id'],
+                                        child: Text(f['name'] ?? f['id']!),
+                                      ))
+                                  .toList(),
+                              onChanged: (val) => setState(() => selectedFieldId = val ?? selectedFieldId),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: durationController,
+                      decoration: const InputDecoration(labelText: 'Duration (minutes)', border: OutlineInputBorder()),
+                      keyboardType: TextInputType.number,
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Text('Start Time: ', style: Theme.of(context).textTheme.bodyMedium),
+                        Text(DateFormat('MMM dd, yyyy hh:mm a').format(selectedStart)),
+                        const Spacer(),
+                        TextButton(
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                              initialDate: selectedStart,
+                            );
+                            if (date == null) return;
+                            final time = await showTimePicker(
+                              context: context,
+                              initialTime: TimeOfDay.fromDateTime(selectedStart),
+                            );
+                            if (time == null) return;
+                            setState(() {
+                              selectedStart = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                            });
+                          },
+                          child: const Text('Pick'),
+          ),
+        ],
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        TextButton(onPressed: () => Get.back(), child: const Text('Cancel')),
+                        const Spacer(),
+                        ElevatedButton(
+                          onPressed: () async {
+                            try {
+                              print('[SCHEDULE] Updating schedule: ${schedule.id}');
+                              
+                              final nameText = nameController.text.trim();
+                              if (nameText.isEmpty) {
+                                Get.snackbar('Invalid', 'Please enter a schedule name');
+                                return;
+                              }
+                              
+                              final parsed = int.tryParse(durationController.text.trim());
+                              if (parsed == null || parsed <= 0) {
+                                Get.snackbar('Invalid', 'Duration must be a positive number');
+                                return;
+                              }
+                              final duration = parsed;
+                              
+                              List<Map<String,String>> options = await fieldOptionsAsync;
+                              if (options.isEmpty) {
+                                Get.snackbar('Error', 'No fields available');
+                                return;
+                              }
+                              
+                              final field = options.firstWhere(
+                                (f) => f['id'] == selectedFieldId, 
+                                orElse: () => options.first
+                              );
+
+                              print('[SCHEDULE] Selected field: ${field['name']} (${field['id']})');
+
+                              final now = DateTime.now();
+                              // Calculate nextRun based on whether it's a recurring schedule
+                              DateTime? nextRunTime;
+                              if (schedule.repeatDays.isNotEmpty) {
+                                // For recurring schedules, find next occurrence
+                                for (int i = 0; i < 7; i++) {
+                                  final candidateDay = selectedStart.add(Duration(days: i));
+                                  if (schedule.repeatDays.contains(candidateDay.weekday)) {
+                                    nextRunTime = DateTime(
+                                      candidateDay.year,
+                                      candidateDay.month,
+                                      candidateDay.day,
+                                      selectedStart.hour,
+                                      selectedStart.minute,
+                                    );
+                                    if (nextRunTime.isAfter(now)) break;
+                                  }
+                                }
+                              }
+
+                              final updateData = {
+                                'name': nameText,
+                                'zoneId': field['id'],
+                                'zoneName': field['name'] ?? field['id'],
+                                'startTime': Timestamp.fromDate(selectedStart),
+                                'nextRun': nextRunTime != null ? Timestamp.fromDate(nextRunTime) : null,
+                                'durationMinutes': duration,
+                                'status': 'scheduled',
+                                'updatedAt': Timestamp.fromDate(now),
+                              };
+
+                              print('[SCHEDULE] Updating with data: $updateData');
+
+                              await FirebaseFirestore.instance
+                                  .collection('irrigationSchedules')
+                                  .doc(schedule.id)
+                                  .update(updateData);
+                              
+                              print('[SCHEDULE] Schedule updated successfully');
+                              Get.back();
+                              Get.snackbar(
+                                'Updated', 
+                                'Schedule updated successfully',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            } catch (e) {
+                              print('[SCHEDULE] Error updating schedule: $e');
+                              Get.snackbar(
+                                'Error', 
+                                'Failed to update schedule: $e',
+                                snackPosition: SnackPosition.BOTTOM,
+                              );
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(minimumSize: const Size(120, 44)),
+                          child: const Text('Save'),
+                        )
+                      ],
+                    )
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+>>>>>>> hyacinthe
       ),
     );
   }
@@ -647,4 +1334,121 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
       ],
     );
   }
+<<<<<<< HEAD
+=======
+
+  void _showNoFieldsModal(BuildContext context, String userId) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    
+    Get.dialog(
+      Dialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardColor,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Icon
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: FamingaBrandColors.primaryOrange.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.landscape_outlined,
+                  size: 40,
+                  color: FamingaBrandColors.primaryOrange,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Title
+              Text(
+                'No Fields Found',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // Message
+              Text(
+                'You don\'t have any fields registered. Please create a field first to add an irrigation schedule.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 15,
+                  color: Theme.of(context).textTheme.bodyMedium?.color?.withOpacity(0.8),
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 28),
+              
+              // Buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Get.back(),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(
+                          color: isDark 
+                              ? Colors.white.withOpacity(0.3)
+                              : FamingaBrandColors.darkGreen.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Get.back();
+                        Get.offAllNamed(AppRoutes.fields);
+                      },
+                      icon: const Icon(Icons.add, size: 20),
+                      label: const Text('Go to Fields'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: FamingaBrandColors.primaryOrange,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      barrierDismissible: false,
+    );
+  }
+>>>>>>> hyacinthe
 }

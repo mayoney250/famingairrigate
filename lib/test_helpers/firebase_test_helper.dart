@@ -7,6 +7,10 @@ import '../services/alert_service.dart';
 import '../services/weather_service.dart';
 import '../services/irrigation_log_service.dart';
 import '../models/irrigation_zone_model.dart';
+<<<<<<< HEAD
+=======
+import 'package:cloud_firestore/cloud_firestore.dart';
+>>>>>>> hyacinthe
 import '../models/irrigation_schedule_model.dart';
 import '../models/sensor_data_model.dart';
 import '../models/weather_data_model.dart';
@@ -90,11 +94,16 @@ class FirebaseTestHelper {
   
   static Future<String> _testCreateZone() async {
     final zoneService = IrrigationZoneService();
+<<<<<<< HEAD
     final zone = IrrigationZoneModel(
+=======
+    final zone = IrrigationZone(
+>>>>>>> hyacinthe
       id: '',
       userId: userId,
       fieldId: 'test_field_1',
       name: 'Test Zone A',
+<<<<<<< HEAD
       areaHectares: 2.5,
       cropType: 'Maize',
       isActive: true,
@@ -103,6 +112,21 @@ class FirebaseTestHelper {
       createdAt: DateTime.now(),
     );
     return await zoneService.createZone(zone);
+=======
+      zoneType: IrrigationZoneType.sprinkler,
+      drawingType: DrawingType.polygon,
+      coordinates: [
+        GeoPoint(-1.286389, 36.817223),
+        GeoPoint(-1.286489, 36.817323),
+        GeoPoint(-1.286589, 36.817223),
+      ],
+      color: '#4CAF50',
+      isActive: true,
+      createdAt: DateTime.now(),
+    );
+    final id = await zoneService.createZone(zone);
+    return id ?? 'error';
+>>>>>>> hyacinthe
   }
   
   static Future<String> _testCreateSchedule(String zoneId) async {

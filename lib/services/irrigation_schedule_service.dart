@@ -193,5 +193,20 @@ class IrrigationScheduleService {
       rethrow;
     }
   }
+<<<<<<< HEAD
+=======
+
+  // Stream of running schedules for a user
+  Stream<List<IrrigationScheduleModel>> getRunningSchedulesStream(String userId) {
+    return _firestore
+        .collection(_collection)
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: 'running') // Assuming 'status' field exists
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+        .map((doc) => IrrigationScheduleModel.fromFirestore(doc))
+        .toList());
+  }
+>>>>>>> hyacinthe
 }
 

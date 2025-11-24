@@ -6,6 +6,10 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../services/auth_service.dart';
+<<<<<<< HEAD
+=======
+import '../../utils/l10n_extensions.dart';
+>>>>>>> hyacinthe
 
 class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
@@ -41,11 +45,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   
   // Rwanda provinces and districts
   final Map<String, List<String>> _rwandaLocations = {
+<<<<<<< HEAD
     'Kigali City': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
     'Eastern Province': ['Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana'],
     'Northern Province': ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'],
     'Southern Province': ['Gisagara', 'Huye', 'Kamonyi', 'Muhanga', 'Nyamagabe', 'Nyanza', 'Nyaruguru', 'Ruhango'],
     'Western Province': ['Karongi', 'Ngororero', 'Nyabihu', 'Nyamasheke', 'Rubavu', 'Rusizi', 'Rutsiro'],
+=======
+    'Kigali': ['Gasabo', 'Kicukiro', 'Nyarugenge'],
+    'Eastern': ['Bugesera', 'Gatsibo', 'Kayonza', 'Kirehe', 'Ngoma', 'Nyagatare', 'Rwamagana'],
+    'Northern': ['Burera', 'Gakenke', 'Gicumbi', 'Musanze', 'Rulindo'],
+    'Southern': ['Gisagara', 'Huye', 'Kamonyi', 'Muhanga', 'Nyamagabe', 'Nyanza', 'Nyaruguru', 'Ruhango'],
+    'Western': ['Karongi', 'Ngororero', 'Nyabihu', 'Nyamasheke', 'Rubavu', 'Rusizi', 'Rutsiro'],
+>>>>>>> hyacinthe
   };
   
   // Sectors will be populated based on district (simplified for now)
@@ -227,7 +239,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
+<<<<<<< HEAD
         title: const Text('Edit Profile'),
+=======
+        title: Text(context.l10n.editProfileTitle),
+>>>>>>> hyacinthe
         elevation: 0,
       ),
       body: Form(
@@ -293,7 +309,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
+<<<<<<< HEAD
                       'Tap camera icon to change photo',
+=======
+                      context.l10n.tapCameraToChangePhoto,
+>>>>>>> hyacinthe
                       style: textTheme.bodyMedium?.copyWith(
                         color: scheme.onSurfaceVariant,
                       ),
@@ -306,27 +326,47 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Personal Information Section
               _buildSection(
+<<<<<<< HEAD
                 title: 'Personal Information',
+=======
+                title: context.l10n.personalInformation,
+>>>>>>> hyacinthe
                 icon: Icons.person,
                 children: [
                   _buildTextField(
                     controller: _firstNameController,
+<<<<<<< HEAD
                     label: 'First Name',
                     icon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your first name';
+=======
+                    label: context.l10n.firstName,
+                    icon: Icons.person_outline,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return context.l10n.pleaseEnterFirstName;
+>>>>>>> hyacinthe
                       }
                       return null;
                     },
                   ),
                   _buildTextField(
                     controller: _lastNameController,
+<<<<<<< HEAD
                     label: 'Last Name',
                     icon: Icons.person_outline,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
                         return 'Please enter your last name';
+=======
+                    label: context.l10n.lastName,
+                    icon: Icons.person_outline,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return context.l10n.pleaseEnterLastName;
+>>>>>>> hyacinthe
                       }
                       return null;
                     },
@@ -359,21 +399,36 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Contact Information Section
               _buildSection(
+<<<<<<< HEAD
                 title: 'Contact Information',
+=======
+                title: context.l10n.contactInformation,
+>>>>>>> hyacinthe
                 icon: Icons.contact_phone,
                 children: [
                   _buildTextField(
                     controller: _phoneController,
+<<<<<<< HEAD
                     label: 'Phone Number',
+=======
+                    label: context.l10n.phoneNumberLabel,
+>>>>>>> hyacinthe
                     icon: Icons.phone,
                     keyboardType: TextInputType.phone,
                     prefixText: '+250 ',
                     validator: (value) {
                       if (value == null || value.isEmpty) {
+<<<<<<< HEAD
                         return 'Please enter your phone number';
                       }
                       if (value.length < 9) {
                         return 'Please enter a valid phone number';
+=======
+                        return context.l10n.pleaseEnterPhoneNumber;
+                      }
+                      if (value.length < 9) {
+                        return context.l10n.pleaseEnterValidPhoneNumber;
+>>>>>>> hyacinthe
                       }
                       return null;
                     },
@@ -430,7 +485,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               
               // Location Section
               _buildSection(
+<<<<<<< HEAD
                 title: 'Location',
+=======
+                title: context.l10n.location,
+>>>>>>> hyacinthe
                 icon: Icons.location_on,
                 children: [
                   _buildDropdown(
@@ -502,7 +561,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           )
                         : Text(
+<<<<<<< HEAD
                             'Save Changes',
+=======
+                            context.l10n.saveChanges,
+>>>>>>> hyacinthe
                             style: textTheme.titleMedium?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: scheme.onPrimary,

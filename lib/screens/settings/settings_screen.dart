@@ -1,8 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+<<<<<<< HEAD
 import '../../config/colors.dart';
 import '../../providers/theme_provider.dart';
+=======
+import '../../providers/theme_provider.dart';
+import '../../providers/language_provider.dart';
+import '../../generated/app_localizations.dart';
+import 'terms_and_services_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'reports_screen.dart';
+import 'download_data_screen.dart';
+import 'dart:async';
+>>>>>>> hyacinthe
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,13 +22,18 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
+<<<<<<< HEAD
 class _SettingsScreenState extends State<SettingsScreen> {
+=======
+class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObserver {
+>>>>>>> hyacinthe
   bool _notificationsEnabled = true;
   bool _emailNotifications = true;
   bool _pushNotifications = true;
   bool _autoIrrigation = true;
   String _themeMode = 'Light';
   String _temperatureUnit = 'Celsius';
+<<<<<<< HEAD
   String _language = 'English';
 
   @override
@@ -28,16 +44,73 @@ class _SettingsScreenState extends State<SettingsScreen> {
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Settings'),
+=======
+  late LanguageProvider _languageProvider;
+
+  @override
+  void initState() {
+    super.initState();
+    _languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeLocales(List<Locale>? locales) {
+    // Called when system locale changes
+    setState(() {});
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to language changes and rebuild entire screen
+    return Consumer<LanguageProvider>(
+      builder: (context, languageProvider, _) {
+        print('SettingsScreen rebuilding with locale: ${languageProvider.currentLocale}');
+        _languageProvider = languageProvider;
+        return _buildScreen(context);
+      },
+    );
+  }
+
+  Widget _buildScreen(BuildContext context) {
+    final themeProvider = Provider.of<ThemeProvider>(context);
+    _themeMode = _themeModeFor(themeProvider.themeMode);
+    
+    print('_buildScreen called, locale from provider: ${_languageProvider.currentLocale}');
+    final appLocalizations = AppLocalizations.of(context);
+    print('AppLocalizations.of(context) returned: ${appLocalizations?.runtimeType}');
+    print('Localization locale: ${appLocalizations?.localeName}');
+    
+    return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      appBar: AppBar(
+        title: Text(appLocalizations?.settings ?? 'Settings'),
+>>>>>>> hyacinthe
       ),
       body: ListView(
         children: [
           _buildSection(
+<<<<<<< HEAD
             'Notifications',
             [
               _buildSwitchTile(
                 Icons.notifications_outlined,
                 'Enable Notifications',
                 'Receive notifications about your irrigation system',
+=======
+            appLocalizations?.notifications ?? 'Notifications',
+            [
+              _buildSwitchTile(
+                Icons.notifications_outlined,
+                appLocalizations?.enableNotifications ?? 'Enable Notifications',
+                appLocalizations?.receiveNotifications ?? 'Receive notifications about your irrigation system',
+>>>>>>> hyacinthe
                 _notificationsEnabled,
                 (value) {
                   setState(() => _notificationsEnabled = value);
@@ -45,8 +118,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _buildSwitchTile(
                 Icons.email_outlined,
+<<<<<<< HEAD
                 'Email Notifications',
                 'Receive email updates',
+=======
+                appLocalizations?.emailNotifications ?? 'Email Notifications',
+                appLocalizations?.receiveEmailUpdates ?? 'Receive email updates',
+>>>>>>> hyacinthe
                 _emailNotifications,
                 (value) {
                   setState(() => _emailNotifications = value);
@@ -55,8 +133,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _buildSwitchTile(
                 Icons.phone_android,
+<<<<<<< HEAD
                 'Push Notifications',
                 'Receive push notifications',
+=======
+                appLocalizations?.pushNotifications ?? 'Push Notifications',
+                appLocalizations?.receivePushNotifications ?? 'Receive push notifications',
+>>>>>>> hyacinthe
                 _pushNotifications,
                 (value) {
                   setState(() => _pushNotifications = value);
@@ -67,17 +150,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           _buildSection(
+<<<<<<< HEAD
             'Irrigation',
             [
               _buildSwitchTile(
                 Icons.water_drop_outlined,
                 'Auto Irrigation',
                 'Automatically irrigate based on sensor data',
+=======
+            appLocalizations?.irrigation ?? 'Irrigation',
+            [
+              _buildSwitchTile(
+                Icons.water_drop_outlined,
+                appLocalizations?.autoIrrigation ?? 'Auto Irrigation',
+                appLocalizations?.autoIrrigationDesc ?? 'Automatically irrigate based on sensor data',
+>>>>>>> hyacinthe
                 _autoIrrigation,
                 (value) {
                   setState(() => _autoIrrigation = value);
                 },
               ),
+<<<<<<< HEAD
               _buildListTile(
                 Icons.schedule,
                 'Irrigation Schedule',
@@ -102,15 +195,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                 },
               ),
+=======
+>>>>>>> hyacinthe
             ],
           ),
           const SizedBox(height: 16),
           _buildSection(
+<<<<<<< HEAD
             'Preferences',
             [
               _buildDropdownTile(
                 Icons.thermostat_outlined,
                 'Temperature Unit',
+=======
+            appLocalizations?.preferences ?? 'Preferences',
+            [
+              _buildDropdownTile(
+                Icons.thermostat_outlined,
+                appLocalizations?.temperatureUnit ?? 'Temperature Unit',
+>>>>>>> hyacinthe
                 _temperatureUnit,
                 ['Celsius', 'Fahrenheit'],
                 (value) {
@@ -119,25 +222,68 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               _buildDropdownTile(
                 Icons.language,
+<<<<<<< HEAD
                 'Language',
                 _language,
                 ['English', 'French', 'Swahili', 'Kinyarwanda'],
                 (value) {
                   setState(() => _language = value!);
+=======
+                appLocalizations?.language ?? 'Language',
+                _languageProvider.currentLanguageName,
+                ['English', 'French', 'Swahili', 'Kinyarwanda'],
+                (value) async {
+                  if (value == null) return;
+                  print('========== LANGUAGE CHANGE INITIATED: $value ==========');
+                  
+                  // Change language in provider
+                  await _languageProvider.setLanguage(value);
+                  print('Language provider updated');
+                  
+                  // Force GetX to update
+                  Get.updateLocale(_languageProvider.currentLocale);
+                  print('GetX locale updated');
+                  
+                  // Force this screen rebuild
+                  setState(() {});
+                  print('SetState called');
+                  
+                  // Wait for rebuild
+                  await Future.delayed(const Duration(milliseconds: 100));
+                  
+                  // Trigger another setState
+                  if (mounted) {
+                    setState(() {});
+                    print('Second setState called');
+                  }
+                  
+                  print('========== LANGUAGE CHANGE COMPLETED ==========');
+>>>>>>> hyacinthe
                 },
               ),
               _buildDropdownTile(
                 Icons.dark_mode_outlined,
+<<<<<<< HEAD
                 'Theme',
+=======
+                appLocalizations?.theme ?? 'Theme',
+>>>>>>> hyacinthe
                 _themeMode,
                 ['Light', 'Dark'],
                 (value) async {
                   if (value == null) return;
                   setState(() => _themeMode = value);
+<<<<<<< HEAD
                   await themeProvider.setThemeMode(_modeFor(value));
                   Get.snackbar(
                     'Theme updated',
                     'Theme set to ${value.toLowerCase()}',
+=======
+                  await Provider.of<ThemeProvider>(context, listen: false).setThemeMode(_modeFor(value));
+                  Get.snackbar(
+                    appLocalizations?.themeUpdated ?? 'Theme updated',
+                    '${appLocalizations?.theme ?? 'Theme'} ${appLocalizations?.setTo ?? 'set to'} ${value.toLowerCase()}',
+>>>>>>> hyacinthe
                     snackPosition: SnackPosition.BOTTOM,
                   );
                 },
@@ -146,6 +292,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           const SizedBox(height: 16),
           _buildSection(
+<<<<<<< HEAD
             'Data & Storage',
             [
               _buildListTile(
@@ -157,21 +304,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Download Data',
                     'Data export coming soon!',
                     snackPosition: SnackPosition.BOTTOM,
+=======
+            appLocalizations?.dataStorage ?? 'Data & Storage',
+            [
+              _buildListTile(
+                Icons.assessment_outlined,
+                appLocalizations?.reports ?? 'Reports',
+                appLocalizations?.reportsDesc ?? 'View irrigation statistics and insights',
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ReportsScreen()),
+                  );
+                },
+              ),
+              _buildListTile(
+                Icons.download_outlined,
+                'Download Data',
+                'Generate and download irrigation reports',
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const DownloadDataScreen()),
+>>>>>>> hyacinthe
                   );
                 },
               ),
               _buildListTile(
                 Icons.delete_outline,
+<<<<<<< HEAD
                 'Clear Cache',
                 'Free up storage space',
                 () {
                   _showClearCacheDialog();
+=======
+                appLocalizations?.clearCache ?? 'Clear Cache',
+                appLocalizations?.clearCacheDesc ?? 'Free up storage space',
+                () {
+                  _showClearCacheDialog(context);
+>>>>>>> hyacinthe
                 },
               ),
             ],
           ),
           const SizedBox(height: 16),
           _buildSection(
+<<<<<<< HEAD
             'Security',
             [
               _buildListTile(
@@ -183,10 +361,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Change Password',
                     'Password change coming soon!',
                     snackPosition: SnackPosition.BOTTOM,
+=======
+            appLocalizations?.legal ?? 'Legal',
+            [
+              _buildListTile(
+                Icons.description,
+                appLocalizations?.termsAndServices ?? 'Terms and Services',
+                appLocalizations?.viewTerms ?? 'View terms and services',
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TermsAndServicesScreen()),
+>>>>>>> hyacinthe
                   );
                 },
               ),
               _buildListTile(
+<<<<<<< HEAD
                 Icons.fingerprint,
                 'Biometric Login',
                 'Use fingerprint or face ID',
@@ -231,6 +422,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     'Terms of Service',
                     'Terms of service coming soon!',
                     snackPosition: SnackPosition.BOTTOM,
+=======
+                Icons.privacy_tip,
+                appLocalizations?.privacyPolicy ?? 'Privacy and Policy',
+                appLocalizations?.readPrivacy ?? 'Read our privacy policy',
+                () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PrivacyPolicyScreen()),
+>>>>>>> hyacinthe
                   );
                 },
               ),
@@ -345,6 +545,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+<<<<<<< HEAD
   void _showClearCacheDialog() {
     Get.dialog(
       AlertDialog(
@@ -352,23 +553,44 @@ class _SettingsScreenState extends State<SettingsScreen> {
         content: const Text(
           'This will remove all cached data and free up storage space. '
           'Your account data will not be affected.',
+=======
+  void _showClearCacheDialog(BuildContext context) {
+    Get.dialog(
+      AlertDialog(
+        title: Text(AppLocalizations.of(context)?.clearCache ?? 'Clear Cache'),
+        content: Text(
+          AppLocalizations.of(context)?.clearCacheWarning ?? 'This will remove all cached data and free up storage space. Your account data will not be affected.',
+>>>>>>> hyacinthe
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
+<<<<<<< HEAD
             child: const Text('Cancel'),
+=======
+            child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
+>>>>>>> hyacinthe
           ),
           TextButton(
             onPressed: () {
               Get.back();
               Get.snackbar(
+<<<<<<< HEAD
                 'Cache Cleared',
                 'Cache has been cleared successfully!',
+=======
+                AppLocalizations.of(context)?.cacheCleared ?? 'Cache Cleared',
+                AppLocalizations.of(context)?.cacheSuccessful ?? 'Cache has been cleared successfully!',
+>>>>>>> hyacinthe
                 snackPosition: SnackPosition.BOTTOM,
               );
             },
             child: Text(
+<<<<<<< HEAD
               'Clear',
+=======
+              AppLocalizations.of(context)?.clear ?? 'Clear',
+>>>>>>> hyacinthe
               style: TextStyle(color: Theme.of(context).colorScheme.error),
             ),
           ),

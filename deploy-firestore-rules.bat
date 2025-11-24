@@ -1,4 +1,8 @@
 @echo off
+
+:: Deploy Firestore Security Rules with detailed checks and instructions
+
+:: Display header
 echo ================================================
 echo   Deploying Firestore Security Rules
 echo ================================================
@@ -67,4 +71,3 @@ if %ERRORLEVEL% EQ 0 (
 )
 
 pause
-

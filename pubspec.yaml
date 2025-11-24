@@ -11,6 +11,10 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
+<<<<<<< HEAD
+=======
+
+>>>>>>> hyacinthe
   
   # Firebase
   firebase_core: ^2.24.0
@@ -22,6 +26,10 @@ dependencies:
   firebase_crashlytics: ^3.4.0
   firebase_performance: ^0.9.3
   google_sign_in: ^6.2.1
+<<<<<<< HEAD
+=======
+  cloud_functions: ^4.4.0
+>>>>>>> hyacinthe
   
   # State Management
   provider: ^6.1.0
@@ -37,6 +45,11 @@ dependencies:
   
   # Maps & Location
   google_maps_flutter: ^2.5.0
+<<<<<<< HEAD
+=======
+  flutter_map: ^6.1.0
+  latlong2: ^0.9.1
+>>>>>>> hyacinthe
   geolocator: ^10.1.0
   geocoding: ^2.1.1
   location: ^5.0.3
@@ -81,12 +94,20 @@ dependencies:
   
   # PDF & Documents
   pdf: ^3.10.7
+<<<<<<< HEAD
+=======
+  printing: ^5.12.0
+>>>>>>> hyacinthe
   
   # Other
   uuid: ^4.2.2
   crypto: ^3.0.3
   webview_flutter: ^4.4.4
   cupertino_icons: ^1.0.2
+<<<<<<< HEAD
+=======
+  flutter_map_cancellable_tile_provider: ^2.0.0
+>>>>>>> hyacinthe
 
 dev_dependencies:
   flutter_test:

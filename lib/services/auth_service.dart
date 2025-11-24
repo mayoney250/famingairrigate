@@ -1,10 +1,18 @@
 import 'dart:developer';
 import 'dart:io';
+<<<<<<< HEAD
+=======
+import 'dart:typed_data';
+>>>>>>> hyacinthe
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+<<<<<<< HEAD
+=======
+import 'package:cloud_functions/cloud_functions.dart';
+>>>>>>> hyacinthe
 import '../models/user_model.dart';
 
 class AuthService {
@@ -185,6 +193,48 @@ class AuthService {
     }
   }
 
+<<<<<<< HEAD
+=======
+  /// Find a user's email by identifier which can be a phone number or cooperative ID
+  /// Returns the user's email if found, or null otherwise.
+  Future<String?> getEmailForIdentifier(String identifier) async {
+    // First try the secure callable function
+    try {
+      log('🔍 Calling resolveIdentifier function for: $identifier');
+      final functions = FirebaseFunctions.instanceFor(region: 'us-central1');
+      final callable = functions.httpsCallable('resolveIdentifier');
+      final result = await callable.call(<String, dynamic>{'identifier': identifier});
+      final data = result.data as Map<String, dynamic>?;
+      if (data != null && data['email'] != null) {
+        final email = data['email'] as String?;
+        log('✅ resolveIdentifier returned email: $email (via ${data['foundBy']})');
+        return email;
+      }
+      log('🔎 resolveIdentifier returned no email for: $identifier');
+    } catch (e) {
+      log('⚠️ resolveIdentifier callable failed (falling back to client queries): $e');
+    }
+
+    // Fallback: try client-side queries (best-effort)
+    try {
+      log('🔍 Fallback: client-side lookup for identifier: $identifier');
+      final phoneQuery = await _firestore.collection('users').where('phoneNumber', isEqualTo: identifier).limit(1).get();
+      if (phoneQuery.docs.isNotEmpty) return phoneQuery.docs.first.data()['email'] as String?;
+
+      final coopGovQuery = await _firestore.collection('users').where('cooperative.coopGovId', isEqualTo: identifier).limit(1).get();
+      if (coopGovQuery.docs.isNotEmpty) return coopGovQuery.docs.first.data()['email'] as String?;
+
+      final coopMemberQuery = await _firestore.collection('users').where('cooperative.memberId', isEqualTo: identifier).limit(1).get();
+      if (coopMemberQuery.docs.isNotEmpty) return coopMemberQuery.docs.first.data()['email'] as String?;
+
+      return null;
+    } catch (e) {
+      log('❌ getEmailForIdentifier fallback error: $e');
+      return null;
+    }
+  }
+
+>>>>>>> hyacinthe
   // Update user data
   Future<void> updateUserData(
     String userId,
@@ -367,6 +417,42 @@ class AuthService {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Upload profile picture for web (using bytes instead of File)
+  Future<String> uploadProfilePictureBytes(
+    String userId,
+    Uint8List imageBytes,
+    String fileName,
+  ) async {
+    try {
+      // Create a reference to the profile pictures directory
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('profile_pictures')
+          .child('$userId.jpg');
+
+      // Upload the bytes
+      final uploadTask = storageRef.putData(
+        imageBytes,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
+
+      // Wait for upload to complete
+      final snapshot = await uploadTask;
+
+      // Get the download URL
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      log('Profile picture uploaded successfully: $downloadUrl');
+      return downloadUrl;
+    } catch (e) {
+      log('Error uploading profile picture: $e');
+      rethrow;
+    }
+  }
+
+>>>>>>> hyacinthe
   /// Change user password
   Future<void> changePassword(
     String currentPassword,

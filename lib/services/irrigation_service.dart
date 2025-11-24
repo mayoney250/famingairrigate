@@ -118,6 +118,7 @@ class IrrigationService {
     try {
       final now = DateTime.now();
 
+<<<<<<< HEAD
       final schedule = IrrigationScheduleModel(
         id: '',
         userId: userId,
@@ -135,6 +136,25 @@ class IrrigationService {
       await _firestore
           .collection('irrigationSchedules')
           .add(schedule.toMap());
+=======
+      final scheduleData = {
+        'userId': userId,
+        'name': 'Manual Irrigation - $fieldName',
+        'zoneId': fieldId,
+        'zoneName': fieldName,
+        'startTime': Timestamp.fromDate(now),
+        'durationMinutes': durationMinutes,
+        'repeatDays': [],
+        'isActive': true,
+        'status': 'running',
+        'createdAt': Timestamp.fromDate(now),
+        'isManual': true,
+      };
+
+      await _firestore
+          .collection('irrigationSchedules')
+          .add(scheduleData);
+>>>>>>> hyacinthe
 
       log('Irrigation started manually');
       return true;
@@ -171,6 +191,7 @@ class IrrigationService {
   // Create new schedule
   Future<bool> createSchedule(IrrigationScheduleModel schedule) async {
     try {
+<<<<<<< HEAD
       await _firestore
           .collection('irrigationSchedules')
           .add(schedule.toMap());
@@ -179,6 +200,22 @@ class IrrigationService {
       return true;
     } catch (e) {
       log('Error creating schedule: $e');
+=======
+      log('[IrrigationService] Creating schedule: ${schedule.name}');
+      
+      final scheduleData = schedule.toMap(includeId: false); // Don't include ID for new documents
+      log('[IrrigationService] Schedule data: $scheduleData');
+      
+      final docRef = await _firestore
+          .collection('irrigationSchedules')
+          .add(scheduleData);
+
+      log('[IrrigationService] Schedule created with ID: ${docRef.id}');
+      return true;
+    } catch (e, stackTrace) {
+      log('[IrrigationService] Error creating schedule: $e');
+      log('[IrrigationService] Stack trace: $stackTrace');
+>>>>>>> hyacinthe
       return false;
     }
   }
@@ -271,7 +308,11 @@ class IrrigationService {
   Future<bool> deleteSchedule(String scheduleId) async {
     try {
       await _firestore
+<<<<<<< HEAD
           .collection('irrigation_schedules')
+=======
+          .collection('irrigationSchedules')
+>>>>>>> hyacinthe
           .doc(scheduleId)
           .delete();
 

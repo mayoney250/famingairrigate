@@ -16,6 +16,10 @@ class IrrigationScheduleModel {
   final DateTime? nextRun;
   final DateTime? stoppedAt;
   final String? stoppedBy; // 'manual' or 'automatic'
+<<<<<<< HEAD
+=======
+  final bool isManual; // true if this is a manual irrigation cycle
+>>>>>>> hyacinthe
 
   IrrigationScheduleModel({
     required this.id,
@@ -33,11 +37,19 @@ class IrrigationScheduleModel {
     this.nextRun,
     this.stoppedAt,
     this.stoppedBy,
+<<<<<<< HEAD
   });
 
   Map<String, dynamic> toMap() {
     return {
       'id': id,
+=======
+    this.isManual = false,
+  });
+
+  Map<String, dynamic> toMap({bool includeId = false}) {
+    final map = <String, dynamic>{
+>>>>>>> hyacinthe
       'userId': userId,
       'name': name,
       'zoneId': zoneId,
@@ -52,7 +64,19 @@ class IrrigationScheduleModel {
       'nextRun': nextRun != null ? Timestamp.fromDate(nextRun!) : null,
       'stoppedAt': stoppedAt != null ? Timestamp.fromDate(stoppedAt!) : null,
       'stoppedBy': stoppedBy,
+<<<<<<< HEAD
     };
+=======
+      'isManual': isManual,
+    };
+    
+    // Only include ID if explicitly requested (for updates, not creates)
+    if (includeId && id.isNotEmpty) {
+      map['id'] = id;
+    }
+    
+    return map;
+>>>>>>> hyacinthe
   }
 
   factory IrrigationScheduleModel.fromMap(Map<String, dynamic> map) {
@@ -102,11 +126,17 @@ class IrrigationScheduleModel {
         nextRun: map['nextRun'] != null ? parseDate(map['nextRun']) : null,
         stoppedAt: map['stoppedAt'] != null ? parseDate(map['stoppedAt']) : null,
         stoppedBy: map['stoppedBy'],
+<<<<<<< HEAD
       );
     } catch (e) {
       // If there's an error, create a minimal valid model
       print('Error parsing IrrigationScheduleModel: $e');
       print('Map data: $map');
+=======
+        isManual: map['isManual'] is bool ? map['isManual'] as bool : (map['isManual'] == true),
+      );
+    } catch (e) {
+>>>>>>> hyacinthe
       rethrow;
     }
   }
@@ -133,6 +163,10 @@ class IrrigationScheduleModel {
     DateTime? nextRun,
     DateTime? stoppedAt,
     String? stoppedBy,
+<<<<<<< HEAD
+=======
+    bool? isManual,
+>>>>>>> hyacinthe
   }) {
     return IrrigationScheduleModel(
       id: id ?? this.id,
@@ -150,6 +184,10 @@ class IrrigationScheduleModel {
       nextRun: nextRun ?? this.nextRun,
       stoppedAt: stoppedAt ?? this.stoppedAt,
       stoppedBy: stoppedBy ?? this.stoppedBy,
+<<<<<<< HEAD
+=======
+      isManual: isManual ?? this.isManual,
+>>>>>>> hyacinthe
     );
   }
 

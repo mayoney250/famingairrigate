@@ -80,5 +80,32 @@ class WeatherData {
   String get temperatureString => '${temperature.round()}°C';
   String get feelsLikeString => '${feelsLike.round()}°C';
   String get humidityString => '$humidity%';
+<<<<<<< HEAD
+=======
+  
+  Map<String, dynamic> toMap() => {
+    'temperature': temperature,
+    'feelsLike': feelsLike,
+    'humidity': humidity,
+    'condition': condition,
+    'description': description,
+    'windSpeed': windSpeed,
+    'pressure': pressure,
+    'timestamp': timestamp.millisecondsSinceEpoch,
+    'location': location,
+  };
+  
+  factory WeatherData.fromMap(Map<String, dynamic> m) => WeatherData(
+    temperature: (m['temperature'] ?? 0).toDouble(),
+    feelsLike: (m['feelsLike'] ?? 0).toDouble(),
+    humidity: (m['humidity'] ?? 0).toInt(),
+    condition: (m['condition'] ?? 'unknown').toString(),
+    description: (m['description'] ?? '').toString(),
+    windSpeed: (m['windSpeed'] ?? 0).toDouble(),
+    pressure: (m['pressure'] ?? 0).toInt(),
+    timestamp: DateTime.fromMillisecondsSinceEpoch((m['timestamp'] ?? DateTime.now().millisecondsSinceEpoch).toInt()),
+    location: (m['location'] ?? 'Unknown').toString(),
+  );
+>>>>>>> hyacinthe
 }
 

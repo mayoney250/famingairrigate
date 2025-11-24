@@ -13,8 +13,19 @@ service cloud.firestore {
     }
     
     // Users collection - users can read/write their own data
+<<<<<<< HEAD
     match /users/{userId} {
       allow read: if isAuthenticated();
+=======
+    // NOTE: We allow reads here to enable identifier-based login (phone/cooperative ID)
+    // WARNING: Allowing unauthenticated reads of user documents may expose user contact
+    // information (emails, phone numbers). For production consider implementing a
+    // server-side lookup (Cloud Function) that performs this mapping securely.
+    match /users/{userId} {
+      // Allow reads so clients can resolve phone/cooperative identifiers to emails
+      // This makes the identifier->email login flow possible from unauthenticated clients.
+      allow read: if true;
+>>>>>>> hyacinthe
       allow write: if isOwner(userId);
     }
     
@@ -45,15 +56,70 @@ service cloud.firestore {
          !('userId' in resource.data));
     }
     
+<<<<<<< HEAD
     // Irrigation schedules
     match /irrigationSchedules/{scheduleId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && 
+=======
+    // Irrigation schedules - FIXED FOR AUTO-START (camelCase)
+    match /irrigationSchedules/{scheduleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || 
+         !('userId' in resource.data) ||
+         (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status', 'startedAt', 'completedAt', 'stoppedAt', 'stoppedBy', 'updatedAt', 'isActive'])));
+      allow delete: if isAuthenticated() && 
+>>>>>>> hyacinthe
         (resource.data.userId == request.auth.uid || 
          !('userId' in resource.data));
     }
     
+<<<<<<< HEAD
+=======
+    // Irrigation schedules - snake_case version
+    match /irrigation_schedules/{scheduleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Irrigation cycles - for tracking active irrigation
+    match /irrigation_cycles/{cycleId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Sensor readings - for all sensor data (supports both collection and collectionGroup)
+    match /sensor_readings/{readingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Sensor readings - collectionGroup support (matches at any path depth)
+    match /{path=**}/sensor_readings/{readingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+    // Weather data
+    match /weatherData/{weatherId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if isAuthenticated();
+    }
+    
+>>>>>>> hyacinthe
     // Sensor data
     match /sensorData/{dataId} {
       allow read: if isAuthenticated();
@@ -80,6 +146,7 @@ service cloud.firestore {
       allow read, write: if isAuthenticated();
     }
     
+<<<<<<< HEAD
     // Irrigation zones
     match /irrigationZones/{zoneId} {
       allow read: if isAuthenticated();
@@ -87,6 +154,29 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && 
         (resource.data.userId == request.auth.uid || 
          !('userId' in resource.data));
+=======
+    // Irrigation zones - NEW: Enhanced for irrigation planning module
+    match /irrigation_zones/{zoneId} {
+      allow read: if isAuthenticated() && 
+        (resource.data.userId == request.auth.uid || 
+         request.auth.uid in resource.data.get('sharedWith', []));
+      
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.fieldId is string &&
+        request.resource.data.name is string &&
+        request.resource.data.zoneType is string &&
+        request.resource.data.drawingType is string &&
+        request.resource.data.coordinates is list;
+      
+      allow update: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid &&
+        request.resource.data.userId == resource.data.userId &&
+        request.resource.data.fieldId == resource.data.fieldId;
+      
+      allow delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+>>>>>>> hyacinthe
     }
   }
 }

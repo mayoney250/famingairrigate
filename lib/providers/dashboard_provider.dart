@@ -9,6 +9,16 @@ import '../services/weather_service.dart';
 import '../services/error_service.dart';
 import '../services/irrigation_status_service.dart';
 import 'package:geocoding/geocoding.dart';
+<<<<<<< HEAD
+=======
+import 'package:geolocator/geolocator.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import '../models/sensor_data_model.dart';
+import '../services/sensor_data_service.dart';
+import '../models/flow_meter_model.dart';
+import '../services/flow_meter_service.dart';
+import 'dart:async';
+>>>>>>> hyacinthe
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
@@ -24,8 +34,15 @@ class DashboardProvider with ChangeNotifier {
   // Dashboard data
   List<IrrigationScheduleModel> _upcoming = <IrrigationScheduleModel>[];
   WeatherData? _weatherData;
+<<<<<<< HEAD
   double? _avgSoilMoisture; // Add field
   double _weeklyWaterUsage = 0.0;
+=======
+  List<Map<String, dynamic>> _forecast5Day = [];
+  double? _avgSoilMoisture; // Add field
+  double _weeklyWaterUsage = 0.0;
+  double _dailyWaterUsage = 0.0;
+>>>>>>> hyacinthe
   double _weeklySavings = 0.0;
   String _selectedFarmId = 'farm1'; // Will be replaced by first field id
   List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name}]
@@ -33,12 +50,17 @@ class DashboardProvider with ChangeNotifier {
   // Add location fields to DashboardProvider
   double? _latitude;
   double? _longitude;
+<<<<<<< HEAD
+=======
+  Box? _weatherBox;
+>>>>>>> hyacinthe
 
   setLocation(double lat, double lon) {
     _latitude = lat;
     _longitude = lon;
     notifyListeners();
   }
+<<<<<<< HEAD
 
   Future<void> fetchAndSetLiveWeather() async {
     if (_latitude != null && _longitude != null) {
@@ -60,6 +82,135 @@ class DashboardProvider with ChangeNotifier {
           location: weather.location,
         );
         notifyListeners();
+=======
+  
+  Future<void> initWeatherCache() async {
+    try {
+      _weatherBox ??= await Hive.openBox('weather');
+      await _loadCachedWeather();
+    } catch (e) {
+      log('Error opening weather cache: $e');
+    }
+  }
+  
+  Future<void> _loadCachedWeather() async {
+    try {
+      final cached = _weatherBox?.get('current_weather') as Map?;
+      if (cached != null) {
+        final ts = DateTime.fromMillisecondsSinceEpoch(cached['ts'] as int);
+        if (DateTime.now().difference(ts) <= const Duration(hours: 3)) {
+          _weatherData = WeatherData.fromMap(Map<String, dynamic>.from(cached['data'] as Map));
+          _latitude = cached['lat'] as double?;
+          _longitude = cached['lon'] as double?;
+          notifyListeners();
+          log('Loaded cached weather: ${_weatherData?.location}');
+        }
+      }
+    } catch (e) {
+      log('Error loading cached weather: $e');
+    }
+  }
+  
+  Future<void> setLocationFromDevice() async {
+    try {
+      final servicesOn = await Geolocator.isLocationServiceEnabled();
+      if (!servicesOn) {
+        log('Location services disabled');
+        return;
+      }
+      
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+        if (perm == LocationPermission.denied) {
+          log('Location permission denied');
+          return;
+        }
+      }
+      
+      if (perm == LocationPermission.deniedForever) {
+        log('Location permission permanently denied');
+        return;
+      }
+
+      final pos = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.low,
+      );
+      
+      setLocation(pos.latitude, pos.longitude);
+      await fetchAndSetLiveWeather();
+    } catch (e) {
+      log('GPS error: $e');
+    }
+  }
+
+  Future<void> fetchAndSetLiveWeather() async {
+    if (_latitude != null && _longitude != null) {
+      try {
+        final weather = await _weatherService.fetchCurrentWeatherFromOpenWeather(
+          lat: _latitude!,
+          lon: _longitude!,
+          apiKey: '1bbb141391cf468601f7de322cecb11e',
+        ).timeout(const Duration(seconds: 10));
+        
+        if (weather != null) {
+          String mappedCondition;
+          switch (weather.condition.toLowerCase()) {
+            case 'clear':
+              mappedCondition = 'sunny';
+              break;
+            case 'clouds':
+              mappedCondition = 'cloudy';
+              break;
+            case 'rain':
+            case 'drizzle':
+              mappedCondition = 'rainy';
+              break;
+            case 'thunderstorm':
+              mappedCondition = 'stormy';
+              break;
+            case 'snow':
+              mappedCondition = 'snowy';
+              break;
+            default:
+              mappedCondition = 'unknown';
+          }
+          
+          _weatherData = WeatherData(
+            temperature: weather.temperature,
+            feelsLike: weather.temperature,
+            humidity: weather.humidity.toInt(),
+            condition: mappedCondition,
+            description: weather.description,
+            windSpeed: 3.5, // To improve: parse wind from current API and wire here
+            pressure: 1013,
+            timestamp: weather.timestamp,
+            location: weather.location,
+          );
+
+          // Fetch 5-day forecast
+          try {
+            final forecast = await _weatherService.fetch5DayForecast(
+              lat: _latitude!,
+              lon: _longitude!,
+              apiKey: '1bbb141391cf468601f7de322cecb11e',
+            ).timeout(const Duration(seconds: 10));
+            _forecast5Day = forecast;
+          } catch (_) {}
+          
+          await _weatherBox?.put('current_weather', {
+            'ts': DateTime.now().millisecondsSinceEpoch,
+            'lat': _latitude,
+            'lon': _longitude,
+            'data': _weatherData!.toMap(),
+          });
+          
+          notifyListeners();
+          log('Weather updated and cached: ${weather.location}');
+        }
+      } catch (e) {
+        log('Error fetching weather: $e - Using cached data');
+>>>>>>> hyacinthe
       }
     }
   }
@@ -73,7 +224,11 @@ class DashboardProvider with ChangeNotifier {
         await fetchAndSetLiveWeather();
       }
     } catch (e) {
+<<<<<<< HEAD
       print('Failed to geocode address: $e');
+=======
+      log('Failed to geocode address: $e');
+>>>>>>> hyacinthe
     }
   }
 
@@ -83,8 +238,15 @@ class DashboardProvider with ChangeNotifier {
   IrrigationScheduleModel? get nextSchedule => _upcoming.isNotEmpty ? _upcoming.first : null;
   List<IrrigationScheduleModel> get upcomingSchedules => _upcoming;
   WeatherData? get weatherData => _weatherData;
+<<<<<<< HEAD
   double? get avgSoilMoisture => _avgSoilMoisture;
   double get weeklyWaterUsage => _weeklyWaterUsage;
+=======
+  List<Map<String, dynamic>> get forecast5Day => _forecast5Day;
+  double? get avgSoilMoisture => _avgSoilMoisture;
+  double get weeklyWaterUsage => _weeklyWaterUsage;
+  double get dailyWaterUsage => _dailyWaterUsage;
+>>>>>>> hyacinthe
   double get weeklySavings => _weeklySavings;
   String get selectedFarmId => _selectedFarmId;
   List<Map<String, String>> get fields => _fields;
@@ -115,15 +277,59 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+<<<<<<< HEAD
+=======
+  // Add this helper for summarizing soil status across all fields
+  String systemSoilStatusSummary() {
+    // Uses same logic as the per-field card
+    final sensors = latestSensorDataPerField;
+    bool anyDry = false, anyWet = false, anyOptimal = false, anyData = false;
+    for (final sid in fields.map((f) => f['id'])) {
+      final sensor = sid != null ? sensors[sid] : null;
+      if (sensor != null) {
+        anyData = true;
+        if (sensor.soilMoisture < 50) {
+          anyDry = true;
+        } else if (sensor.soilMoisture > 100) {
+          anyWet = true;
+        } else {
+          anyOptimal = true;
+        }
+      }
+    }
+    if (!anyData) return "No soil moisture data.";
+    if (anyWet) return "Soil is too wet – check drainage.";
+    if (anyDry) return "Soil is dry – it's time to irrigate.";
+    return "Soil conditions are optimal – no action needed.";
+  }
+
+>>>>>>> hyacinthe
   // Load dashboard data
   Future<void> loadDashboardData(String userId) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
+<<<<<<< HEAD
 
       // Load data in parallel, but don't let one failure stop the others
       final results = await Future.wait([
+=======
+      
+      await initWeatherCache();
+
+      // Load data in parallel, but don't let one failure stop the others
+      final results = await Future.wait([
+        // Sync irrigation statuses before reading
+        _statusService.startDueSchedules().catchError((e) {
+          log('Error in startDueSchedules: $e');
+          return 0;
+        }),
+        _statusService.markDueIrrigationsCompleted().catchError((e) {
+          log('Error in markDueIrrigationsCompleted: $e');
+          return 0;
+        }),
+>>>>>>> hyacinthe
         _loadUpcoming(userId).catchError((e) {
           log('Error in _loadUpcoming: $e');
           return null;
@@ -136,18 +342,43 @@ class DashboardProvider with ChangeNotifier {
           log('Error in _loadWeatherData: $e');
           return null;
         }),
+<<<<<<< HEAD
         _loadSoilMoisture().catchError((e) {
           log('Error in _loadSoilMoisture: $e');
           return null;
         }),
+=======
+        // soil moisture now computed via sensorData in _refreshDailySoilAverage
+>>>>>>> hyacinthe
         _loadWeeklyStats(userId).catchError((e) {
           log('Error in _loadWeeklyStats: $e');
           return null;
         }),
       ]);
+<<<<<<< HEAD
 
       _isLoading = false;
       notifyListeners();
+=======
+      
+      await setLocationFromDevice();
+
+      _isLoading = false;
+      notifyListeners();
+      if (_fields.isNotEmpty) {
+        subscribeToLiveFieldData(userId);
+      }
+      await _refreshDailySoilAverage();
+      await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
+      // Start background status sync every 60s (auto-start due + auto-complete)
+      _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
+        try {
+          await _statusService.startDueSchedules();
+          await _statusService.markDueIrrigationsCompleted();
+        } catch (_) {}
+      });
+>>>>>>> hyacinthe
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
@@ -166,9 +397,13 @@ class DashboardProvider with ChangeNotifier {
 
         final filtered = all.where((s) {
           if (!s.isActive) return false;
+<<<<<<< HEAD
           // Scope by field/zone id; legacy data without alignment will still show globally
           if (s.zoneId.isNotEmpty && s.zoneId != _selectedFarmId) return false;
 
+=======
+          // Show across all fields
+>>>>>>> hyacinthe
           if (s.status == 'scheduled') return startFor(s).isAfter(now);
           if (s.status == 'running') return endFor(s).isAfter(now);
           return false; // hide stopped/completed
@@ -249,6 +484,7 @@ class DashboardProvider with ChangeNotifier {
     );
   }
 
+<<<<<<< HEAD
   // Load soil moisture
   Future<void> _loadSoilMoisture() async {
     try {
@@ -259,6 +495,9 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
+=======
+  // Legacy soil moisture loader removed; we use _refreshDailySoilAverage fed by sensorData
+>>>>>>> hyacinthe
   // Load weekly statistics
   Future<void> _loadWeeklyStats(String userId) async {
     try {
@@ -356,5 +595,165 @@ class DashboardProvider with ChangeNotifier {
       // Otherwise, do nothing here.
     }
   }
+<<<<<<< HEAD
 }
 
+=======
+
+  @override
+  void dispose() {
+    _statusTimer?.cancel();
+    _aggTimer?.cancel();
+    super.dispose();
+  }
+
+  // Live/streamed sensor and flow meter values
+  final SensorDataService _sensorDataService = SensorDataService();
+  final FlowMeterService _flowMeterService = FlowMeterService();
+  final Map<String, SensorDataModel?> _latestSensorDataPerField = {};
+  final Map<String, FlowMeterModel?> _latestFlowDataPerField = {};
+  String? _lastActionError;
+
+  Map<String, SensorDataModel?> get latestSensorDataPerField => _latestSensorDataPerField;
+  Map<String, FlowMeterModel?> get latestFlowDataPerField => _latestFlowDataPerField;
+  String? get lastActionError => _lastActionError;
+
+  Timer? _aggTimer;
+  Timer? _statusTimer;
+
+  DateTime _startOfToday() {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month, now.day);
+  }
+
+  DateTime _startOfThisWeekMonday() {
+    final now = DateTime.now();
+    final mondayDelta = (now.weekday - DateTime.monday) % 7; // 0 if monday
+    final monday = now.subtract(Duration(days: mondayDelta));
+    return DateTime(monday.year, monday.month, monday.day);
+  }
+
+  Future<void> _refreshDailySoilAverage() async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfToday();
+      double sum = 0;
+      int count = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        final readings = await _sensorDataService.getReadingsInRange(fieldId, start, DateTime.now());
+        if (readings.isNotEmpty) {
+          // average per field in window
+          final avgField = readings.map((r) => r.soilMoisture).reduce((a,b)=>a+b) / readings.length;
+          sum += avgField;
+          count++;
+        }
+      }
+      _avgSoilMoisture = count > 0 ? sum / count : null;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _refreshWeeklyWaterUsage({String? userId}) async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfThisWeekMonday();
+      double total = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+      }
+      _weeklyWaterUsage = total;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  Future<void> _refreshDailyWaterUsage({String? userId}) async {
+    try {
+      if (_fields.isEmpty) return;
+      final start = _startOfToday();
+      double total = 0;
+      for (final f in _fields) {
+        final fieldId = f['id']!;
+        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+      }
+      _dailyWaterUsage = total;
+      notifyListeners();
+    } catch (_) {}
+  }
+
+  void _startAggTimer(String userId) {
+    _aggTimer?.cancel();
+    _aggTimer = Timer.periodic(const Duration(minutes: 5), (_) async {
+      await _refreshDailySoilAverage();
+      await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
+    });
+  }
+
+  // Dev utility: add a test flow meter reading for a field
+  Future<bool> addTestFlowUsage({
+    required String userId,
+    required String fieldId,
+    double? liters,
+  }) async {
+    try {
+      _lastActionError = null;
+      final amount = liters ?? (5 + (DateTime.now().millisecondsSinceEpoch % 200) / 10.0); // 5.0 – 25.0-ish
+      final test = FlowMeterModel(
+        id: '',
+        userId: userId,
+        fieldId: fieldId,
+        liters: amount,
+        timestamp: DateTime.now(),
+      );
+      await _flowMeterService.createReading(test, userId: userId);
+
+      // update local latest + aggregates
+      _latestFlowDataPerField[fieldId] = test;
+      await _refreshWeeklyWaterUsage(userId: userId);
+      await _refreshDailyWaterUsage(userId: userId);
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _lastActionError = e.toString();
+      return false;
+    }
+  }
+
+  // Start/restart live listeners for all fields the user has
+  void subscribeToLiveFieldData(String userId) {
+    for (var field in _fields) {
+      final fieldId = field['id']!;
+      // Prime with latest once so UI doesn't wait for stream
+      _sensorDataService.getLatestReading(fieldId).then((sensorData) {
+        _latestSensorDataPerField[fieldId] = sensorData;
+        _refreshDailySoilAverage();
+        notifyListeners();
+      }).catchError((_) {});
+      // Sensor readings
+      _sensorDataService.streamLatestReading(fieldId).listen((sensorData) {
+        _latestSensorDataPerField[fieldId] = sensorData;
+        // Update live aggregates quickly from latest values
+        _refreshDailySoilAverage();
+        notifyListeners();
+      });
+      // Flow meter optional: ignore if collection doesn't exist
+      _flowMeterService.getLatestReading(fieldId, userId: userId).then((flowData) {
+        _latestFlowDataPerField[fieldId] = flowData;
+        // update aggregates when latest flow reading arrives
+        _refreshWeeklyWaterUsage(userId: userId);
+        _refreshDailyWaterUsage(userId: userId);
+        notifyListeners();
+      }).catchError((_) {});
+      _flowMeterService.streamLatestReading(fieldId, userId: userId).listen((flowData) {
+        _latestFlowDataPerField[fieldId] = flowData;
+        _refreshWeeklyWaterUsage(userId: userId);
+        _refreshDailyWaterUsage(userId: userId);
+        notifyListeners();
+      }, onError: (_) {});
+    }
+    _startAggTimer(userId);
+  }
+}
+>>>>>>> hyacinthe

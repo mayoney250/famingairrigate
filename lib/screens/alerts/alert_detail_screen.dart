@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+<<<<<<< HEAD
+=======
+import '../../generated/app_localizations.dart';
+>>>>>>> hyacinthe
 import '../../models/alert_model.dart';
 import '../../services/alert_service.dart';
 
@@ -15,7 +19,11 @@ class AlertDetailScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
+<<<<<<< HEAD
         title: const Text('Alert'),
+=======
+  title: Text(AppLocalizations.of(context)?.alerts ?? 'Alert'),
+>>>>>>> hyacinthe
         actions: [
           if (!alert.read)
             TextButton(
@@ -23,7 +31,11 @@ class AlertDetailScreen extends StatelessWidget {
                 await service.markAsRead(alert.id);
                 Get.back();
               },
+<<<<<<< HEAD
               child: const Text('Mark read'),
+=======
+              child: Text(AppLocalizations.of(context)?.markAsRead ?? 'Mark read'),
+>>>>>>> hyacinthe
             ),
         ],
       ),
@@ -76,7 +88,11 @@ class AlertDetailScreen extends StatelessWidget {
       case 'low':
       case 'info':
       default:
+<<<<<<< HEAD
         return Colors.green;
+=======
+        return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.green;
+>>>>>>> hyacinthe
     }
   }
 

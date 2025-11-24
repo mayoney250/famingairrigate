@@ -70,6 +70,7 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+<<<<<<< HEAD
               // Logo placeholder
               Container(
                 width: 120,
@@ -83,6 +84,14 @@ class _SplashScreenState extends State<SplashScreen>
                   size: 64,
                   color: FamingaBrandColors.white,
                 ),
+=======
+              // Logo - using splash_logo.png
+              Image.asset(
+                'assets/images/splash_logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+>>>>>>> hyacinthe
               ),
               const SizedBox(height: 24),
               Text(

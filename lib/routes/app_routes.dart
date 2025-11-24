@@ -2,6 +2,7 @@ import 'package:get/get.dart';
 import '../screens/auth/email_verification_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
+<<<<<<< HEAD
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/fields/add_field_screen.dart';
@@ -9,12 +10,29 @@ import '../screens/fields/fields_screen.dart';
 import '../screens/irrigation/irrigation_list_screen.dart';
 import '../screens/irrigation/irrigation_control_screen.dart';
 import '../screens/profile/profile_screen.dart';
+=======
+import '../screens/auth/verification_pending_screen.dart';
+import '../screens/auth/forgot_password_screen.dart';
+import '../screens/dashboard/dashboard_screen.dart';
+import '../screens/fields/add_field_screen.dart';
+import '../screens/fields/add_field_with_map_screen.dart';
+import '../screens/fields/fields_screen.dart';
+import '../screens/irrigation/irrigation_list_screen.dart';
+import '../screens/irrigation/irrigation_control_screen.dart';
+import '../screens/irrigation/irrigation_planning_screen.dart';
+import '../screens/profile/profile_screen.dart';
+import '../models/field_model.dart';
+>>>>>>> hyacinthe
 import '../screens/sensors/sensors_screen.dart';
 import '../screens/sensors/sensor_detail_screen.dart';
 import '../screens/alerts/alerts_list_screen.dart';
 import '../screens/alerts/alert_detail_screen.dart';
 import '../screens/settings/settings_screen.dart';
 import '../screens/splash_screen.dart';
+<<<<<<< HEAD
+=======
+import '../screens/notification_test_screen.dart';
+>>>>>>> hyacinthe
 
 class AppRoutes {
   // Private constructor
@@ -30,6 +48,10 @@ class AppRoutes {
   static const String irrigationList = '/irrigation-list';
   static const String irrigationControl = '/irrigation-control';
   static const String irrigationDetail = '/irrigation-detail';
+<<<<<<< HEAD
+=======
+  static const String irrigationPlanning = '/irrigation-planning';
+>>>>>>> hyacinthe
   static const String addIrrigation = '/add-irrigation';
   static const String fields = '/fields';
   static const String addField = '/add-field';
@@ -39,6 +61,10 @@ class AppRoutes {
   static const String settings = '/settings';
   static const String alerts = '/alerts';
   static const String alertDetail = '/alert-detail';
+<<<<<<< HEAD
+=======
+  static const String notificationTest = '/notification-test';
+>>>>>>> hyacinthe
 
   // Route definitions
   static List<GetPage> routes = [
@@ -58,6 +84,14 @@ class AppRoutes {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+<<<<<<< HEAD
+=======
+      name: '/verification-pending',
+      page: () => const VerificationPendingScreen(),
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+>>>>>>> hyacinthe
       name: forgotPassword,
       page: () => const ForgotPasswordScreen(),
       transition: Transition.rightToLeft,
@@ -83,13 +117,28 @@ class AppRoutes {
       transition: Transition.rightToLeft,
     ),
     GetPage(
+<<<<<<< HEAD
+=======
+      name: irrigationPlanning,
+      page: () {
+        final field = Get.arguments as FieldModel;
+        return IrrigationPlanningScreen(field: field);
+      },
+      transition: Transition.rightToLeft,
+    ),
+    GetPage(
+>>>>>>> hyacinthe
       name: fields,
       page: () => const FieldsScreen(),
       transition: Transition.rightToLeft,
     ),
     GetPage(
       name: addField,
+<<<<<<< HEAD
       page: () => const AddFieldScreen(),
+=======
+      page: () => const AddFieldWithMapScreen(),
+>>>>>>> hyacinthe
       transition: Transition.rightToLeft,
     ),
     GetPage(
@@ -122,6 +171,14 @@ class AppRoutes {
       page: () => const AlertDetailScreen(),
       transition: Transition.rightToLeft,
     ),
+<<<<<<< HEAD
+=======
+    GetPage(
+      name: notificationTest,
+      page: () => const NotificationTestScreen(),
+      transition: Transition.rightToLeft,
+    ),
+>>>>>>> hyacinthe
   ];
 }
 

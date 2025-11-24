@@ -107,6 +107,23 @@
       ]
     },
     {
+<<<<<<< HEAD
+=======
+      "collectionGroup": "irrigationLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+>>>>>>> hyacinthe
       "collectionGroup": "irrigationZones",
       "queryScope": "COLLECTION",
       "fields": [
@@ -137,6 +154,33 @@
           "order": "ASCENDING"
         }
       ]
+<<<<<<< HEAD
+=======
+    },
+    {
+      "collectionGroup": "sensor_readings",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        {
+          "fieldPath": "sensorId",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "ai_recommendations",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "timestamp",
+          "order": "DESCENDING"
+        }
+      ]
+>>>>>>> hyacinthe
     }
   ],
   "fieldOverrides": []

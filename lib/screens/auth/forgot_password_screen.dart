@@ -5,6 +5,11 @@ import '../../config/colors.dart';
 import '../../providers/auth_provider.dart';
 import '../../widgets/common/custom_button.dart';
 import '../../widgets/common/custom_textfield.dart';
+<<<<<<< HEAD
+=======
+import '../../generated/app_localizations.dart';
+import '../../utils/l10n_extensions.dart';
+>>>>>>> hyacinthe
 
 class ForgotPasswordScreen extends StatefulWidget {
   const ForgotPasswordScreen({super.key});
@@ -76,7 +81,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
+<<<<<<< HEAD
         title: const Text('Forgot Password'),
+=======
+        title: Text(AppLocalizations.of(context)?.resetPassword ?? 'Forgot Password'),
+>>>>>>> hyacinthe
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
           onPressed: () => Get.back(),

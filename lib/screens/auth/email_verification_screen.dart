@@ -6,6 +6,11 @@ import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/auth_service.dart';
 import '../../widgets/common/custom_button.dart';
+<<<<<<< HEAD
+=======
+import '../../generated/app_localizations.dart';
+import '../../utils/l10n_extensions.dart';
+>>>>>>> hyacinthe
 
 class EmailVerificationScreen extends StatefulWidget {
   const EmailVerificationScreen({super.key});
@@ -92,7 +97,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
     return Scaffold(
       backgroundColor: FamingaBrandColors.backgroundLight,
       appBar: AppBar(
+<<<<<<< HEAD
         title: const Text('Verify Email'),
+=======
+        title: Text(AppLocalizations.of(context)?.verifyEmail ?? 'Verify Email'),
+>>>>>>> hyacinthe
         automaticallyImplyLeading: false,
       ),
       body: SafeArea(
@@ -121,7 +130,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
                 // Title
                 Text(
+<<<<<<< HEAD
                   'Verify Your Email',
+=======
+                  AppLocalizations.of(context)?.verifyYourEmail ?? 'Verify Your Email',
+>>>>>>> hyacinthe
                   style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: FamingaBrandColors.textPrimary,
                         fontWeight: FontWeight.bold,
@@ -132,7 +145,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
                 // Description
                 Text(
+<<<<<<< HEAD
                   'We\'ve sent a verification email to:',
+=======
+                  AppLocalizations.of(context)?.verificationEmailSentTo ?? 'We\'ve sent a verification email to:',
+>>>>>>> hyacinthe
                   style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                         color: FamingaBrandColors.textPrimary,
                       ),
@@ -173,7 +190,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ),
                           const SizedBox(width: 8),
                           Text(
+<<<<<<< HEAD
                             'Next Steps:',
+=======
+                            AppLocalizations.of(context)?.nextSteps ?? 'Next Steps:',
+>>>>>>> hyacinthe
                             style: Theme.of(context)
                                 .textTheme
                                 .titleMedium
@@ -185,6 +206,7 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                       ),
                       const SizedBox(height: 12),
                       _buildInstructionItem(
+<<<<<<< HEAD
                         '1. Check your email inbox',
                       ),
                       _buildInstructionItem(
@@ -198,6 +220,21 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                       ),
                       _buildInstructionItem(
                         '5. Return here and click "I\'ve Verified"',
+=======
+                        AppLocalizations.of(context)?.checkEmailInbox ?? '1. Check your email inbox',
+                      ),
+                      _buildInstructionItem(
+                        AppLocalizations.of(context)?.lookForFirebaseEmail ?? '2. Look for an email from Firebase',
+                      ),
+                      _buildInstructionItem(
+                        AppLocalizations.of(context)?.checkSpamFolder ?? '3. Check your spam/junk folder',
+                      ),
+                      _buildInstructionItem(
+                        AppLocalizations.of(context)?.clickVerificationLink ?? '4. Click the verification link',
+                      ),
+                      _buildInstructionItem(
+                        AppLocalizations.of(context)?.returnAndClickVerified ?? '5. Return here and click "I\'ve Verified"',
+>>>>>>> hyacinthe
                       ),
                     ],
                   ),
@@ -229,7 +266,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
 
                 // Check Verification button
                 CustomButton(
+<<<<<<< HEAD
                   text: 'I\'ve Verified My Email',
+=======
+                  text: AppLocalizations.of(context)?.verifiedMyEmail ?? 'I\'ve Verified My Email',
+>>>>>>> hyacinthe
                   onPressed: _checkVerification,
                   isLoading: _isChecking,
                 ),
@@ -257,7 +298,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                           ),
                         )
                       : Text(
+<<<<<<< HEAD
                           'Resend Verification Email',
+=======
+                          AppLocalizations.of(context)?.resendVerificationEmail ?? 'Resend Verification Email',
+>>>>>>> hyacinthe
                           style:
                               Theme.of(context).textTheme.bodyLarge?.copyWith(
                                     color: FamingaBrandColors.primaryOrange,
@@ -274,7 +319,11 @@ class _EmailVerificationScreenState extends State<EmailVerificationScreen> {
                     Get.offAllNamed(AppRoutes.login);
                   },
                   child: Text(
+<<<<<<< HEAD
                     'Back to Login',
+=======
+                    AppLocalizations.of(context)?.backToLogin ?? 'Back to Login',
+>>>>>>> hyacinthe
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           color: FamingaBrandColors.textPrimary,
                         ),
