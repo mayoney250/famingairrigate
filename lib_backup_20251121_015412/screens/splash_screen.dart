@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:provider/provider.dart';
+<<<<<<< HEAD
+import '../config/colors.dart';
+import '../providers/auth_provider.dart';
+=======
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../config/colors.dart';
 import '../providers/auth_provider.dart' as app_auth;
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
 import '../routes/app_routes.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -47,6 +52,11 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (!mounted) return;
 
+<<<<<<< HEAD
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    if (authProvider.isAuthenticated) {
+=======
     final authProvider = Provider.of<app_auth.AuthProvider>(context, listen: false);
 
     // If user is authenticated, check whether they have a pending verification
@@ -70,6 +80,7 @@ class _SplashScreenState extends State<SplashScreen>
       }
 
       // No pending verification found -> dashboard
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
       Get.offAllNamed(AppRoutes.dashboard);
     } else {
       Get.offAllNamed(AppRoutes.login);
@@ -92,17 +103,28 @@ class _SplashScreenState extends State<SplashScreen>
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Logo
+<<<<<<< HEAD
+              // Logo - using splash_logo.png
+              Image.asset(
+                'assets/images/splash_logo.png',
+                width: 120,
+                height: 120,
+                fit: BoxFit.contain,
+=======
+              // Logo placeholder
               Container(
-                width: 150,
-                height: 150,
+                width: 120,
+                height: 120,
                 decoration: BoxDecoration(
+                  color: FamingaBrandColors.primaryOrange,
                   borderRadius: BorderRadius.circular(24),
                 ),
-                child: Image.asset(
-                  'assets/images/splash_logo.png',
-                  fit: BoxFit.contain,
+                child: const Icon(
+                  Icons.water_drop,
+                  size: 64,
+                  color: FamingaBrandColors.white,
                 ),
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
               ),
               const SizedBox(height: 24),
               Text(

@@ -4,9 +4,16 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
+<<<<<<< HEAD
+import 'dart:io';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+=======
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
 import '../../config/colors.dart';
 import '../../services/irrigation_log_service.dart';
 import '../../services/irrigation_schedule_service.dart';
@@ -18,7 +25,7 @@ import '../../models/user_model.dart';
 import '../../models/alert_model.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 
-enum ReportPeriod { daily, weekly, monthly, custom }
+enum ReportPeriod { daily, weekly, monthly }
 enum CycleTypeFilter { all, scheduled, manual }
 enum StatusFilter { all, scheduled, running, completed, stopped }
 
@@ -45,7 +52,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   DateTime? _reportGeneratedAt;
-  DateTimeRange? _customDateRange;
+<<<<<<< HEAD
+  DateTime? _selectedDate;
+=======
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
   
   // User & Metadata
   UserModel? _user;
@@ -114,7 +124,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
         _loadAlerts(user.uid, dateRange['start']!, dateRange['end']!),
       ]);
 
+<<<<<<< HEAD
+=======
       _startRealTimeRunningCyclesListener(user.uid, dateRange['start']!, dateRange['end']!);
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
       _calculateMetrics();
       
     } catch (e) {
@@ -341,7 +354,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
     switch (_selectedPeriod) {
       case ReportPeriod.daily:
+<<<<<<< HEAD
+        // If user selected a specific date, generate report for that exact date
+        final base = _selectedDate ?? now;
+        start = DateTime(base.year, base.month, base.day);
+=======
         start = DateTime(now.year, now.month, now.day);
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
         break;
       case ReportPeriod.weekly:
         final daysToMonday = (now.weekday - DateTime.monday) % 7;
@@ -351,50 +370,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       case ReportPeriod.monthly:
         start = DateTime(now.year, now.month, 1);
         break;
-      case ReportPeriod.custom:
-        if (_customDateRange != null) {
-          start = _customDateRange!.start;
-          end = _customDateRange!.end;
-        } else {
-          // Default to this week if custom selected but no range yet
-          start = now.subtract(const Duration(days: 7));
-        }
-        break;
     }
 
     return {'start': start, 'end': end};
-  }
-
-  Future<void> _selectDateRange() async {
-    final now = DateTime.now();
-    final picked = await showDateRangePicker(
-      context: context,
-      firstDate: DateTime(2020),
-      lastDate: now, // Restrict to today
-      initialDateRange: _customDateRange ?? DateTimeRange(
-        start: now.subtract(const Duration(days: 7)),
-        end: now,
-      ),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: FamingaBrandColors.primaryOrange,
-              onPrimary: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null) {
-      setState(() {
-        _customDateRange = picked;
-        _selectedPeriod = ReportPeriod.custom;
-      });
-      _loadReportData();
-    }
   }
 
   String _getErrorMessage(dynamic error) {
@@ -443,11 +421,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Irrigation Report'),
         actions: [
           IconButton(
+<<<<<<< HEAD
             icon: const Icon(Icons.picture_as_pdf),
-            onPressed: _exportToPdf,
+            onPressed: () {
+              _exportToPDF();
+            },
             tooltip: 'Export PDF',
           ),
           IconButton(
+=======
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
             icon: const Icon(Icons.filter_list),
             onPressed: _showFilterDialog,
             tooltip: 'Filters',
@@ -479,19 +462,91 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+<<<<<<< HEAD
+                        _buildTopSelector(isDark),
+                        const SizedBox(height: 16),
+                        // Move Report Metadata here (per request)
+                        _buildMetadataSection(isDark),
+                        const SizedBox(height: 16),
+
+                        // Activity summary 2x2 grid
+                        _buildActivitySummaryGrid(isDark),
+                        const SizedBox(height: 16),
+                        _buildSummaryDetails(isDark),
+                        const SizedBox(height: 16),
+                        _buildIrrigationTimeline(isDark),
+
+                        // Responsive main area: left (charts) / right (overview + recommendations)
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final wide = constraints.maxWidth >= 900;
+                            if (wide) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 2,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildSoilMoistureChart(isDark),
+                                        const SizedBox(height: 16),
+                                        _buildChartsSection(isDark),
+                                        const SizedBox(height: 16),
+                                        _buildExportOptions(isDark),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    flex: 1,
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        _buildFarmOverviewCard(isDark),
+                                        const SizedBox(height: 16),
+                                        _buildNotificationsSection(isDark),
+                                        const SizedBox(height: 16),
+                                        _buildSmartRecommendations(isDark),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }
+
+                            // Narrow layout: stack vertically
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildSoilMoistureChart(isDark),
+                                const SizedBox(height: 16),
+                                _buildChartsSection(isDark),
+                                const SizedBox(height: 16),
+                                _buildFarmOverviewCard(isDark),
+                                const SizedBox(height: 16),
+                                _buildNotificationsSection(isDark),
+                                const SizedBox(height: 16),
+                                _buildSmartRecommendations(isDark),
+                                const SizedBox(height: 16),
+                                _buildExportOptions(isDark),
+                              ],
+                            );
+                          },
+                        ),
+                        // Removed legacy data summary banner and detailed sections per request.
+=======
                         _buildPeriodSelector(isDark),
                         const SizedBox(height: 20),
-                        _buildSummaryCard(isDark),
+                        _buildDataSummaryBanner(isDark),
                         const SizedBox(height: 20),
                         _buildMetadataSection(isDark),
                         const SizedBox(height: 20),
                         _buildWaterUsageSummary(isDark),
                         const SizedBox(height: 20),
-                        _buildRecommendationsSection(isDark),
+                        _buildPerformanceMetrics(isDark),
                         const SizedBox(height: 20),
-                        _buildIrrigationTimeline(isDark),
-                        const SizedBox(height: 20),
-                        _buildChartsSection(isDark),
+                        _buildScheduledCyclesSection(isDark),
                         const SizedBox(height: 20),
                         _buildRunningCyclesCard(isDark),
                         const SizedBox(height: 20),
@@ -500,6 +555,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         _buildCompletedIrrigationsCard(isDark),
                         const SizedBox(height: 20),
                         _buildNotificationsSection(isDark),
+                        const SizedBox(height: 20),
+                        _buildChartsSection(isDark),
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
                       ],
                     ),
                   ),
@@ -657,18 +715,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
         children: [
           Expanded(child: _buildPeriodButton('Daily', ReportPeriod.daily, isDark, isFirst: true)),
           Expanded(child: _buildPeriodButton('Weekly', ReportPeriod.weekly, isDark)),
-          Expanded(child: _buildPeriodButton('Monthly', ReportPeriod.monthly, isDark)),
-          Expanded(child: _buildPeriodButton('Custom', ReportPeriod.custom, isDark, isLast: true, onTap: _selectDateRange)),
+          Expanded(child: _buildPeriodButton('Monthly', ReportPeriod.monthly, isDark, isLast: true)),
         ],
       ),
     );
   }
 
-  Widget _buildPeriodButton(String label, ReportPeriod period, bool isDark, {bool isFirst = false, bool isLast = false, VoidCallback? onTap}) {
+  Widget _buildPeriodButton(String label, ReportPeriod period, bool isDark, {bool isFirst = false, bool isLast = false}) {
     final isSelected = _selectedPeriod == period;
     
     return InkWell(
-      onTap: onTap ?? () {
+      onTap: () {
         setState(() => _selectedPeriod = period);
         _loadReportData();
       },
@@ -685,23 +742,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
             right: isLast ? const Radius.circular(10) : Radius.zero,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: isSelected ? Colors.white : (isDark ? Colors.white : FamingaBrandColors.darkGreen),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-            if (period == ReportPeriod.custom && isSelected) ...[
-              const SizedBox(width: 4),
-              const Icon(Icons.calendar_today, size: 12, color: Colors.white),
-            ],
-          ],
+        child: Text(
+          label,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: isSelected ? Colors.white : (isDark ? Colors.white : FamingaBrandColors.darkGreen),
+            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 15,
+          ),
         ),
       ),
     );
@@ -1503,176 +1551,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildChartsSection(bool isDark) {
+    if (_dailyWaterUsage.isEmpty) return const SizedBox.shrink();
+    
     return _buildSectionCard(
       isDark: isDark,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Analytics', Icons.analytics, isDark),
+          _buildSectionTitle('Water Usage Trend', Icons.show_chart, isDark),
           const SizedBox(height: 24),
-          if (_dailyWaterUsage.isNotEmpty) ...[
-            Text('Water Usage (L)', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-            const SizedBox(height: 16),
-            _buildBarChart(isDark),
-            const SizedBox(height: 32),
-          ],
-          Text('Soil Moisture Trends', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-          const SizedBox(height: 16),
-          _buildMoistureChart(isDark),
-          const SizedBox(height: 32),
-          Text('Irrigation Duration (min)', style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).textTheme.bodyLarge?.color)),
-          const SizedBox(height: 16),
-          _buildDurationChart(isDark),
+          _buildBarChart(isDark),
         ],
-      ),
-    );
-  }
-
-  Widget _buildDurationChart(bool isDark) {
-    final completedLogs = _allLogs.where((l) => l.action == IrrigationAction.completed).toList();
-    if (completedLogs.isEmpty) return const Center(child: Text('No duration data'));
-
-    final sortedLogs = completedLogs.take(7).toList(); // Last 7 logs
-
-    return SizedBox(
-      height: 200,
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: (sortedLogs.map((l) => l.durationMinutes ?? 0).fold<int>(0, (p, c) => p > c ? p : c) * 1.2).toDouble(),
-          barTouchData: BarTouchData(enabled: true),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  if (value.toInt() >= 0 && value.toInt() < sortedLogs.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        DateFormat('MM/dd').format(sortedLogs[value.toInt()].timestamp),
-                        style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-          gridData: FlGridData(show: true, drawVerticalLine: false),
-          barGroups: List.generate(
-            sortedLogs.length,
-            (index) => BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  toY: (sortedLogs[index].durationMinutes ?? 0).toDouble(),
-                  color: Colors.blueAccent,
-                  width: 16,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMoistureChart(bool isDark) {
-    // Mock data for moisture
-    final spots = [
-      FlSpot(0, 60),
-      FlSpot(1, 58),
-      FlSpot(2, 65),
-      FlSpot(3, 62),
-      FlSpot(4, 70),
-      FlSpot(5, 68),
-      FlSpot(6, 65),
-    ];
-
-    return SizedBox(
-      height: 200,
-      child: LineChart(
-        LineChartData(
-          gridData: FlGridData(
-            show: true,
-            drawVerticalLine: false,
-            getDrawingHorizontalLine: (value) {
-              return FlLine(
-                color: isDark ? Colors.white.withOpacity(0.1) : Colors.black.withOpacity(0.1),
-                strokeWidth: 1,
-              );
-            },
-          ),
-          titlesData: FlTitlesData(
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 1,
-                getTitlesWidget: (value, meta) {
-                  // Simple day labels
-                  final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                  if (value.toInt() >= 0 && value.toInt() < days.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Text(
-                        days[value.toInt()],
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Theme.of(context).textTheme.bodySmall?.color,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox();
-                },
-              ),
-            ),
-            leftTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                interval: 20,
-                reservedSize: 30,
-                getTitlesWidget: (value, meta) {
-                  return Text(
-                    '${value.toInt()}%',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Theme.of(context).textTheme.bodySmall?.color,
-                    ),
-                  );
-                },
-              ),
-            ),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          borderData: FlBorderData(show: false),
-          minX: 0,
-          maxX: 6,
-          minY: 0,
-          maxY: 100,
-          lineBarsData: [
-            LineChartBarData(
-              spots: spots,
-              isCurved: true,
-              color: Colors.teal,
-              barWidth: 3,
-              isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
-              belowBarData: BarAreaData(
-                show: true,
-                color: Colors.teal.withOpacity(0.2),
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -1986,99 +1875,52 @@ class _ReportsScreenState extends State<ReportsScreen> {
     }
   }
 
-  Widget _buildSummaryCard(bool isDark) {
-    // Calculate metrics
-    final nextSchedule = _scheduledCycles.isNotEmpty 
-        ? _scheduledCycles.first.nextRun ?? _scheduledCycles.first.startTime 
-        : null;
+  Widget _buildDataSummaryBanner(bool isDark) {
+    final totalSchedules = _scheduledCycles.length + _runningCycles.length;
+    final totalCycles = totalSchedules + _manualCycles.length;
     
-    final lastLog = _allLogs.isNotEmpty 
-        ? _allLogs.reduce((a, b) => a.timestamp.isAfter(b.timestamp) ? a : b)
-        : null;
-
-    // Mock moisture for now as we don't have direct access to sensor history in this view yet
-    final currentMoisture = 65; 
-
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark 
-              ? [const Color(0xFF2C3E50), const Color(0xFF34495E)]
-              : [Colors.white, const Color(0xFFF5F7FA)],
+          colors: [
+            FamingaBrandColors.primaryOrange,
+            FamingaBrandColors.primaryOrange.withOpacity(0.8),
+          ],
         ),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 10,
+            color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+            blurRadius: 8,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Overview',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: isDark ? Colors.white : FamingaBrandColors.darkGreen,
-            ),
-          ),
-          const SizedBox(height: 20),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: _buildSummaryMetric(
-                  'Next Irrigation',
-                  nextSchedule != null 
-                      ? DateFormat('MMM dd\nhh:mm a').format(nextSchedule)
-                      : 'None Scheduled',
-                  Icons.calendar_today,
-                  Colors.blue,
-                  isDark,
-                ),
-              ),
-              Expanded(
-                child: _buildSummaryMetric(
-                  'Last Irrigation',
-                  lastLog != null 
-                      ? DateFormat('MMM dd\nhh:mm a').format(lastLog.timestamp)
-                      : 'No Data',
-                  Icons.history,
-                  Colors.green,
-                  isDark,
+              const Icon(Icons.check_circle, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Data Loaded Successfully',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Expanded(
-                child: _buildSummaryMetric(
-                  'Avg Moisture',
-                  '$currentMoisture%',
-                  Icons.water_drop,
-                  Colors.teal,
-                  isDark,
-                ),
-              ),
-              Expanded(
-                child: _buildSummaryMetric(
-                  'Total Water',
-                  '${_totalWaterUsed.toStringAsFixed(0)} L',
-                  Icons.opacity,
-                  Colors.indigo,
-                  isDark,
-                ),
-              ),
+              _buildSummaryItem('Schedules', totalSchedules.toString(), Colors.white),
+              _buildSummaryItem('Logs', _allLogs.length.toString(), Colors.white),
+              _buildSummaryItem('Fields', _fields.length.toString(), Colors.white),
+              _buildSummaryItem('Alerts', _alerts.length.toString(), Colors.white),
             ],
           ),
         ],
@@ -2086,186 +1928,159 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildSummaryMetric(String label, String value, IconData icon, Color color, bool isDark) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSummaryItem(String label, String value, Color color) {
+    return Column(
       children: [
-        Container(
-          padding: const EdgeInsets.all(10),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: color,
           ),
-          child: Icon(icon, color: color, size: 20),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: isDark ? Colors.white : Colors.black87,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isDark ? Colors.white70 : Colors.grey[600],
-                ),
-              ),
-            ],
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11,
+            color: color.withOpacity(0.9),
           ),
         ),
       ],
     );
   }
+<<<<<<< HEAD
 
-  Future<void> _exportToPdf() async {
-    final pdf = pw.Document();
-
-    pdf.addPage(
-      pw.MultiPage(
-        pageFormat: PdfPageFormat.a4,
-        build: (pw.Context context) {
-          return [
-            pw.Header(
-              level: 0,
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('Irrigation Report', style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold, color: PdfColors.blue900)),
-                      pw.Text('Faminga Smart Irrigation', style: pw.TextStyle(fontSize: 12, color: PdfColors.grey700)),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(DateFormat('MMM dd, yyyy').format(DateTime.now()), style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold)),
-                      pw.Text('Generated at ${DateFormat('HH:mm').format(DateTime.now())}', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey600)),
-                    ],
-                  ),
-                ],
-              ),
+  // --- New responsive UI helpers ---
+  Widget _buildTopSelector(bool isDark) {
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Report Period', style: TextStyle(fontWeight: FontWeight.w700, color: Theme.of(context).textTheme.bodyLarge?.color)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _selectedDate ?? DateTime.now(),
+                          firstDate: DateTime.now().subtract(const Duration(days: 365 * 3)),
+                          lastDate: DateTime.now().add(const Duration(days: 365)),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _selectedDate = picked;
+                            _selectedPeriod = ReportPeriod.daily;
+                          });
+                          _loadReportData();
+                        }
+                      },
+                      icon: const Icon(Icons.calendar_today),
+                      label: Text(_selectedDate != null ? DateFormat('MMM dd, yyyy').format(_selectedDate!) : 'Select Date'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? FamingaBrandColors.primaryOrange : FamingaBrandColors.primaryOrange,
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: _buildPeriodSelector(isDark)),
+                  ],
+                ),
+              ],
             ),
-            pw.SizedBox(height: 30),
-            
-            // Summary Section
-            pw.Container(
-              padding: const pw.EdgeInsets.all(15),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.grey100,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceAround,
-                children: [
-                  _buildPdfMetric('Total Water Used', '${_totalWaterUsed.toStringAsFixed(1)} L'),
-                  _buildPdfMetric('Completed Cycles', _allLogs.where((l) => l.action == IrrigationAction.completed).length.toString()),
-                  _buildPdfMetric('Alerts', _alerts.length.toString()),
-                  _buildPdfMetric('Fields', _fields.length.toString()),
-                ],
-              ),
-            ),
-            pw.SizedBox(height: 30),
-
-            // Recommendations
-            if (_missedCycles > 0 || _alerts.isNotEmpty) ...[
-              pw.Text('Recommendations & Alerts', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-              pw.SizedBox(height: 10),
-              if (_missedCycles > 0)
-                pw.Bullet(text: 'Check schedule configuration: $_missedCycles missed cycles detected.'),
-              if (_alerts.isNotEmpty)
-                pw.Bullet(text: '${_alerts.length} active alerts requiring attention.'),
-              pw.SizedBox(height: 20),
-            ],
-
-            // Logs Table
-            pw.Text('Irrigation Log', style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold, color: PdfColors.blue800)),
-            pw.SizedBox(height: 10),
-            pw.Table.fromTextArray(
-              context: context,
-              headerDecoration: pw.BoxDecoration(color: PdfColors.blue100),
-              headerHeight: 30,
-              cellHeight: 35,
-              cellAlignments: {
-                0: pw.Alignment.centerLeft,
-                1: pw.Alignment.centerLeft,
-                2: pw.Alignment.center,
-                3: pw.Alignment.centerRight,
-                4: pw.Alignment.center,
-              },
-              headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, color: PdfColors.blue900),
-              headers: ['Date', 'Field', 'Type', 'Water (L)', 'Status'],
-              data: _allLogs.take(50).map((log) => [
-                DateFormat('MM/dd HH:mm').format(log.timestamp),
-                log.zoneName,
-                log.triggeredBy == 'manual' ? 'Manual' : 'Scheduled',
-                log.waterUsed?.toStringAsFixed(1) ?? '0',
-                log.action == IrrigationAction.completed ? 'Completed' : 'Stopped',
-              ]).toList(),
-            ),
-            
-            pw.SizedBox(height: 20),
-            pw.Divider(),
-            pw.Center(
-              child: pw.Text('End of Report', style: pw.TextStyle(fontSize: 10, color: PdfColors.grey500)),
-            ),
-          ];
-        },
+          ),
+        ],
       ),
     );
-
-    await Printing.sharePdf(
-      bytes: await pdf.save(),
-      filename: 'Irrigation_Report_${DateFormat('yyyyMMdd').format(DateTime.now())}.pdf',
-    );
-  }
-  pw.Widget _buildPdfMetric(String label, String value) {
-    return pw.Column(
-      crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        pw.Text(value, style: pw.TextStyle(fontSize: 16, fontWeight: pw.FontWeight.bold)),
-        pw.Text(label, style: pw.TextStyle(fontSize: 10, color: PdfColors.grey700)),
-      ],
-    );
   }
 
-  Widget _buildRecommendationsSection(bool isDark) {
-    final recommendations = <Map<String, dynamic>>[];
+  Widget _buildActivitySummaryGrid(bool isDark) {
+    final totalIrrigations = (_scheduledCycles.length + _runningCycles.length + _manualCycles.length);
+    final efficiency = _completionRate.toStringAsFixed(0) + '%';
 
-    if (_missedCycles > 0) {
-      recommendations.add({
-        'title': 'Check Schedule Configuration',
-        'desc': 'You have $_missedCycles missed cycles. Ensure your controller is online.',
-        'priority': 'high',
-      });
-    }
+    final items = [
+      {'icon': Icons.play_arrow, 'label': 'Total Irrigations', 'value': totalIrrigations.toString()},
+      {'icon': Icons.opacity, 'label': 'Total Water', 'value': '${_totalWaterUsed.toStringAsFixed(1)}L'},
+      {'icon': Icons.report_problem, 'label': 'Missed Irrigations', 'value': _missedCycles.toString()},
+      {'icon': Icons.insights, 'label': 'Efficiency', 'value': efficiency},
+    ];
 
-    if (_alerts.any((a) => a.severity == 'high')) {
-      recommendations.add({
-        'title': 'Critical Alerts Detected',
-        'desc': 'There are high priority alerts requiring your attention.',
-        'priority': 'high',
-      });
-    }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final crossAxisCount = width >= 900 ? 4 : (width >= 600 ? 2 : 2);
+        return Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: items.map((it) {
+            final w = (width - (crossAxisCount - 1) * 12) / crossAxisCount;
+            return SizedBox(
+              width: w.clamp(160, width),
+              child: Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.25 : 0.05), blurRadius: 6)],
+                  border: Border.all(color: FamingaBrandColors.primaryOrange.withOpacity(0.06)),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: FamingaBrandColors.primaryOrange.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(it['icon'] as IconData, color: FamingaBrandColors.primaryOrange),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(it['label'] as String, style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+                          const SizedBox(height: 6),
+                          Text(
+                            it['value'] as String,
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              color: Theme.of(context).brightness == Brightness.dark ? Colors.white : FamingaBrandColors.textPrimary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
 
-    // Mock recommendation if empty
-    if (recommendations.isEmpty) {
-      recommendations.add({
-        'title': 'Optimize Water Usage',
-        'desc': 'Consider reducing duration for Field A by 10% based on recent moisture levels.',
-        'priority': 'medium',
-      });
+  Widget _buildSoilMoistureChart(bool isDark) {
+    // Use daily water usage as a proxy to display a moisture-like trend if moisture data not available
+    if (_dailyWaterUsage.isEmpty) return _buildEmptyState('No soil moisture data available for selected period', isDark);
+
+    final sorted = _dailyWaterUsage.entries.toList()..sort((a, b) => a.key.compareTo(b.key));
+    final values = sorted.map((e) => e.value).toList();
+    final max = values.reduce((a, b) => a > b ? a : b);
+
+    // Map water usage to a 0-100 moisture % (simple scaling)
+    final spots = <FlSpot>[];
+    for (var i = 0; i < values.length; i++) {
+      final double percent = max > 0 ? (values[i] / max) * 60.0 + 20.0 : 40.0; // map into 20-80
+      spots.add(FlSpot(i.toDouble(), percent));
     }
 
     return _buildSectionCard(
@@ -2273,48 +2088,124 @@ class _ReportsScreenState extends State<ReportsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildSectionTitle('Recommendations', Icons.lightbulb_outline, isDark),
-          const SizedBox(height: 16),
-          ...recommendations.map((rec) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: rec['priority'] == 'high' 
-                  ? Colors.red.withOpacity(0.1) 
-                  : Colors.blue.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: rec['priority'] == 'high' ? Colors.red.withOpacity(0.3) : Colors.blue.withOpacity(0.3),
+          _buildSectionTitle('Soil Moisture Trend', Icons.thermostat, isDark),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 220,
+            child: LineChart(
+              LineChartData(
+                gridData: FlGridData(show: true, drawVerticalLine: false),
+                titlesData: FlTitlesData(
+                  bottomTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, getTitlesWidget: (v, meta) {
+                    final idx = v.toInt();
+                    if (idx >= 0 && idx < sorted.length) {
+                      return SideTitleWidget(child: Text(sorted[idx].key, style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color)), axisSide: meta.axisSide);
+                    }
+                    return const SizedBox.shrink();
+                  })),
+                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, getTitlesWidget: (v, meta) => Text('${v.toInt()}%', style: TextStyle(fontSize: 10, color: Theme.of(context).textTheme.bodySmall?.color)))),
+                ),
+                minY: 0,
+                maxY: 100,
+                lineBarsData: [
+                  LineChartBarData(
+                    spots: spots,
+                    isCurved: true,
+                    color: FamingaBrandColors.primaryOrange,
+                    barWidth: 3,
+                    dotData: FlDotData(show: true),
+                    belowBarData: BarAreaData(show: true, color: FamingaBrandColors.primaryOrange.withOpacity(0.12)),
+                  ),
+                ],
+                betweenBarsData: [],
+                borderData: FlBorderData(show: false),
+                extraLinesData: ExtraLinesData(horizontalLines: [
+                  HorizontalLine(y: 40, color: Colors.green.withOpacity(0.2), strokeWidth: 0),
+                  HorizontalLine(y: 60, color: Colors.green.withOpacity(0.2), strokeWidth: 0),
+                ]),
               ),
             ),
+          ),
+          const SizedBox(height: 8),
+          Text('Ideal range highlighted (40% - 60%)', style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+        ],
+      ),
+    );
+  }
+
+  List<String> _generateSmartRecommendations() {
+    final recs = <String>[];
+    
+    // Check for low soil moisture trend
+    if (_dailyWaterUsage.isNotEmpty) {
+      final values = _dailyWaterUsage.values.toList();
+      if (values.isNotEmpty) {
+        final avg = values.reduce((a, b) => a + b) / values.length;
+        if (avg < 150) {
+          recs.add('💧 Soil moisture trending low (Avg: ${avg.toStringAsFixed(1)}L). Consider increasing irrigation frequency or duration.');
+        }
+      }
+    }
+
+    // Check for completion rate
+    if (_completionRate < 70 && _scheduledCycles.isNotEmpty) {
+      recs.add('⚠️ Completion rate is low (${_completionRate.toStringAsFixed(0)}%). Review scheduled cycles and sensor connectivity.');
+    }
+
+    // Check for missed cycles
+    if (_missedCycles > 0) {
+      recs.add('🔴 ${_missedCycles} scheduled cycle(s) were missed. Check if schedules need adjustment.');
+    }
+
+    // Check for high alerts
+    final highAlerts = _alerts.where((a) => a.severity.toLowerCase() == 'high' || a.severity.toLowerCase() == 'critical').length;
+    if (highAlerts > 0) {
+      recs.add('🚨 $highAlerts high-severity alert(s) detected. Review system status and sensor readings.');
+    }
+
+    // Check water usage efficiency
+    if (_allLogs.isNotEmpty && _totalWaterUsed > 0) {
+      final avgPerCycle = _totalWaterUsed / _allLogs.length;
+      if (avgPerCycle > 500) {
+        recs.add('💦 Average water per cycle is high (${avgPerCycle.toStringAsFixed(0)}L). Consider optimizing cycle duration or checking for leaks.');
+      }
+    }
+
+    // Check for scheduled vs manual ratio
+    if (_manualCycles.isNotEmpty && _scheduledCycles.isNotEmpty) {
+      final manualRatio = (_manualCycles.length / (_scheduledCycles.length + _manualCycles.length)) * 100;
+      if (manualRatio > 50) {
+        recs.add('📅 High manual intervention ratio (${manualRatio.toStringAsFixed(0)}%). Consider creating more schedules for automation.');
+      }
+    }
+
+    // Fallback recommendations
+    if (recs.isEmpty) {
+      recs.add('✅ System performing well! Continue monitoring soil moisture and adjust schedules as needed.');
+      recs.add('📊 Review weekly performance trends to optimize water usage.');
+    }
+
+    return recs;
+  }
+
+  Widget _buildSmartRecommendations(bool isDark) {
+    final recs = _generateSmartRecommendations();
+
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Smart Recommendations', Icons.lightbulb, isDark),
+          const SizedBox(height: 12),
+          ...recs.map((r) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  rec['priority'] == 'high' ? Icons.warning_amber : Icons.info_outline,
-                  color: rec['priority'] == 'high' ? Colors.red : Colors.blue,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        rec['title'],
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: isDark ? Colors.white : Colors.black87,
-                        ),
-                      ),
-                      Text(
-                        rec['desc'],
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: isDark ? Colors.white70 : Colors.black54,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                Icon(Icons.circle, size: 8, color: FamingaBrandColors.primaryOrange),
+                const SizedBox(width: 8),
+                Expanded(child: Text(r, style: TextStyle(fontSize: 13, color: Theme.of(context).textTheme.bodyLarge?.color))),
               ],
             ),
           )),
@@ -2323,39 +2214,183 @@ class _ReportsScreenState extends State<ReportsScreen> {
     );
   }
 
-  Widget _buildIrrigationTimeline(bool isDark) {
-    // Combine all events
-    final events = <Map<String, dynamic>>[];
+  Widget _buildFarmOverviewCard(bool isDark) {
+    // Field info
+    final String fieldName = _fields.isNotEmpty ? (_fields.first['name']?.toString() ?? 'No fields') : 'No fields';
+    final fieldCount = _fields.length;
     
-    for (var s in _scheduledCycles) {
-      events.add({
-        'time': s.nextRun ?? s.startTime,
-        'type': 'Scheduled',
-        'status': 'scheduled',
-        'zone': s.zoneName,
-      });
+    // Last irrigation
+    String lastIrrigation = 'No data';
+    if (_allLogs.isNotEmpty) {
+      final sorted = _allLogs.toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+      lastIrrigation = DateFormat('MMM dd, yyyy hh:mm a').format(sorted.first.timestamp);
     }
     
-    for (var r in _runningCycles) {
-      events.add({
-        'time': r.nextRun ?? r.startTime,
-        'type': 'Running',
-        'status': 'running',
-        'zone': r.zoneName,
-      });
-    }
-    
-    for (var l in _allLogs) {
-      events.add({
-        'time': l.timestamp,
-        'type': l.triggeredBy == 'manual' ? 'Manual' : 'Scheduled',
-        'status': l.action == IrrigationAction.completed ? 'completed' : 'stopped',
-        'zone': l.zoneName,
-      });
+    // Next irrigation
+    String nextIrrigation = 'No scheduled';
+    if (_scheduledCycles.isNotEmpty) {
+      final sorted = _scheduledCycles.toList()..sort((a, b) => (a.nextRun ?? a.startTime).compareTo(b.nextRun ?? b.startTime));
+      nextIrrigation = DateFormat('MMM dd, hh:mm a').format(sorted.first.nextRun ?? sorted.first.startTime);
     }
 
-    // Sort by time descending
-    events.sort((a, b) => (b['time'] as DateTime).compareTo(a['time'] as DateTime));
+    // Current moisture (proxy from daily water usage)
+    String currentMoisture = 'No data';
+    if (_dailyWaterUsage.isNotEmpty) {
+      final avg = (_dailyWaterUsage.values.reduce((a,b) => a+b)/_dailyWaterUsage.length);
+      currentMoisture = '${(avg / 10).toStringAsFixed(0)}%'; // Simple proxy
+    }
+
+    // Crop type & size
+    String cropType = 'Not set';
+    String farmSize = 'Not set';
+    if (_user != null) {
+      try {
+        final dynamic u = _user as dynamic;
+        final ct = u.cropType;
+        if (ct != null) cropType = ct.toString();
+      } catch (_) {
+        cropType = 'Not set';
+      }
+
+      try {
+        final dynamic u = _user as dynamic;
+        final fs = u.farmSize;
+        if (fs != null) farmSize = fs.toString();
+      } catch (_) {
+        farmSize = 'Not set';
+      }
+    }
+
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Farm Overview', Icons.agriculture, isDark),
+          const SizedBox(height: 12),
+          _buildInfoRow('Primary Field', fieldName, isDark),
+          _buildInfoRow('Total Fields', '$fieldCount', isDark),
+          _buildInfoRow('Crop Type', cropType, isDark),
+          _buildInfoRow('Farm Size', farmSize, isDark),
+          _buildInfoRow('Last Irrigation', lastIrrigation, isDark),
+          _buildInfoRow('Next Irrigation', nextIrrigation, isDark),
+          _buildInfoRow('Current Moisture (est.)', currentMoisture, isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExportOptions(bool isDark) {
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Export', Icons.share, isDark),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _exportToPDF,
+                  icon: const Icon(Icons.picture_as_pdf),
+                  label: const Text('Export as PDF'),
+                  style: ElevatedButton.styleFrom(backgroundColor: FamingaBrandColors.primaryOrange),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryDetails(bool isDark) {
+    if (_dailyWaterUsage.isEmpty) {
+      return _buildSectionCard(isDark: isDark, child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        _buildSectionTitle('Summary', Icons.list, isDark),
+        const SizedBox(height: 12),
+        Text('No summary data available for the selected period', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color)),
+      ]));
+    }
+
+    final entries = _dailyWaterUsage.entries.toList();
+    entries.sort((a, b) => a.value.compareTo(b.value));
+    final lowest = entries.first;
+    final highest = entries.last;
+    final avg = (_dailyWaterUsage.values.reduce((a, b) => a + b) / _dailyWaterUsage.length);
+
+    return _buildSectionCard(
+      isDark: isDark,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildSectionTitle('Summary', Icons.list, isDark),
+          const SizedBox(height: 12),
+          LayoutBuilder(builder: (context, constraints) {
+            final width = constraints.maxWidth;
+            final twoColumn = width >= 600;
+            return Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                _smallStatCard('Total Water', '${_totalWaterUsed.toStringAsFixed(1)}L', Icons.opacity, isDark, width, twoColumn),
+                _smallStatCard('Total Irrigations', '${(_scheduledCycles.length + _runningCycles.length + _manualCycles.length)}', Icons.play_arrow, isDark, width, twoColumn),
+                _smallStatCard('Highest Day', '${highest.key}: ${highest.value.toStringAsFixed(1)}L', Icons.trending_up, isDark, width, twoColumn),
+                _smallStatCard('Lowest Day', '${lowest.key}: ${lowest.value.toStringAsFixed(1)}L', Icons.trending_down, isDark, width, twoColumn),
+                _smallStatCard('Avg/Day', '${avg.toStringAsFixed(1)}L', Icons.calculate, isDark, width, twoColumn),
+              ],
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _smallStatCard(String title, String value, IconData icon, bool isDark, double width, bool twoColumn) {
+    final cardWidth = twoColumn ? (width / 2) - 12 : width;
+    return SizedBox(
+      width: cardWidth.clamp(140, 400),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: FamingaBrandColors.primaryOrange.withOpacity(0.06)),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(isDark ? 0.18 : 0.03), blurRadius: 6)],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: FamingaBrandColors.primaryOrange.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+              child: Icon(icon, color: FamingaBrandColors.primaryOrange),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text(title, style: TextStyle(fontSize: 12, color: Theme.of(context).textTheme.bodySmall?.color)),
+                const SizedBox(height: 6),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: Theme.of(context).brightness == Brightness.dark ? Colors.white : FamingaBrandColors.textPrimary,
+                  ),
+                ),
+              ]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildIrrigationTimeline(bool isDark) {
+    final recent = _allLogs.toList();
+    recent.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final items = recent.take(6).toList();
 
     return _buildSectionCard(
       isDark: isDark,
@@ -2363,112 +2398,284 @@ class _ReportsScreenState extends State<ReportsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildSectionTitle('Irrigation Timeline', Icons.timeline, isDark),
-          const SizedBox(height: 20),
-          if (events.isEmpty)
-            const Center(child: Text('No events found'))
+          const SizedBox(height: 12),
+          if (items.isEmpty)
+            Text('No events in the selected period', style: TextStyle(color: Theme.of(context).textTheme.bodySmall?.color))
           else
-            ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: events.take(10).length,
-              itemBuilder: (context, index) {
-                final event = events[index];
-                final isLast = index == events.take(10).length - 1;
-                return _buildTimelineItem(event, isLast, isDark);
-              },
+            Column(
+              children: items.map((log) => Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Container(width: 8, height: 8, decoration: BoxDecoration(color: FamingaBrandColors.primaryOrange, shape: BoxShape.circle)),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text('${log.zoneName} — ${DateFormat('MMM dd, hh:mm a').format(log.timestamp)}', style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color))),
+                    Text(log.action.name.toUpperCase(), style: TextStyle(fontSize: 11, color: FamingaBrandColors.primaryOrange, fontWeight: FontWeight.w700)),
+                  ],
+                ),
+              )).toList(),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildTimelineItem(Map<String, dynamic> event, bool isLast, bool isDark) {
-    final status = event['status'] as String;
-    Color color;
-    switch (status) {
-      case 'running': color = FamingaBrandColors.primaryOrange; break;
-      case 'completed': color = Colors.green; break;
-      case 'scheduled': color = Colors.blue; break;
-      default: color = Colors.grey;
-    }
+  // Export & Share Methods
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 50,
-            child: Column(
+  Future<void> _exportToPDF() async {
+    try {
+      final pdf = pw.Document();
+      
+      // Add content to PDF
+      pdf.addPage(
+        pw.MultiPage(
+          pageFormat: PdfPageFormat.a4,
+          margin: const pw.EdgeInsets.all(32),
+          build: (context) => [
+            // Title
+            pw.Text(
+              'Irrigation Report',
+              style: pw.TextStyle(fontSize: 24, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Text(
+              'Generated: ${DateFormat('MMM dd, yyyy hh:mm a').format(_reportGeneratedAt ?? DateTime.now())}',
+              style: pw.TextStyle(fontSize: 10, color: PdfColors.grey),
+            ),
+            pw.SizedBox(height: 20),
+            
+            // Farm Overview Section
+            pw.Text(
+              'FARM OVERVIEW',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(),
               children: [
-                Text(
-                  DateFormat('HH:mm').format(event['time']),
-                  style: const TextStyle(fontWeight: FontWeight.bold),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Farmer', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(_user?.fullName ?? 'N/A'),
+                    ),
+                  ],
                 ),
-                Text(
-                  DateFormat('MMM dd').format(event['time']),
-                  style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Primary Field', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text(_fields.isNotEmpty ? _fields.first['name']! : 'N/A'),
+                    ),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Total Fields', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('${_fields.length}'),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ),
-          Column(
-            children: [
-              Container(
-                width: 12,
-                height: 12,
-                decoration: BoxDecoration(
-                  color: color,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
-                  boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 4)],
-                ),
-              ),
-              if (!isLast)
-                Expanded(
-                  child: Container(
-                    width: 2,
-                    color: Colors.grey.withOpacity(0.2),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    event['zone'],
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 15,
-                      color: isDark ? Colors.white : Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: color.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      status.toUpperCase(),
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: color,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            pw.SizedBox(height: 20),
+            
+            // Summary Section
+            pw.Text(
+              'SUMMARY',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
             ),
-          ),
-        ],
-      ),
+            pw.SizedBox(height: 8),
+            pw.Table(
+              border: pw.TableBorder.all(),
+              children: [
+                pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Metric', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(8),
+                      child: pw.Text('Value', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+                    ),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Total Water Used')),
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${_totalWaterUsed.toStringAsFixed(1)} L')),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Avg Water Per Cycle')),
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${_avgWaterPerCycle.toStringAsFixed(1)} L')),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Total Irrigations')),
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${_scheduledCycles.length + _runningCycles.length + _manualCycles.length}')),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Completion Rate')),
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${_completionRate.toStringAsFixed(1)}%')),
+                  ],
+                ),
+                pw.TableRow(
+                  children: [
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('Missed Cycles')),
+                    pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('$_missedCycles')),
+                  ],
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 20),
+            
+            // Daily Water Usage Table
+            pw.Text(
+              'DAILY WATER USAGE',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            _buildPDFWaterUsageTable(),
+            pw.SizedBox(height: 20),
+            
+            // Recent Logs Table
+            pw.Text(
+              'RECENT IRRIGATION LOGS',
+              style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold),
+            ),
+            pw.SizedBox(height: 8),
+            _buildPDFLogsTable(),
+          ],
+        ),
+      );
+      
+      // Save and share PDF. On web use Printing.sharePdf (path_provider is not
+      // available on web which causes MissingPluginException). On other
+      // platforms save to app documents and share using Share.
+      final timestamp = DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
+      final pdfBytes = await pdf.save();
+      if (kIsWeb) {
+        // Printing.sharePdf opens the browser download/share dialog on web.
+        await Printing.sharePdf(bytes: pdfBytes, filename: 'irrigation_report_$timestamp.pdf');
+      } else {
+        final output = await getApplicationDocumentsDirectory();
+        final file = File('${output.path}/irrigation_report_$timestamp.pdf');
+        await file.writeAsBytes(pdfBytes);
+        await Share.shareXFiles([XFile(file.path)], text: 'Irrigation Report - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}');
+      }
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('PDF report exported and shared successfully!')),
+      );
+    } catch (e) {
+      debugPrint('Error exporting PDF: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error exporting PDF: $e')),
+      );
+    }
+  }
+
+  pw.Widget _buildPDFWaterUsageTable() {
+    final sortedDates = _dailyWaterUsage.keys.toList()..sort();
+    return pw.Table(
+      border: pw.TableBorder.all(),
+      children: [
+        pw.TableRow(
+          children: [
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+            pw.Padding(
+              padding: const pw.EdgeInsets.all(8),
+              child: pw.Text('Water Used (L)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+            ),
+          ],
+        ),
+        ...sortedDates.map((date) {
+          return pw.TableRow(
+            children: [
+              pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text(date)),
+              pw.Padding(padding: const pw.EdgeInsets.all(8), child: pw.Text('${_dailyWaterUsage[date]?.toStringAsFixed(1)}')),
+            ],
+          );
+        }).toList(),
+      ],
     );
   }
+
+  pw.Widget _buildPDFLogsTable() {
+    final sortedLogs = _allLogs.toList()..sort((a, b) => b.timestamp.compareTo(a.timestamp));
+    final recentLogs = sortedLogs.take(20).toList();
+    
+    return pw.Table(
+      border: pw.TableBorder.all(),
+      children: [
+        pw.TableRow(
+          children: [
+            pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Date', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
+            pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Zone', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
+            pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Duration', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
+            pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('Water (L)', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9))),
+          ],
+        ),
+        ...recentLogs.map((log) {
+          return pw.TableRow(
+            children: [
+              pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(DateFormat('MMM dd').format(log.timestamp), style: const pw.TextStyle(fontSize: 8))),
+              pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text(log.zoneName, style: const pw.TextStyle(fontSize: 8))),
+              pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${log.durationMinutes ?? 0}m', style: const pw.TextStyle(fontSize: 8))),
+              pw.Padding(padding: const pw.EdgeInsets.all(6), child: pw.Text('${log.waterUsed?.toStringAsFixed(1) ?? 0}', style: const pw.TextStyle(fontSize: 8))),
+            ],
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Future<void> _shareReport() async {
+    try {
+      final message = '''
+Irrigation Report
+Generated: ${DateFormat('MMM dd, yyyy hh:mm a').format(_reportGeneratedAt ?? DateTime.now())}
+
+SUMMARY:
+• Total Water Used: ${_totalWaterUsed.toStringAsFixed(1)}L
+• Total Irrigations: ${_scheduledCycles.length + _runningCycles.length + _manualCycles.length}
+• Completion Rate: ${_completionRate.toStringAsFixed(1)}%
+• Missed Cycles: $_missedCycles
+
+Farm: ${_fields.isNotEmpty ? _fields.first['name'] : 'N/A'}
+Farmer: ${_user?.fullName ?? 'N/A'}
+      ''';
+      
+      await Share.share(message);
+    } catch (e) {
+      debugPrint('Error sharing: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error sharing report: $e')),
+      );
+    }
+  }
+=======
+>>>>>>> 2ea7d6eeb20bbc31d75fb4a5e80bb55b84fa95a4
 }
