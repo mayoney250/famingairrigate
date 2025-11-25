@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>AI API Test - Faminga</title>
+    <style>
+        body {
+            font-family: Arial;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+
+        h1 {
+            color: #2D4D31;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: #D47B0F;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        button:hover {
+            background: #b36609;
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 5px;
+            display: none;
+        }
+
+        .result.show {
+            display: block;
+        }
+
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+
+        .badge-irrigate {
+            background: #28a745;
+            color: white;
+        }
+
+        .badge-hold {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .badge-alert {
+            background: #dc3545;
+            color: white;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🌾 AI Irrigation Recommendation Test</h1>
+
+        <form id="testForm">
+            <div class="form-group">
+                <label>Soil Moisture (%)</label>
+                <input type="number" id="moisture" value="25" min="0" max="100" step="0.1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Temperature (°C)</label>
+                <input type="number" id="temp" value="28" min="-10" max="50" step="0.1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Humidity (%)</label>
+                <input type="number" id="humid" value="65" min="0" max="100" step="0.1" required>
+            </div>
+
+            <div class="form-group">
+                <label>Crop Type</label>
+                <select id="crop">
+                    <option value="wheat">Wheat</option>
+                    <option value="corn">Corn</option>
+                    <option value="rice">Rice</option>
+                    <option value="tomato">Tomato</option>
+                </select>
+            </div>
+
+            <button type="submit">Get Recommendation</button>
+            <button type="button" onclick="checkHealth()">Check API Health</button>
+        </form>
+
+        <div id="result" class="result"></div>
+    </div>
+
+    <script>
+        document.getElementById('testForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const moisture = parseFloat(document.getElementById('moisture').value);
+            const temp = parseFloat(document.getElementById('temp').value);
+            const humid = parseFloat(document.getElementById('humid').value);
+            const crop = document.getElementById('crop').value;
+
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Loading...';
+            resultDiv.className = 'result show';
+
+            try {
+                const response = await fetch('/api/ai/advice', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        soil_data: { soil_moisture: moisture }, // Corrected key: soil_moisture
+                        weather_data: { temperature: temp, humidity: humid },
+                        crop_type: crop
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    const decision = data.decision || 'UNKNOWN';
+                    const reasons = (data.reasons || []).join(', ');
+                    const confidence = data.confidence || 0;
+                    const alerts = (data.alerts || []).join(', ');
+
+                    let badgeClass = 'badge-hold';
+                    if (decision === 'IRRIGATE') badgeClass = 'badge-irrigate';
+                    if (decision === 'ALERT') badgeClass = 'badge-alert';
+
+                    let html = '<h3>✅ Recommendation Received</h3>';
+                    html += `<div class="badge ${badgeClass}">${decision}</div>`;
+                    html += `<p><strong>Confidence:</strong> ${confidence}%</p>`;
+                    html += `<p><strong>Reasons:</strong> ${reasons || 'None'}</p>`;
+                    if (alerts) html += `<p><strong>Alerts:</strong> ${alerts}</p>`;
+                    if (data.recommendations) {
+                        html += `<p><strong>Irrigation:</strong> ${data.recommendations.irrigation_amount_mm || 0}mm (${data.recommendations.irrigation_duration_minutes || 0} min)</p>`;
+                        html += `<p><strong>Next Check:</strong> ${data.recommendations.next_check_hours || 0} hours</p>`;
+                    }
+                    html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+
+                    resultDiv.innerHTML = html;
+                    resultDiv.className = 'result success show';
+                } else {
+                    resultDiv.innerHTML = `<h3>❌ Error</h3><p>${JSON.stringify(data)}</p>`;
+                    resultDiv.className = 'result error show';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ Error</h3><p>${error.message}</p>`;
+                resultDiv.className = 'result error show';
+            }
+        });
+
+        async function checkHealth() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Checking...';
+            resultDiv.className = 'result show';
+
+            try {
+                const response = await fetch('/api/ai/health');
+                const data = await response.json();
+                resultDiv.innerHTML = `<h3>✅ API is Healthy</h3><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                resultDiv.className = 'result success show';
+            } catch (error) {
+                resultDiv.innerHTML = `<h3>❌ Error</h3><p>${error.message}</p>`;
+                resultDiv.className = 'result error show';
+            }
+        }
+    </script>
+</body>
+
+</html>
