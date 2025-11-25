@@ -76,20 +76,32 @@ class AIRecommendation {
     required String fieldId,
     required Map<String, dynamic> apiResponse,
   }) {
-    final recommendation = apiResponse['recommendation'] ?? 'Hold';
-    final reasoning = apiResponse['reasoning'] ?? '';
-    final soilMoisture =
-        (apiResponse['soilMoisture'] as num?)?.toDouble() ?? 0.0;
-    final temperature = (apiResponse['temperature'] as num?)?.toDouble() ?? 0.0;
-    final humidity = (apiResponse['humidity'] as num?)?.toDouble() ?? 0.0;
-    final cropType = apiResponse['cropType'] ?? 'unknown';
-    final confidence = (apiResponse['confidence'] as num?)?.toDouble() ?? 0.5;
+    // New API format uses 'decision' instead of 'recommendation'
+    final decision = apiResponse['decision'] ?? 'HOLD';
+    
+    // 'reasons' is an array, join them into a string
+    final reasons = apiResponse['reasons'] as List<dynamic>?;
+    final reasoning = reasons?.join(', ') ?? '';
+    
+    // Extract data from nested 'analysis' object
+    final analysis = apiResponse['analysis'] as Map<String, dynamic>?;
+    final soilData = analysis?['soil'] as Map<String, dynamic>?;
+    final weatherData = analysis?['weather'] as Map<String, dynamic>?;
+    
+    final soilMoisture = (soilData?['moisture'] as num?)?.toDouble() ?? 0.0;
+    final temperature = (weatherData?['temperature'] as num?)?.toDouble() ?? 0.0;
+    final humidity = (weatherData?['humidity'] as num?)?.toDouble() ?? 0.0;
+    final cropType = apiResponse['crop'] ?? 'unknown';
+    
+    // Confidence is already a percentage (0-100), convert to 0-1 range
+    final confidencePercent = (apiResponse['confidence'] as num?)?.toDouble() ?? 50.0;
+    final confidence = confidencePercent / 100.0;
 
     return AIRecommendation(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       userId: userId,
       fieldId: fieldId,
-      recommendation: recommendation,
+      recommendation: decision,
       reasoning: reasoning,
       soilMoisture: soilMoisture,
       temperature: temperature,

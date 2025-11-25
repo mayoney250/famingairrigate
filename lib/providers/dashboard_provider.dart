@@ -261,44 +261,65 @@ class DashboardProvider with ChangeNotifier {
   }
 
   // Load dashboard data
-  Future<void> loadDashboardData(String userId, {bool showLoader = true}) async {
+  Future<void> loadDashboardData(String userId) async {
     try {
-      // Only show the full-screen loading shimmer when explicitly requested
-      if (showLoader) {
-        _isLoading = true;
-        notifyListeners();
-      }
+      _isLoading = true;
       _errorMessage = null;
-      
-      await initWeatherCache();
+      notifyListeners();
 
-      // CRITICAL: Load only essential data that's needed for initial UI
-      // This should complete in <500ms
+      // Load essential data first
       await Future.wait([
-        _loadFields(userId).catchError((_) {}),
+        _loadFields(userId).catchError((e) {
+          dev.log('Error in _loadFields: $e');
+          return null;
+        }),
+        _loadUpcoming(userId).catchError((e) {
+          dev.log('Error in _loadUpcoming: $e');
+          return null;
+        }),
       ]);
 
-      // Mark loading complete immediately so UI shows (with cached/partial data)
-      if (showLoader) {
-        _isLoading = false;
-        notifyListeners();
-      }
-      dev.log('✅ Dashboard initial load complete');
+      // Defer non-critical tasks
+      Future(() async {
+        try {
+          await Future.wait([
+            _loadWeatherData().timeout(const Duration(seconds: 10)).catchError((e) {
+              dev.log('Error in _loadWeatherData: $e');
+              return null;
+            }),
+            _loadWeeklyStats(userId).timeout(const Duration(seconds: 10)).catchError((e) {
+              dev.log('Error in _loadWeeklyStats: $e');
+              return null;
+            }),
+          ]);
 
-      // NOW load remaining data in BACKGROUND (non-blocking)
-      // These operations won't freeze the UI
-      
-      // Setup live data streams
-      if (_fields.isNotEmpty) {
-        subscribeToLiveFieldData(userId);
-      }
+          await setLocationFromDevice().timeout(const Duration(seconds: 10)).catchError((e) {
+            dev.log('Error in setLocationFromDevice: $e');
+          });
 
-      // Background tasks - don't block UI
-      _loadUpcomingInBackground(userId);
-      _syncSchedulesInBackground();
-      _loadWeatherInBackground();
-      _loadWeeklyStatsInBackground(userId);
-      _loadLocationInBackground();
+          if (_fields.isNotEmpty) {
+            subscribeToLiveFieldData(userId);
+          }
+
+          await _refreshDailySoilAverage().timeout(const Duration(seconds: 10)).catchError((e) {
+            dev.log('Error in _refreshDailySoilAverage: $e');
+          });
+          await _refreshWeeklyWaterUsage(userId: userId).timeout(const Duration(seconds: 10)).catchError((e) {
+            dev.log('Error in _refreshWeeklyWaterUsage: $e');
+          });
+          await _refreshDailyWaterUsage(userId: userId).timeout(const Duration(seconds: 10)).catchError((e) {
+            dev.log('Error in _refreshDailyWaterUsage: $e');
+          });
+        } catch (e) {
+          dev.log('Error in deferred tasks: $e');
+        } finally {
+          _isLoading = false;
+          notifyListeners();
+        }
+      });
+
+      _isLoading = false;
+      notifyListeners();
     } catch (e) {
       _errorMessage = ErrorService.toMessage(e);
       _isLoading = false;
@@ -307,82 +328,17 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
-  /// Load upcoming schedules in background (non-blocking)
-  void _loadUpcomingInBackground(String userId) {
-    Future(() async {
-      try {
-        await _loadUpcoming(userId);
-      } catch (e) {
-        dev.log('Background error loading upcoming: $e');
-      }
-    });
-  }
-
-  /// Sync status services in background
-  void _syncSchedulesInBackground() {
-    Future(() async {
-      try {
-        await _statusService.startDueSchedules();
-        await _statusService.markDueIrrigationsCompleted();
-        notifyListeners();
-        
-        // Start periodic sync every 60s
-        _statusTimer ??= Timer.periodic(const Duration(seconds: 60), (_) async {
-          try {
-            await _statusService.startDueSchedules();
-            await _statusService.markDueIrrigationsCompleted();
-          } catch (_) {}
-        });
-      } catch (e) {
-        dev.log('Background error syncing schedules: $e');
-      }
-    });
-  }
-
-  /// Load weather in background with timeout
-  void _loadWeatherInBackground() {
-    Future(() async {
-      try {
-        await fetchAndSetLiveWeather().timeout(const Duration(seconds: 8));
-      } catch (e) {
-        dev.log('Background error loading weather: $e - Using cached');
-      }
-    });
-  }
-
-  /// Load weekly stats in background
-  void _loadWeeklyStatsInBackground(String userId) {
-    Future(() async {
-      try {
-        final now = DateTime.now();
-        final weekAgo = now.subtract(const Duration(days: 7));
-        
-        _weeklyWaterUsage = await _irrigationService.getWaterUsage(userId, weekAgo, now);
-        _weeklySavings = await _irrigationService.calculateSavings(userId, weekAgo, now);
-        await _refreshWeeklyWaterUsage(userId: userId);
-        
-        notifyListeners();
-      } catch (e) {
-        dev.log('Background error loading weekly stats: $e');
-      }
-    });
-  }
-
-  /// Load location in background (non-blocking)
-  void _loadLocationInBackground() {
-    Future(() async {
-      try {
-        await setLocationFromDevice();
-      } catch (e) {
-        dev.log('Background error loading location: $e');
-      }
-    });
-  }
-
   // Load upcoming scheduled irrigations (scoped by selected farm, with legacy fallback)
   Future<void> _loadUpcoming(String userId) async {
     try {
       _irrigationService.getUserSchedules(userId).listen((all) {
+        if (all == null || all.isEmpty) {
+          dev.log('No schedules found for user: $userId');
+          _upcoming = [];
+          notifyListeners();
+          return;
+        }
+
         final now = DateTime.now();
         DateTime startFor(IrrigationScheduleModel s) => s.nextRun ?? s.startTime;
         DateTime endFor(IrrigationScheduleModel s) => startFor(s).add(Duration(minutes: s.durationMinutes));
@@ -396,8 +352,10 @@ class DashboardProvider with ChangeNotifier {
         }).toList();
 
         filtered.sort((a, b) => startFor(a).compareTo(startFor(b)));
-        _upcoming = filtered;
+        _upcoming = filtered; // Assign directly to maintain type compatibility
         notifyListeners();
+      }, onError: (error) {
+        dev.log('Error in getUserSchedules stream: $error');
       });
     } catch (e) {
       dev.log('Error loading upcoming schedules: $e');
@@ -407,13 +365,27 @@ class DashboardProvider with ChangeNotifier {
   // Load fields for the current user
   Future<void> _loadFields(String userId) async {
     try {
+      if (userId.isEmpty) {
+        dev.log('Invalid userId provided to _loadFields');
+        _fields = [];
+        notifyListeners();
+        return;
+      }
+
       final snapshot = await _firestore
           .collection('fields')
           .where('userId', isEqualTo: userId)
           .get();
 
+      if (snapshot.docs.isEmpty) {
+        dev.log('No fields found for user: $userId');
+        _fields = [];
+        notifyListeners();
+        return;
+      }
+
       _fields = snapshot.docs.map((d) {
-        final data = d.data();
+        final data = Map<String, dynamic>.from(d.data()); // Ensure proper casting
         final label = (data['label'] ?? data['name'] ?? data['fieldName'] ?? d.id).toString();
         return {'id': d.id, 'name': label};
       }).toList();
@@ -554,9 +526,7 @@ class DashboardProvider with ChangeNotifier {
 
   // Refresh dashboard
   Future<void> refresh(String userId) async {
-    // For user-initiated refreshes (pull-to-refresh) don't show full-screen shimmer.
-    // The RefreshIndicator will show its own spinner, so load in foreground but keep UI content.
-    await loadDashboardData(userId, showLoader: false);
+    await loadDashboardData(userId);
   }
 
   // Change selected farm

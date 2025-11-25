@@ -22,11 +22,16 @@ class IrrigationAIService {
     try {
       dev.log('📡 Calling AI service for field: $fieldId');
 
+      // New API format with nested objects
       final requestPayload = {
-        'soilMoisture': soilMoisture,
-        'temperature': temperature,
-        'humidity': humidity,
-        'cropType': cropType,
+        'soil_data': {
+          'soil_moisture': soilMoisture,
+        },
+        'weather_data': {
+          'temperature': temperature,
+          'humidity': humidity,
+        },
+        'crop_type': cropType,
       };
 
       dev.log('📤 Request payload: ${jsonEncode(requestPayload)}');
@@ -51,7 +56,8 @@ class IrrigationAIService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        dev.log('✅ AI recommendation received: ${data['recommendation']}');
+        // API returns 'decision' not 'recommendation'
+        dev.log('✅ AI decision received: ${data['decision']}');
 
         final recommendation = AIRecommendation.fromAPIResponse(
           userId: userId,
