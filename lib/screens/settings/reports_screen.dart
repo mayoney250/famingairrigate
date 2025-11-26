@@ -379,12 +379,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
         end: now,
       ),
       builder: (context, child) {
+        final isDark = Theme.of(context).brightness == Brightness.dark;
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: FamingaBrandColors.primaryOrange,
-              onPrimary: Colors.white,
+            colorScheme: isDark
+                ? ColorScheme.dark(
+                    primary: FamingaBrandColors.primaryOrange,
+                    onPrimary: Colors.white,
+                    surface: const Color(0xFF1E1E1E),
+                    onSurface: Colors.white,
+                    secondary: FamingaBrandColors.primaryOrange,
+                  )
+                : ColorScheme.light(
+                    primary: FamingaBrandColors.primaryOrange,
+                    onPrimary: Colors.white,
+                  ),
+            dialogBackgroundColor: isDark ? const Color(0xFF1E1E1E) : null,
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: isDark ? Colors.white : FamingaBrandColors.primaryOrange,
+              ),
             ),
+            appBarTheme: isDark
+                ? const AppBarTheme(
+                    backgroundColor: FamingaBrandColors.primaryOrange,
+                    foregroundColor: Colors.white,
+                    iconTheme: IconThemeData(color: Colors.white),
+                    actionsIconTheme: IconThemeData(color: Colors.white),
+                  )
+                : null,
           ),
           child: child!,
         );
@@ -460,6 +483,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : null,
               ),
             ),
             const SizedBox(height: 8),
@@ -467,7 +493,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
               'Select a field and date range to view detailed insights.',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                color: Colors.grey,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white70
+                    : Colors.grey,
               ),
             ),
             const SizedBox(height: 48),
@@ -476,15 +504,35 @@ class _ReportsScreenState extends State<ReportsScreen> {
               value: _selectedFieldId,
               decoration: InputDecoration(
                 labelText: 'Select Field',
+                labelStyle: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : null,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
                 prefixIcon: const Icon(Icons.grass),
               ),
+              dropdownColor: Theme.of(context).brightness == Brightness.dark
+                  ? Theme.of(context).cardColor
+                  : null,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
               items: _fields.map((field) {
                 return DropdownMenuItem(
                   value: field['id'],
-                  child: Text(field['name']!),
+                  child: Text(
+                    field['name']!,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                  ),
                 );
               }).toList(),
               onChanged: (value) {
@@ -502,6 +550,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: InputDecorator(
                 decoration: InputDecoration(
                   labelText: 'Date Range',
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : null,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -513,8 +566,12 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       : 'Select Dates',
                   style: TextStyle(
                     color: _selectedDateRange != null 
-                        ? Theme.of(context).textTheme.bodyLarge?.color 
-                        : Colors.grey,
+                        ? (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : Theme.of(context).textTheme.bodyLarge?.color)
+                        : (Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white54
+                            : Colors.grey),
                   ),
                 ),
               ),
@@ -750,17 +807,17 @@ class _ReportsScreenState extends State<ReportsScreen> {
           'Soil Moisture',
           '${currentMoisture.toStringAsFixed(1)}%',
           Icons.grass,
-          _getMoistureCardColor(currentMoisture),
+          _getMoistureCardColor(currentMoisture, isDark),
           isDark,
         ),
       ],
     );
   }
 
-  Color _getMoistureCardColor(double moisture) {
+  Color _getMoistureCardColor(double moisture, bool isDark) {
     if (moisture < 30) return Colors.redAccent;
     if (moisture > 70) return Colors.blueAccent;
-    return Colors.green;
+    return isDark ? Colors.white : Colors.green;
   }
 
   // Modern UI Components
@@ -952,7 +1009,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             'Current Moisture',
             '${currentMoisture.toStringAsFixed(1)}%',
             isDark,
-            valueColor: _getMoistureCardColor(currentMoisture),
+            valueColor: _getMoistureCardColor(currentMoisture, isDark),
           ),
           const SizedBox(height: 12),
           
@@ -1073,7 +1130,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   style: TextStyle(
                     fontSize: 48,
                     fontWeight: FontWeight.bold,
-                    color: _getMoistureCardColor(currentMoisture),
+                    color: _getMoistureCardColor(currentMoisture, isDark),
                     height: 1,
                   ),
                 ),
@@ -1107,7 +1164,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    color: Colors.green.shade700,
+                    color: isDark ? Colors.white : Colors.green.shade700,
                   ),
                 ),
               ],

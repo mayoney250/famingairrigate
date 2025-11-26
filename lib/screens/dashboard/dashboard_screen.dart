@@ -133,12 +133,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
         elevation: 0,
         title: Row(
           children: [
-            const Text(
-              'Faminga Irrigation System',
-              style: TextStyle(
-                color: FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
+            Builder(
+              builder: (context) => Text(
+                'Faminga Irrigation System',
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : FamingaBrandColors.textPrimary,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
+                ),
               ),
             ),
             const SizedBox(width: 8),
@@ -260,7 +264,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           context.l10n.quickActions,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -278,7 +284,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           context.l10n.nextScheduleCycle,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -290,7 +298,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           context.l10n.weeklyPerformance,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -318,7 +328,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     context.l10n.quickActions,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : FamingaBrandColors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -338,7 +350,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Text(
                     context.l10n.nextScheduleCycle,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: FamingaBrandColors.textPrimary,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : FamingaBrandColors.textPrimary,
                           fontWeight: FontWeight.bold,
                         ),
                   ),
@@ -353,7 +367,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         Text(
           context.l10n.weeklyPerformance,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: FamingaBrandColors.textPrimary,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontWeight: FontWeight.bold,
               ),
         ),
@@ -391,8 +407,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 Text(
                   avg != null ? '${avg.round()}%' : '--',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -408,7 +426,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 6),
           Text(
             daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
-            style: const TextStyle(color: FamingaBrandColors.textPrimary, fontWeight: FontWeight.w600),
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : FamingaBrandColors.textPrimary,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
       ),
@@ -478,8 +501,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     Text(
                       avg != null ? '${avg.round()}%' : '--',
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -508,8 +533,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               const SizedBox(height: 4),
               Text(
                 daily > 0 ? '${daily.toStringAsFixed(1)} L' : '--',
-                style: const TextStyle(
-                  color: FamingaBrandColors.textPrimary,
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : FamingaBrandColors.textPrimary,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                 ),
@@ -706,8 +733,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   l10n.userInsightGreeting(name),
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -753,8 +782,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 8),
                 Text(
                   recommendation,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                   ),
@@ -907,8 +938,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 8),
             Text(
               label,
-              style: const TextStyle(
-                color: FamingaBrandColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -981,8 +1014,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Text(
                     moistureText,
-                    style: const TextStyle(
-                      color: FamingaBrandColors.textPrimary,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : FamingaBrandColors.textPrimary,
                       fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1084,8 +1119,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       const SizedBox(width: 8),
                       Text(
                         context.l10n.weatherForecast,
-                        style: const TextStyle(
-                          color: FamingaBrandColors.textPrimary,
+                        style: TextStyle(
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : FamingaBrandColors.textPrimary,
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
                         ),
@@ -1160,8 +1197,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               children: [
                 Text(
                   _localizedDayLabel(today.date),
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
                   ),
@@ -1185,8 +1224,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(width: 4),
                     Text(
                       '${today.tempMaxString} / ${today.tempMinString}',
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                       ),
@@ -1200,8 +1241,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     const SizedBox(width: 4),
                     Text(
                       today.humidityString,
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
                         fontSize: 13,
                       ),
                     ),
@@ -1325,8 +1368,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             width: 45,
             child: Text(
               _localizedDayLabel(day.date),
-              style: const TextStyle(
-                color: FamingaBrandColors.textPrimary,
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
               ),
@@ -1352,8 +1397,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 4),
                         Text(
                           '${day.tempMaxString}/${day.tempMinString}',
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : FamingaBrandColors.textPrimary,
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                           ),
@@ -1366,8 +1413,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 3),
                         Text(
                           day.humidityString,
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : FamingaBrandColors.textPrimary,
                             fontSize: 11,
                           ),
                         ),
@@ -1385,8 +1434,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 3),
                         Text(
                           day.popPercentage,
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : FamingaBrandColors.textPrimary,
                             fontSize: 11,
                           ),
                         ),
@@ -1398,8 +1449,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         const SizedBox(width: 2),
                         Text(
                           day.windSpeedString,
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : FamingaBrandColors.textPrimary,
                             fontSize: 10,
                           ),
                         ),
@@ -1412,8 +1465,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           const SizedBox(width: 2),
                           Text(
                             day.rainAmountString,
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textPrimary,
+                            style: TextStyle(
+                              color: Theme.of(context).brightness == Brightness.dark
+                                  ? Colors.white
+                                  : FamingaBrandColors.textPrimary,
                               fontSize: 10,
                             ),
                           ),
@@ -1643,8 +1698,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     Text(
                       DateFormat('dd MMM, hh:mm a').format(schedule.startTime),
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textPrimary,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
                       ),
@@ -1703,8 +1760,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 Text(
                   context.l10n.noScheduledIrrigations,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2120,8 +2179,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 Text(
                   '${dashboardProvider.weeklyWaterUsage.round()}',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2170,7 +2231,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Icons.savings,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : FamingaBrandColors.darkGreen,
+                          : FamingaBrandColors.primaryOrange,
                       size: 20,
                     ),
                     const SizedBox(width: 8),
@@ -2186,8 +2247,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 const SizedBox(height: 12),
                 Text(
                   dashboardProvider.weeklySavings.round().toStringAsFixed(0),
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textPrimary,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
@@ -2206,7 +2269,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   decoration: BoxDecoration(
                     color: (Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
-                            : FamingaBrandColors.darkGreen)
+                            : FamingaBrandColors.primaryOrange)
                         .withOpacity(0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -2215,7 +2278,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Icons.trending_up,
                       color: Theme.of(context).brightness == Brightness.dark
                           ? Colors.white
-                          : FamingaBrandColors.darkGreen,
+                          : FamingaBrandColors.primaryOrange,
                     ),
                   ),
                 ),
@@ -2297,7 +2360,7 @@ class AlertCenterBottomSheet extends StatelessWidget {
           children: [
             Icon(
               _getIconForType(alert.type),
-              color: _getColorForSeverity(alert.severity),
+              color: _getColorForSeverity(alert.severity, context),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -2377,7 +2440,7 @@ class AlertCenterBottomSheet extends StatelessWidget {
     );
   }
 
-  Color _getColorForSeverity(String severity) {
+  Color _getColorForSeverity(String severity, BuildContext context) {
     switch (severity.toLowerCase()) {
       case 'high':
       case 'critical':
@@ -2385,7 +2448,9 @@ class AlertCenterBottomSheet extends StatelessWidget {
       case 'medium':
         return Colors.orange;
       default:
-        return Colors.green;
+        return Theme.of(context).brightness == Brightness.dark
+            ? Colors.white
+            : FamingaBrandColors.primaryOrange;
     }
   }
 
@@ -2422,7 +2487,7 @@ class AlertCenterBottomSheet extends StatelessWidget {
           separatorBuilder: (_, __) => const Divider(),
           itemBuilder: (context, i) {
             final a = alerts[i];
-            Color iconColor = _getColorForSeverity(a.severity);
+            Color iconColor = _getColorForSeverity(a.severity, context);
             IconData icon = _getIconForType(a.type);
             
             return Dismissible(
@@ -2469,7 +2534,12 @@ class AlertCenterBottomSheet extends StatelessWidget {
                   children: [
                     if (!a.read)
                       IconButton(
-                        icon: const Icon(Icons.check, color: Colors.green),
+                        icon: Icon(
+                          Icons.check,
+                          color: Theme.of(context).brightness == Brightness.dark
+                              ? Colors.white
+                              : FamingaBrandColors.primaryOrange,
+                        ),
                         tooltip: context.l10n.markAsRead,
                         onPressed: () => onMarkRead(a.id),
                       ),

@@ -265,8 +265,10 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       children: [
                         Text(
                           schedule.name,
-                          style: const TextStyle(
-                            color: FamingaBrandColors.textPrimary,
+                          style: TextStyle(
+                            color: Theme.of(context).brightness == Brightness.dark
+                                ? Colors.white
+                                : FamingaBrandColors.textPrimary,
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
                           ),
@@ -470,8 +472,10 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
         const SizedBox(width: 4),
         Text(
           text,
-          style: const TextStyle(
-            color: FamingaBrandColors.textPrimary,
+          style: TextStyle(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : FamingaBrandColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w600,
           ),
