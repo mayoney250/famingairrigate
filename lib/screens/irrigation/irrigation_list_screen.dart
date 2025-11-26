@@ -750,11 +750,15 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                       const Spacer(),
                       TextButton(
                         onPressed: () async {
+                          final now = DateTime.now();
+                          final firstDate = now.subtract(const Duration(minutes: 1));
+                          final initialDate = selectedStart.isBefore(firstDate) ? now : selectedStart;
+
                           final date = await showDatePicker(
                             context: context,
-                            firstDate: DateTime.now(),
-                            lastDate: DateTime.now().add(const Duration(days: 365)),
-                            initialDate: selectedStart,
+                            firstDate: now,
+                            lastDate: now.add(const Duration(days: 365)),
+                            initialDate: initialDate,
                           );
                           if (date == null) return;
                           final time = await showTimePicker(
@@ -948,11 +952,15 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                         const Spacer(),
                         TextButton(
                           onPressed: () async {
+                            final now = DateTime.now();
+                            final firstDate = now.subtract(const Duration(minutes: 1)); // Allow slight buffer
+                            final initialDate = selectedStart.isBefore(firstDate) ? now : selectedStart;
+
                             final date = await showDatePicker(
                               context: context,
-                              firstDate: DateTime.now(),
-                              lastDate: DateTime.now().add(const Duration(days: 365)),
-                              initialDate: selectedStart,
+                              firstDate: now,
+                              lastDate: now.add(const Duration(days: 365)),
+                              initialDate: initialDate,
                             );
                             if (date == null) return;
                             final time = await showTimePicker(

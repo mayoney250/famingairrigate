@@ -43,13 +43,19 @@ class SensorDataService {
   // Stream latest sensor data (with cache)
   Stream<SensorDataModel?> streamLatestReading(String fieldId) async* {
     try {
+      log('🔴 [STREAM] Starting stream for fieldId: $fieldId');
+      
       // Yield cached value immediately
       final cached = await _cache.getSensorData(fieldId: fieldId, limit: 1);
       if (cached.isNotEmpty) {
+        log('🔴 [STREAM] Yielding cached data: moisture=${cached.first.soilMoisture}');
         yield cached.first;
+      } else {
+        log('🔴 [STREAM] No cached data to yield');
       }
 
       // Then stream from Firebase
+      log('🔴 [STREAM] Setting up Firestore listener for $fieldId');
       yield* _firestore
           .collection(_collection)
           .where('fieldId', isEqualTo: fieldId)
@@ -57,16 +63,19 @@ class SensorDataService {
           .limit(1)
           .snapshots()
           .map((snapshot) {
+        log('🔴 [STREAM] Firestore snapshot received: ${snapshot.docs.length} docs');
         if (snapshot.docs.isNotEmpty) {
           final model = SensorDataModel.fromFirestore(snapshot.docs.first);
+          log('🔴 [STREAM] Yielding fresh data: moisture=${model.soilMoisture}, temp=${model.temperature}');
           // Update cache with latest from Firebase
           _cache.saveSensorDataOffline(model);
           return model;
         }
+        log('🔴 [STREAM] No documents in snapshot');
         return null;
       });
     } catch (e) {
-      log('Error in streamLatestReading: $e');
+      log('❌ [STREAM] Error in streamLatestReading: $e');
     }
   }
 

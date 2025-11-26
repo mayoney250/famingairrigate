@@ -582,23 +582,32 @@ class DashboardProvider with ChangeNotifier {
 
   Future<void> _refreshDailySoilAverage() async {
     try {
-      if (_fields.isEmpty) return;
+      if (_fields.isEmpty) {
+        dev.log('🟡 [SOIL AVG] No fields to calculate average');
+        return;
+      }
       final start = _startOfToday();
       double sum = 0;
       int count = 0;
+      dev.log('🟡 [SOIL AVG] Calculating average for ${_fields.length} fields');
       for (final f in _fields) {
         final fieldId = f['id']!;
         final readings = await _sensorDataService.getReadingsInRange(fieldId, start, DateTime.now());
+        dev.log('🟡 [SOIL AVG] Field $fieldId: ${readings.length} readings today');
         if (readings.isNotEmpty) {
           // average per field in window
           final avgField = readings.map((r) => r.soilMoisture).reduce((a,b)=>a+b) / readings.length;
+          dev.log('🟡 [SOIL AVG] Field $fieldId average: $avgField');
           sum += avgField;
           count++;
         }
       }
       _avgSoilMoisture = count > 0 ? sum / count : null;
+      dev.log('🟡 [SOIL AVG] Final average: $_avgSoilMoisture (from $count fields)');
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      dev.log('❌ [SOIL AVG] Error: $e');
+    }
   }
 
   Future<void> _refreshWeeklyWaterUsage({String? userId}) async {
@@ -670,24 +679,32 @@ class DashboardProvider with ChangeNotifier {
 
   // Start/restart live listeners for all fields the user has
   void subscribeToLiveFieldData(String userId) {
+    dev.log('🟢 [DASHBOARD] Subscribing to live field data for ${_fields.length} fields');
     for (var field in _fields) {
       final fieldId = field['id']!;
+      dev.log('🟢 [DASHBOARD] Setting up listeners for field: $fieldId');
+      
       // Prime with latest once so UI doesn't wait for stream
       _sensorDataService.getLatestReading(fieldId).then((sensorData) {
+        dev.log('🟢 [DASHBOARD] Initial sensor data loaded for $fieldId: ${sensorData?.soilMoisture}');
         _latestSensorDataPerField[fieldId] = sensorData;
         _refreshDailySoilAverage();
         // Trigger AI recommendation fetch for this field when new latest reading is available
         _maybeFetchAIForField(fieldId);
         notifyListeners();
       }).catchError((_) {});
+      
       // Sensor readings
       _sensorDataService.streamLatestReading(fieldId).listen((sensorData) {
+        dev.log('🟢 [DASHBOARD] Stream update for $fieldId: moisture=${sensorData?.soilMoisture}, temp=${sensorData?.temperature}');
         _latestSensorDataPerField[fieldId] = sensorData;
+        dev.log('🟢 [DASHBOARD] Updated _latestSensorDataPerField[$fieldId], calling notifyListeners()');
         // Update live aggregates quickly from latest values
         _refreshDailySoilAverage();
         // Trigger AI recommendation fetch for this field on each new reading (internal debounce will prevent excess calls)
         _maybeFetchAIForField(fieldId);
         notifyListeners();
+        dev.log('🟢 [DASHBOARD] notifyListeners() called');
       });
       // Flow meter optional: ignore if collection doesn't exist
       _flowMeterService.getLatestReading(fieldId, userId: userId).then((flowData) {

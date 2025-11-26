@@ -83,23 +83,28 @@ class CacheRepository {
   }
 
   /// Get sensor data with read-through cache
-  /// Returns cached data immediately, then fetches fresh from Firebase if online
+  /// Returns cached data immediately if available, otherwise waits for Firestore fetch
   Future<List<SensorDataModel>> getSensorData({
     required String fieldId,
     int limit = 50,
     int daysBack = 7,
   }) async {
     try {
-      // Return cached data immediately
+      // Check cached data first
       final cached = _getCachedSensorData(fieldId, daysBack, limit);
+      
       if (cached.isNotEmpty) {
+        // Cache hit: return immediately and refresh in background
         dev.log('📦 Returning ${cached.length} cached sensor readings for $fieldId');
+        _fetchAndCacheSensorData(fieldId, limit, daysBack);
+        return cached;
       }
-
-      // Fetch fresh data in background
-      _fetchAndCacheSensorData(fieldId, limit, daysBack);
-
-      return cached;
+      
+      // Cache miss: wait for Firestore fetch to complete
+      dev.log('📭 Cache empty for $fieldId, fetching from Firestore...');
+      final fresh = await _fetchAndCacheSensorData(fieldId, limit, daysBack);
+      dev.log('✅ Returning ${fresh.length} fresh sensor readings for $fieldId');
+      return fresh;
     } catch (e) {
       dev.log('❌ Error in getSensorData: $e');
       return [];
@@ -107,22 +112,28 @@ class CacheRepository {
   }
 
   /// Get flow meter data with read-through cache
+  /// Returns cached data immediately if available, otherwise waits for Firestore fetch
   Future<List<FlowMeterModel>> getFlowMeterData({
     required String fieldId,
     int limit = 50,
     int daysBack = 7,
   }) async {
     try {
-      // Return cached data immediately
+      // Check cached data first
       final cached = _getCachedFlowMeterData(fieldId, daysBack, limit);
+      
       if (cached.isNotEmpty) {
+        // Cache hit: return immediately and refresh in background
         dev.log('📦 Returning ${cached.length} cached flow meter readings for $fieldId');
+        _fetchAndCacheFlowMeterData(fieldId, limit, daysBack);
+        return cached;
       }
-
-      // Fetch fresh data in background
-      _fetchAndCacheFlowMeterData(fieldId, limit, daysBack);
-
-      return cached;
+      
+      // Cache miss: wait for Firestore fetch to complete
+      dev.log('📭 Cache empty for $fieldId, fetching flow meter data from Firestore...');
+      final fresh = await _fetchAndCacheFlowMeterData(fieldId, limit, daysBack);
+      dev.log('✅ Returning ${fresh.length} fresh flow meter readings for $fieldId');
+      return fresh;
     } catch (e) {
       dev.log('❌ Error in getFlowMeterData: $e');
       return [];
@@ -168,9 +179,11 @@ class CacheRepository {
   }
 
   /// Fetch sensor data from Firebase and cache it (background)
-  void _fetchAndCacheSensorData(String fieldId, int limit, int daysBack) async {
+  Future<List<SensorDataModel>> _fetchAndCacheSensorData(String fieldId, int limit, int daysBack) async {
     try {
+      dev.log('🔍 [SENSOR FETCH] Starting fetch for fieldId: $fieldId');
       final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
+      dev.log('🔍 [SENSOR FETCH] Cutoff date: $cutoffDate');
 
       final snapshot = await _firestore
           .collection('sensorData')
@@ -181,28 +194,43 @@ class CacheRepository {
           .limit(limit)
           .get();
 
+      dev.log('🔍 [SENSOR FETCH] Query completed. Found ${snapshot.docs.length} documents');
+
       if (snapshot.docs.isEmpty) {
         dev.log('ℹ️ No fresh sensor data from Firebase for $fieldId');
-        return;
+        dev.log('   Check: 1) fieldId matches exactly, 2) Firestore index exists, 3) Security rules allow read');
+        return [];
       }
 
-      // Update cache
+      // Update cache and collect models
+      final models = <SensorDataModel>[];
       for (final doc in snapshot.docs) {
         final model = SensorDataModel.fromFirestore(doc);
         await _sensorDataCacheBox?.put(model.id, model);
+        models.add(model);
+        dev.log('📦 Cached sensor reading: ${model.id} (moisture: ${model.soilMoisture}, temp: ${model.temperature})');
       }
 
       // Update cache timestamp
       await _metadataBox?.put('sensor_$fieldId', DateTime.now().toIso8601String());
 
       dev.log('🔄 Cached ${snapshot.docs.length} fresh sensor readings for $fieldId');
-    } catch (e) {
+      return models;
+    } catch (e, stackTrace) {
       dev.log('⚠️ Failed to fetch sensor data from Firebase: $e (using cache)');
+      dev.log('Stack trace: $stackTrace');
+      
+      if (e.toString().contains('failed-precondition') || e.toString().contains('index')) {
+        dev.log('❌ MISSING FIRESTORE INDEX! Create index for collection "sensorData" with fields:');
+        dev.log('   - fieldId (Ascending)');
+        dev.log('   - timestamp (Descending)');
+      }
+      return [];
     }
   }
 
   /// Fetch flow meter data from Firebase and cache it (background)
-  void _fetchAndCacheFlowMeterData(String fieldId, int limit, int daysBack) async {
+  Future<List<FlowMeterModel>> _fetchAndCacheFlowMeterData(String fieldId, int limit, int daysBack) async {
     try {
       final cutoffDate = DateTime.now().subtract(Duration(days: daysBack));
 
@@ -218,21 +246,25 @@ class CacheRepository {
 
       if (snapshot.docs.isEmpty) {
         dev.log('ℹ️ No fresh flow meter data from Firebase for $fieldId');
-        return;
+        return [];
       }
 
-      // Update cache
+      // Update cache and collect models
+      final models = <FlowMeterModel>[];
       for (final doc in snapshot.docs) {
         final model = FlowMeterModel.fromFirestore(doc);
         await _flowMeterCacheBox?.put(model.id, model);
+        models.add(model);
       }
 
       // Update cache timestamp
       await _metadataBox?.put('flow_$fieldId', DateTime.now().toIso8601String());
 
       dev.log('🔄 Cached ${snapshot.docs.length} fresh flow meter readings for $fieldId');
+      return models;
     } catch (e) {
       dev.log('⚠️ Failed to fetch flow meter data from Firebase: $e (using cache)');
+      return [];
     }
   }
 

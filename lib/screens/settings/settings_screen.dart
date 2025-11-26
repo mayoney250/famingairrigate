@@ -8,6 +8,7 @@ import 'terms_and_services_screen.dart';
 import 'privacy_policy_screen.dart';
 import 'reports_screen.dart';
 import 'dart:async';
+import '../../services/cache_repository.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -347,12 +348,12 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
     );
   }
 
-  void _showClearCacheDialog(BuildContext context) {
+  void _showClearCacheDialog(BuildContext context) async {
     Get.dialog(
       AlertDialog(
         title: Text(AppLocalizations.of(context)?.clearCache ?? 'Clear Cache'),
         content: Text(
-          AppLocalizations.of(context)?.clearCacheWarning ?? 'This will remove all cached data and free up storage space. Your account data will not be affected.',
+          AppLocalizations.of(context)?.clearCacheWarning ?? 'This will remove all cached sensor data and force a fresh reload from the server. Your account data will not be affected.',
         ),
         actions: [
           TextButton(
@@ -360,13 +361,44 @@ class _SettingsScreenState extends State<SettingsScreen> with WidgetsBindingObse
             child: Text(AppLocalizations.of(context)?.cancel ?? 'Cancel'),
           ),
           TextButton(
-            onPressed: () {
+            onPressed: () async {
               Get.back();
-              Get.snackbar(
-                AppLocalizations.of(context)?.cacheCleared ?? 'Cache Cleared',
-                AppLocalizations.of(context)?.cacheSuccessful ?? 'Cache has been cleared successfully!',
-                snackPosition: SnackPosition.BOTTOM,
+              
+              // Show loading indicator
+              Get.dialog(
+                const Center(
+                  child: CircularProgressIndicator(),
+                ),
+                barrierDismissible: false,
               );
+              
+              try {
+                // Import CacheRepository at the top of the file
+                final cache = CacheRepository();
+                await cache.clearCache();
+                
+                // Wait a moment for the operation to complete
+                await Future.delayed(const Duration(milliseconds: 500));
+                
+                Get.back(); // Close loading
+                
+                Get.snackbar(
+                  AppLocalizations.of(context)?.cacheCleared ?? 'Cache Cleared',
+                  AppLocalizations.of(context)?.cacheSuccessful ?? 'Cache has been cleared successfully! Pull down to refresh.',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                  duration: const Duration(seconds: 4),
+                );
+              } catch (e) {
+                Get.back(); // Close loading
+                
+                Get.snackbar(
+                  'Error',
+                  'Failed to clear cache: $e',
+                  snackPosition: SnackPosition.BOTTOM,
+                  backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                );
+              }
             },
             child: Text(
               AppLocalizations.of(context)?.clear ?? 'Clear',
