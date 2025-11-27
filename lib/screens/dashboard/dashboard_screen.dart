@@ -433,8 +433,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final avg = dashboardProvider.avgSoilMoisture;
     final daily = dashboardProvider.dailyWaterUsage;
 
-    Widget gauge = Container(
-      padding: const EdgeInsets.all(12),
+    // Soil Moisture Card
+    Widget moistureCard = Container(
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -468,19 +469,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 12),
           Text(
             context.l10n.soilMoisture,
-            style: const TextStyle(color: FamingaBrandColors.textSecondary, fontSize: 12),
+            style: const TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
           ),
-          const SizedBox(height: 6),
+        ],
+      ),
+    );
+
+    // Water Usage Card
+    Widget waterCard = Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.water_drop,
+            size: 40,
+            color: FamingaBrandColors.primaryOrange,
+          ),
+          const SizedBox(height: 12),
           Text(
-            daily > 0 ? '${daily.toStringAsFixed(2)} L today' : '--',
+            daily > 0 ? '${daily.toStringAsFixed(1)} L' : '--',
             style: TextStyle(
               color: Theme.of(context).brightness == Brightness.dark
                   ? Colors.white
                   : FamingaBrandColors.textPrimary,
-              fontWeight: FontWeight.w600,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Water Usage',
+            style: const TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],
@@ -488,30 +523,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     if (isWideScreen) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      // Large screen: Show moisture and water side by side, then weather below
+      return Column(
         children: [
-          SizedBox(width: 140, child: gauge),
-          const SizedBox(width: 16),
-          Expanded(child: _buildWeatherCard(dashboardProvider)),
+          Row(
+            children: [
+              Expanded(child: moistureCard),
+              const SizedBox(width: 16),
+              Expanded(child: waterCard),
+            ],
+          ),
+          const SizedBox(height: 16),
+          _buildWeatherCard(dashboardProvider),
         ],
       );
     } else {
       return LayoutBuilder(builder: (context, constraints) {
         if (constraints.maxWidth > 500) {
-           return Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return Column(
             children: [
-              SizedBox(width: 120, child: gauge),
-              const SizedBox(width: 16),
-              Expanded(child: _buildWeatherCard(dashboardProvider)),
+              Row(
+                children: [
+                  Expanded(child: moistureCard),
+                  const SizedBox(width: 16),
+                  Expanded(child: waterCard),
+                ],
+              ),
+              const SizedBox(height: 16),
+              _buildWeatherCard(dashboardProvider),
             ],
           );
         }
+        // Mobile: Use the full width card
         return Column(
           children: [
-            gauge,
-            const SizedBox(height: 12),
+            _buildFullWidthSoilCard(dashboardProvider),
+            const SizedBox(height: 16),
             _buildWeatherCard(dashboardProvider),
           ],
         );
@@ -705,6 +752,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Color _getRecColor(String recommendation) {
+    switch (recommendation.toLowerCase()) {
+      case 'irrigate':
+        return Colors.green;
+      case 'hold':
+        return Colors.amber;
+      case 'alert':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
   Widget _buildUserInsightCard(DashboardProvider dashboardProvider) {
     // Greeting + per-field insight based on individual sensor data
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -724,6 +784,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final fieldId = field['id']!;
       final fieldName = field['name']!;
       final sensor = sensors[fieldId];
+      final aiRec = dashboardProvider.aiRecommendations[fieldId];
       
       if (sensor == null) {
         // Alert for missing data
@@ -762,12 +823,57 @@ class _DashboardScreenState extends State<DashboardScreen> {
         fieldDataWidgets.add(
           Padding(
             padding: const EdgeInsets.only(bottom: 4),
-            child: Text(
-              '$fieldName: $moisture% moisture, $temp°C',
-              style: const TextStyle(
-                color: FamingaBrandColors.textSecondary,
-                fontSize: 13,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '$fieldName: $moisture% moisture, $temp°C',
+                  style: const TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                if (aiRec != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2, left: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.psychology,
+                              size: 14,
+                              color: _getRecColor(aiRec.recommendation),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'AI: ${aiRec.recommendation} (${aiRec.cropType})',
+                              style: TextStyle(
+                                color: _getRecColor(aiRec.recommendation),
+                                fontWeight: FontWeight.bold,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 18),
+                          child: Text(
+                            aiRec.reasoning,
+                            style: const TextStyle(
+                              color: FamingaBrandColors.textSecondary,
+                              fontSize: 11,
+                              fontStyle: FontStyle.italic,
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
           ),
         );
@@ -783,7 +889,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
     } else {
       // Use existing l10n logic for other cases
       final l10n = context.l10n;
-      final sensors = dashboardProvider.latestSensorDataPerField;
       double totalMoisture = 0.0;
       int moistureCount = 0;
       sensors.forEach((_, sensor) {
@@ -864,6 +969,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontStyle: FontStyle.italic,
                   ),
                 ),
+                _buildAiRecommendationDetail(dashboardProvider),
               ],
             ),
           ),
@@ -900,6 +1006,92 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: const Text('View sensors'),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAiRecommendationDetail(DashboardProvider dashboardProvider) {
+    final selectedFieldId = dashboardProvider.selectedFarmId;
+    final aiRec = dashboardProvider.aiRecommendations[selectedFieldId];
+    if (aiRec == null) {
+      return const SizedBox.shrink();
+    }
+
+    final fieldMeta = dashboardProvider.fields.firstWhere(
+      (f) => f['id'] == selectedFieldId,
+      orElse: () => {'id': selectedFieldId, 'name': selectedFieldId, 'crop': 'unknown'},
+    );
+
+    final cropName = fieldMeta['crop']?.isNotEmpty == true ? fieldMeta['crop']! : 'unknown';
+    final decision = (aiRec.metadata?['decision'] ?? aiRec.recommendation).toString();
+    final reasoning = aiRec.reasoning.isNotEmpty
+        ? aiRec.reasoning
+        : 'AI did not include additional reasoning for this field.';
+    final color = _getRecColor(decision);
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(top: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant.withOpacity(0.4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color.withOpacity(0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.psychology_alt_outlined, color: color, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'AI advice for ${cropName != 'unknown' ? cropName : (fieldMeta['name'] ?? selectedFieldId)}',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Decision: ${decision.toUpperCase()}',
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Recommendation: ${aiRec.recommendation}',
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : FamingaBrandColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Reason: $reasoning',
+            style: TextStyle(
+              color: FamingaBrandColors.textSecondary.withOpacity(0.9),
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Confidence: ${(aiRec.confidence * 100).toStringAsFixed(0)}% • Crop: ${cropName.toUpperCase()}',
+            style: const TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 11,
+            ),
           ),
         ],
       ),

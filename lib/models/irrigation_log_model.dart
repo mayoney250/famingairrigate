@@ -55,7 +55,7 @@ class IrrigationLogModel {
     return IrrigationLogModel(
       id: map['id'] ?? '',
       userId: map['userId'] ?? '',
-      zoneId: map['zoneId'] ?? '',
+      zoneId: map['zoneId'] ?? map['fieldId'] ?? '',
       zoneName: map['zoneName'] ?? '',
       action: IrrigationAction.values.firstWhere(
         (e) => e.toString().split('.').last == map['action'],

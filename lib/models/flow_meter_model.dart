@@ -23,13 +23,31 @@ class FlowMeterModel {
         'timestamp': Timestamp.fromDate(timestamp),
       };
 
-  factory FlowMeterModel.fromMap(Map<String, dynamic> map) => FlowMeterModel(
-        id: map['id'] ?? '',
-        userId: map['userId'] ?? '',
-        fieldId: map['fieldId'] ?? '',
-        liters: (map['liters'] ?? 0.0).toDouble(),
-        timestamp: (map['timestamp'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      );
+  factory FlowMeterModel.fromMap(Map<String, dynamic> map) {
+    final resolvedFieldId = (map['fieldId'] ?? map['zoneId'] ?? '').toString();
+    final litersValue = map['liters'] ?? map['waterUsed'] ?? map['usage'] ?? 0.0;
+    final tsRaw = map['timestamp'];
+    DateTime resolvedTimestamp;
+    if (tsRaw is Timestamp) {
+      resolvedTimestamp = tsRaw.toDate();
+    } else if (tsRaw is DateTime) {
+      resolvedTimestamp = tsRaw;
+    } else if (tsRaw is num) {
+      resolvedTimestamp = DateTime.fromMillisecondsSinceEpoch(tsRaw.toInt());
+    } else if (tsRaw is String) {
+      resolvedTimestamp = DateTime.tryParse(tsRaw) ?? DateTime.now();
+    } else {
+      resolvedTimestamp = DateTime.now();
+    }
+
+    return FlowMeterModel(
+      id: map['id'] ?? '',
+      userId: map['userId'] ?? '',
+      fieldId: resolvedFieldId,
+      liters: (litersValue as num?)?.toDouble() ?? 0.0,
+      timestamp: resolvedTimestamp,
+    );
+  }
 
   factory FlowMeterModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;

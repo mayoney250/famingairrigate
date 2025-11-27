@@ -103,6 +103,9 @@ class IrrigationLogService {
       final startOfDay = DateTime(today.year, today.month, today.day);
       final endOfDay = startOfDay.add(const Duration(days: 1));
 
+      dev.log('🔍 [IrrigationLogService] Fetching logs for userId: $userId');
+      dev.log('🔍 [IrrigationLogService] Date range: $startOfDay to $endOfDay');
+
       final snapshot = await _firestore
           .collection(_collection)
           .where('userId', isEqualTo: userId)
@@ -111,11 +114,19 @@ class IrrigationLogService {
           .orderBy('timestamp', descending: true)
           .get();
 
-      return snapshot.docs
-          .map((doc) => IrrigationLogModel.fromFirestore(doc))
+      dev.log('📊 [IrrigationLogService] Found ${snapshot.docs.length} logs');
+      
+      final logs = snapshot.docs
+          .map((doc) {
+            final log = IrrigationLogModel.fromFirestore(doc);
+            dev.log('📝 [IrrigationLogService] Log: id=${log.id}, zoneId=${log.zoneId}, waterUsed=${log.waterUsed}, action=${log.action}');
+            return log;
+          })
           .toList();
+      
+      return logs;
     } catch (e) {
-      dev.log('Error fetching today logs: $e');
+      dev.log('❌ [IrrigationLogService] Error fetching today logs: $e');
       rethrow;
     }
   }

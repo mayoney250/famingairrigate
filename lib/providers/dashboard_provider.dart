@@ -14,6 +14,8 @@ import '../models/sensor_data_model.dart';
 import '../services/sensor_data_service.dart';
 import '../models/flow_meter_model.dart';
 import '../services/flow_meter_service.dart';
+import '../models/irrigation_log_model.dart';
+import '../services/irrigation_log_service.dart';
 import 'dart:async';
 import 'dart:developer' as dev;
 import '../services/irrigation_ai_service.dart';
@@ -26,6 +28,7 @@ class DashboardProvider with ChangeNotifier {
   final WeatherService _weatherService = WeatherService();
   final IrrigationStatusService _statusService = IrrigationStatusService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final IrrigationLogService _irrigationLogService = IrrigationLogService();
 
   // State variables
   bool _isLoading = true;
@@ -40,7 +43,10 @@ class DashboardProvider with ChangeNotifier {
   double _dailyWaterUsage = 0.0;
   double _weeklySavings = 0.0;
   String _selectedFarmId = 'farm1'; // Will be replaced by first field id
-  List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name}]
+  List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name, crop}]
+  Map<String, AIRecommendation> _aiRecommendations = {}; // Cache per field
+  
+  Map<String, AIRecommendation> get aiRecommendations => _aiRecommendations;
 
   // Add location fields to DashboardProvider
   double? _latitude;
@@ -387,7 +393,8 @@ class DashboardProvider with ChangeNotifier {
       _fields = snapshot.docs.map((d) {
         final data = Map<String, dynamic>.from(d.data()); // Ensure proper casting
         final label = (data['label'] ?? data['name'] ?? data['fieldName'] ?? d.id).toString();
-        return {'id': d.id, 'name': label};
+        final crop = (data['cropType'] ?? data['crop'] ?? 'unknown').toString();
+        return {'id': d.id, 'name': label, 'crop': crop};
       }).toList();
 
       if (_fields.isNotEmpty) {
@@ -622,12 +629,21 @@ class DashboardProvider with ChangeNotifier {
 
   Future<void> _refreshWeeklyWaterUsage({String? userId}) async {
     try {
-      if (_fields.isEmpty) return;
+      if (_fields.isEmpty || userId == null) return;
       final start = _startOfThisWeekMonday();
+      final logs = await _irrigationLogService.getLogsInRange(userId, start, DateTime.now());
+      
       double total = 0;
       for (final f in _fields) {
         final fieldId = f['id']!;
-        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+        // Filter logs for this field (zoneId matches fieldId)
+        final fieldLogs = logs.where((l) => l.zoneId == fieldId);
+        
+        for (final log in fieldLogs) {
+          if (log.waterUsed != null) {
+            total += log.waterUsed!;
+          }
+        }
       }
       _weeklyWaterUsage = total;
       notifyListeners();
@@ -636,16 +652,66 @@ class DashboardProvider with ChangeNotifier {
 
   Future<void> _refreshDailyWaterUsage({String? userId}) async {
     try {
-      if (_fields.isEmpty) return;
-      final start = _startOfToday();
+      if (_fields.isEmpty || userId == null) {
+        dev.log('⚠️ [WATER] Cannot refresh: fields=${_fields.length}, userId=$userId');
+        return;
+      }
+      
+      dev.log('🔍 [WATER] Fetching irrigation logs for user: $userId');
+      
+      // Fetch recent logs (last 30 days) to show data even if no logs today
+      final now = DateTime.now();
+      final thirtyDaysAgo = now.subtract(const Duration(days: 30));
+      final logs = await _irrigationLogService.getLogsInRange(userId, thirtyDaysAgo, now);
+      
+      dev.log('📊 [WATER] Found ${logs.length} total logs in last 30 days');
+      
       double total = 0;
+      int logCount = 0;
+      
       for (final f in _fields) {
         final fieldId = f['id']!;
-        total += await _flowMeterService.getUsageSince(fieldId, start, userId: userId);
+        final fieldLogs = logs.where(
+          (log) => _isWaterLogValidForField(log, fieldId, userId),
+        );
+        dev.log('🔍 [WATER] Field $fieldId has ${fieldLogs.length} matching logs');
+        
+        for (final log in fieldLogs) {
+          if (log.waterUsed != null) {
+            dev.log('✅ [WATER] Adding ${log.waterUsed}L from log ${log.id} (${log.action}) for field $fieldId');
+            total += log.waterUsed!;
+            logCount++;
+          } else {
+            dev.log('⚠️ [WATER] Skipping log ${log.id} for $fieldId - missing waterUsed value');
+          }
+        }
       }
+      
+      dev.log('💧 [WATER] Total water usage from $logCount logs: ${total}L');
       _dailyWaterUsage = total;
       notifyListeners();
-    } catch (_) {}
+    } catch (e) {
+      dev.log('❌ Error refreshing daily water usage: $e');
+    }
+  }
+
+  bool _isWaterLogValidForField(
+    IrrigationLogModel log,
+    String fieldId,
+    String userId,
+  ) {
+    final matchesUser = log.userId == userId;
+    final logFieldId = log.zoneId;
+    final matchesField = logFieldId == fieldId;
+    if (!matchesUser) {
+      dev.log('⚠️ [WATER] Log ${log.id} skipped - belongs to different user ${log.userId}');
+      return false;
+    }
+    if (!matchesField) {
+      dev.log('⚠️ [WATER] Log ${log.id} skipped - zone ${logFieldId} != field $fieldId');
+      return false;
+    }
+    return true;
   }
 
   void _startAggTimer(String userId) {
@@ -794,7 +860,10 @@ class DashboardProvider with ChangeNotifier {
 
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      final cropType = 'unknown'; // TODO: replace with actual field crop type if available
+      
+      // Find crop type for this field
+      final field = _fields.firstWhere((f) => f['id'] == fieldId, orElse: () => {'crop': 'unknown'});
+      final cropType = field['crop'] ?? 'unknown';
 
       final rec = await _aiService.getIrrigationAdvice(
         userId: userId,
@@ -805,7 +874,7 @@ class DashboardProvider with ChangeNotifier {
         cropType: cropType,
       );
 
-      _currentAIRecommendation = rec;
+      _aiRecommendations[fieldId] = rec;
       notifyListeners();
 
       // Persist recommendation to Firestore for downstream notification processing
