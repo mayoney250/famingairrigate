@@ -9,6 +9,7 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../services/sensor_local_service.dart';
 import '../../utils/l10n_extensions.dart';
+import 'usb_sensor_screen.dart'; // Import the new USB sensor screen
 
 class SensorsScreen extends StatefulWidget {
   const SensorsScreen({super.key});
@@ -56,6 +57,18 @@ class _SensorsScreenState extends State<SensorsScreen> {
       appBar: AppBar(
         title: Text(context.l10n.sensorsTitle),
         actions: [
+          // USB Sensor Button
+          IconButton(
+            icon: const Icon(Icons.usb),
+            tooltip: 'USB Soil Sensor',
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const UsbSensorScreen()),
+              );
+            },
+          ),
+          // Add Wireless Sensor Button
           IconButton(
             icon: const Icon(Icons.add),
             tooltip: 'Add Sensor',
@@ -63,23 +76,138 @@ class _SensorsScreenState extends State<SensorsScreen> {
           ),
         ],
       ),
-      body: _sensors.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+      body: Column(
         children: [
-                  Icon(Icons.sensors, size: 48, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 12),
-                  Text(context.l10n.noSensorsMessage, style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
-              ],
+          // USB Sensor Card at the top
+          _buildUsbSensorCard(context),
+          
+          // Divider
+          if (_sensors.isNotEmpty) 
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(child: Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.3))),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'Wireless Sensors',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                  Expanded(child: Divider(color: Theme.of(context).colorScheme.outline.withOpacity(0.3))),
+                ],
+              ),
             ),
-            )
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _sensors.length,
-              itemBuilder: (context, i) => _SensorCard(sensor: _sensors[i]),
+          
+          // Wireless sensors list
+          Expanded(
+            child: _sensors.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.sensors, size: 48, color: Theme.of(context).colorScheme.primary),
+                        const SizedBox(height: 12),
+                        Text(context.l10n.noSensorsMessage, style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.65))),
+                      ],
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: _sensors.length,
+                    itemBuilder: (context, i) => _SensorCard(sensor: _sensors[i]),
+                  ),
+          ),
+        ],
       ),
       bottomNavigationBar: _buildBottomNavigationBar(context),
+    );
+  }
+
+  Widget _buildUsbSensorCard(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      margin: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFFA500), Color(0xFFFF8C00)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFFA500).withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const UsbSensorScreen()),
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.usb,
+                    size: 32,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        '🌱 FAMINGA USB Soil Sensor',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Real-time soil monitoring via USB',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -487,11 +615,10 @@ class _SensorCard extends StatelessWidget {
                 Text(sensor.hardwareId, style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant)),
                 Text(sensor.pairing['method'] ?? '', style: TextStyle(fontSize: 12, color: scheme.onSurfaceVariant.withOpacity(0.65))),
               ],
-        ),
-      ],
+            ),
+          ],
         ),
       ),
     );
   }
 }
-
