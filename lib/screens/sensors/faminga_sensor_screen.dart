@@ -12,7 +12,7 @@ class FamingaSensorScreen extends StatefulWidget {
 }
 
 class _FamingaSensorScreenState extends State<FamingaSensorScreen> {
-  final String _docPath = 'sensors/faminga_2in1_sensor/latest/current';
+  final String _docPath = '/sensors/faminga_2in1_sensor/latest/current';
   final String _expectedUserId = '0xv5rdRsAFg05aQcAxvlyynaFy73';
   final SensorService _sensorService = SensorService();
   bool _hasAccess = false;

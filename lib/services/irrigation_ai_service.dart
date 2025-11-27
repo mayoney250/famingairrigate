@@ -1,12 +1,23 @@
 import 'dart:developer' as dev;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import '../models/ai_recommendation_model.dart';
 
 class IrrigationAIService {
   static const String _baseUrl = 'https://famingaaimodal.onrender.com';
   static const String _adviceEndpoint = '/api/v1/irrigation/advice';
-  static const Duration _timeout = Duration(seconds: 3);
+  static const Duration _timeout = Duration(seconds: 10); // Increased timeout for proxy
+
+  /// Helper to handle CORS proxy for web
+  Uri _getUri(String endpoint) {
+    final url = '$_baseUrl$endpoint';
+    if (kIsWeb) {
+      // Use corsproxy.io to bypass CORS on web
+      return Uri.parse('https://corsproxy.io/?${Uri.encodeComponent(url)}');
+    }
+    return Uri.parse(url);
+  }
 
   /// Get irrigation advice from the AI API
   /// Returns an [AIRecommendation] with recommendation (Irrigate/Hold/Alert) and reasoning
@@ -38,7 +49,7 @@ class IrrigationAIService {
 
       final response = await http
           .post(
-            Uri.parse('$_baseUrl$_adviceEndpoint'),
+            _getUri(_adviceEndpoint),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -46,9 +57,8 @@ class IrrigationAIService {
             body: jsonEncode(requestPayload),
           )
           .timeout(_timeout, onTimeout: () {
-        dev.log('⏱️ AI API request timed out after 3 seconds');
-        throw TimeoutException(
-            'AI API request timed out after 3 seconds');
+        dev.log('⏱️ AI API request timed out');
+        throw TimeoutException('AI API request timed out');
       });
 
       dev.log('📥 API Response status: ${response.statusCode}');
@@ -81,8 +91,8 @@ class IrrigationAIService {
   Future<bool> healthCheck() async {
     try {
       final response = await http
-          .get(Uri.parse('$_baseUrl/health'))
-          .timeout(const Duration(seconds: 2));
+          .get(_getUri('/health'))
+          .timeout(const Duration(seconds: 5));
 
       dev.log('🏥 AI API health check: ${response.statusCode}');
       return response.statusCode == 200;
@@ -96,8 +106,8 @@ class IrrigationAIService {
   Future<List<String>> getCropProfiles() async {
     try {
       final response = await http
-          .get(Uri.parse('$_baseUrl/api/v1/crops'))
-          .timeout(const Duration(seconds: 3));
+          .get(_getUri('/api/v1/crops'))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -116,8 +126,8 @@ class IrrigationAIService {
   Future<List<Map<String, dynamic>>> getDecisionHistory({int limit = 10}) async {
     try {
       final response = await http
-          .get(Uri.parse('$_baseUrl/api/v1/history?limit=$limit'))
-          .timeout(const Duration(seconds: 3));
+          .get(_getUri('/api/v1/history?limit=$limit'))
+          .timeout(const Duration(seconds: 5));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

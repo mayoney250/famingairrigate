@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Sensor Document</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #2c3e50;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+
+        button:hover {
+            background: #2980b9;
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+
+        .log {
+            margin: 10px 0;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 Fix Sensor Document</h1>
+
+        <div id="authStatus"></div>
+
+        <div id="instructions" class="status info">
+            <strong>Instructions:</strong><br>
+            1. Make sure you're signed in to the app<br>
+            2. Click "Check & Fix Sensor" below<br>
+            3. This will verify and fix the sensor document structure
+        </div>
+
+        <button id="checkBtn" onclick="checkAndFixSensor()">Check & Fix Sensor</button>
+        <button onclick="location.reload()">Refresh Page</button>
+
+        <div id="logs"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDN8w2Jlp_L5Uj6bVODJCFqvvBRdDHUJKI",
+            authDomain: "faminga-irrigation.firebaseapp.com",
+            projectId: "faminga-irrigation",
+            storageBucket: "faminga-irrigation.firebasestorage.app",
+            messagingSenderId: "1031600338302",
+            appId: "1:1031600338302:web:f9d0c0f1f3d3d3d3d3d3d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const authDiv = document.getElementById('authStatus');
+            const checkBtn = document.getElementById('checkBtn');
+
+            if (user) {
+                authDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Signed in as: ${user.email}<br>
+                        User ID: <code>${user.uid}</code>
+                    </div>
+                `;
+                checkBtn.disabled = false;
+            } else {
+                authDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Not signed in. Please sign in to the app first.
+                    </div>
+                `;
+                checkBtn.disabled = true;
+            }
+        });
+
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const logEntry = document.createElement('div');
+            logEntry.className = `log status ${type}`;
+            logEntry.innerHTML = message;
+            logsDiv.appendChild(logEntry);
+        }
+
+        window.checkAndFixSensor = async function () {
+            const logsDiv = document.getElementById('logs');
+            logsDiv.innerHTML = '';
+
+            if (!currentUser) {
+                addLog('❌ Not signed in', 'error');
+                return;
+            }
+
+            try {
+                addLog(`✓ Checking as user: ${currentUser.uid}`, 'info');
+
+                // Check sensor document
+                const sensorRef = doc(db, 'sensors', 'faminga_2in1_sensor');
+                const sensorSnap = await getDoc(sensorRef);
+
+                if (!sensorSnap.exists()) {
+                    addLog('⚠️ Sensor document does not exist. Creating it...', 'warning');
+                    await setDoc(sensorRef, {
+                        userId: currentUser.uid,
+                        name: 'Faminga 2-in-1 Sensor',
+                        type: '2in1',
+                        status: 'active',
+                        createdAt: new Date()
+                    });
+                    addLog('✅ Sensor document created', 'success');
+                } else {
+                    const data = sensorSnap.data();
+                    addLog(`📄 Sensor document exists:<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+
+                    if (!data.userId) {
+                        addLog('⚠️ Sensor missing userId field. Adding it...', 'warning');
+                        await setDoc(sensorRef, { userId: currentUser.uid }, { merge: true });
+                        addLog('✅ Added userId to sensor document', 'success');
+                    } else if (data.userId !== currentUser.uid) {
+                        addLog(`⚠️ Sensor userId (${data.userId}) doesn't match current user (${currentUser.uid})<br>You may need to update it manually or sign in as the correct user`, 'warning');
+                    } else {
+                        addLog('✅ Sensor document userId is correct', 'success');
+                    }
+                }
+
+                // Check latest/current document
+                const latestRef = doc(db, 'sensors', 'faminga_2in1_sensor', 'latest', 'current');
+                const latestSnap = await getDoc(latestRef);
+
+                if (!latestSnap.exists()) {
+                    addLog('❌ No data at sensors/faminga_2in1_sensor/latest/current', 'error');
+                    addLog('⚠️ You need to add sensor data to this path', 'warning');
+                } else {
+                    const data = latestSnap.data();
+                    const timestamp = data.timestamp?.toDate?.() || new Date(data.timestamp);
+                    const age = Math.round((Date.now() - timestamp.getTime()) / 1000 / 60);
+
+                    addLog(`📊 Latest sensor data:<br><pre>${JSON.stringify(data, null, 2)}</pre>`, 'info');
+                    addLog(`⏱️ Data age: ${age} minutes old`, age > 180 ? 'warning' : 'success');
+
+                    if (!data.userId) {
+                        addLog('⚠️ Latest data missing userId. Adding it...', 'warning');
+                        await setDoc(latestRef, { userId: currentUser.uid }, { merge: true });
+                        addLog('✅ Added userId to latest data', 'success');
+                    } else if (data.userId !== currentUser.uid) {
+                        addLog(`⚠️ Latest data userId (${data.userId}) doesn't match current user (${currentUser.uid})`, 'warning');
+                    } else {
+                        addLog('✅ Latest data userId is correct', 'success');
+                    }
+                }
+
+                addLog('<br><strong>✅ Check complete! Reload your Flutter app to see changes.</strong>', 'success');
+
+            } catch (error) {
+                addLog(`❌ Error: ${error.message}<br><pre>${error.stack}</pre>`, 'error');
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+
+</html>

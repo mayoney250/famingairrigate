@@ -56,10 +56,10 @@ service cloud.firestore {
 
       // Nested subcollections under sensors (e.g., latest/current)
       match /{subCollection}/{docId} {
-        // Only the verified owner may read nested sensor documents (latest/current readings).
-        allow read: if isVerified() && get(/databases/$(database)/documents/sensors/$(sensorId)).data.userId == request.auth.uid;
+        // Allow read if the data document itself has userId matching current user
+        allow read: if isVerified() && resource.data.userId == request.auth.uid;
         allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-        allow update, delete: if isVerified() && get(/databases/$(database)/documents/sensors/$(sensorId)).data.userId == request.auth.uid;
+        allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
       }
     }
     
@@ -147,6 +147,14 @@ service cloud.firestore {
     // Connection tests (for diagnostics)
     match /connection_tests/{testId} {
       allow read, write: if isAuthenticated();
+    }
+    
+    // AI Recommendations
+    match /ai_recommendations/{recommendationId} {
+      // Only allow reading recommendations that belong to the current, verified user
+      allow read: if isVerified() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
     
     // Irrigation zones - NEW: Enhanced for irrigation planning module

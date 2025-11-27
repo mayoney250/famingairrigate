@@ -247,7 +247,7 @@ class DashboardProvider with ChangeNotifier {
         anyData = true;
         if (sensor.soilMoisture < 50) {
           anyDry = true;
-        } else if (sensor.soilMoisture > 100) {
+        } else if (sensor.soilMoisture >= 100) {
           anyWet = true;
         } else {
           anyOptimal = true;
@@ -567,6 +567,12 @@ class DashboardProvider with ChangeNotifier {
 
   Timer? _aggTimer;
   Timer? _statusTimer;
+  final Map<String, bool> _sensorOfflineStatus = {}; // Track offline status per field
+  String? _sensorOfflineError; // Global sensor error message
+
+  // Getters for sensor offline status
+  bool isSensorOffline(String fieldId) => _sensorOfflineStatus[fieldId] ?? false;
+  String? get sensorOfflineError => _sensorOfflineError;
 
   DateTime _startOfToday() {
     final now = DateTime.now();
@@ -584,26 +590,30 @@ class DashboardProvider with ChangeNotifier {
     try {
       if (_fields.isEmpty) {
         dev.log('🟡 [SOIL AVG] No fields to calculate average');
+        _avgSoilMoisture = null;
         return;
       }
-      final start = _startOfToday();
+      
+      // Calculate average from current live sensor readings
       double sum = 0;
       int count = 0;
-      dev.log('🟡 [SOIL AVG] Calculating average for ${_fields.length} fields');
+      dev.log('🟡 [SOIL AVG] Calculating average from live data for ${_fields.length} fields');
+      
       for (final f in _fields) {
         final fieldId = f['id']!;
-        final readings = await _sensorDataService.getReadingsInRange(fieldId, start, DateTime.now());
-        dev.log('🟡 [SOIL AVG] Field $fieldId: ${readings.length} readings today');
-        if (readings.isNotEmpty) {
-          // average per field in window
-          final avgField = readings.map((r) => r.soilMoisture).reduce((a,b)=>a+b) / readings.length;
-          dev.log('🟡 [SOIL AVG] Field $fieldId average: $avgField');
-          sum += avgField;
+        final sensorData = _latestSensorDataPerField[fieldId];
+        
+        if (sensorData != null && sensorData.soilMoisture != null) {
+          dev.log('🟡 [SOIL AVG] Field $fieldId: ${sensorData.soilMoisture}%');
+          sum += sensorData.soilMoisture;
           count++;
+        } else {
+          dev.log('🟡 [SOIL AVG] Field $fieldId: No data available');
         }
       }
+      
       _avgSoilMoisture = count > 0 ? sum / count : null;
-      dev.log('🟡 [SOIL AVG] Final average: $_avgSoilMoisture (from $count fields)');
+      dev.log('🟡 [SOIL AVG] Final average: $_avgSoilMoisture (from $count fields with data)');
       notifyListeners();
     } catch (e) {
       dev.log('❌ [SOIL AVG] Error: $e');
@@ -688,6 +698,7 @@ class DashboardProvider with ChangeNotifier {
       _sensorDataService.getLatestReading(fieldId).then((sensorData) {
         dev.log('🟢 [DASHBOARD] Initial sensor data loaded for $fieldId: ${sensorData?.soilMoisture}');
         _latestSensorDataPerField[fieldId] = sensorData;
+        _checkSensorOffline(fieldId, sensorData);
         _refreshDailySoilAverage();
         // Trigger AI recommendation fetch for this field when new latest reading is available
         _maybeFetchAIForField(fieldId);
@@ -698,6 +709,7 @@ class DashboardProvider with ChangeNotifier {
       _sensorDataService.streamLatestReading(fieldId).listen((sensorData) {
         dev.log('🟢 [DASHBOARD] Stream update for $fieldId: moisture=${sensorData?.soilMoisture}, temp=${sensorData?.temperature}');
         _latestSensorDataPerField[fieldId] = sensorData;
+        _checkSensorOffline(fieldId, sensorData);
         dev.log('🟢 [DASHBOARD] Updated _latestSensorDataPerField[$fieldId], calling notifyListeners()');
         // Update live aggregates quickly from latest values
         _refreshDailySoilAverage();
@@ -742,6 +754,35 @@ class DashboardProvider with ChangeNotifier {
       _fetchAIRecommendation(fieldId, sensor.soilMoisture ?? 0.0, weather.temperature, weather.humidity.toDouble());
     } catch (e) {
       dev.log('AI: _maybeFetchAIForField error: $e');
+    }
+  }
+
+  /// Check if sensor data is stale (older than 3 hours)
+  void _checkSensorOffline(String fieldId, SensorDataModel? sensorData) {
+    if (sensorData == null) {
+      _sensorOfflineStatus[fieldId] = true;
+      _sensorOfflineError = 'No sensor data available. Please check your sensors.';
+      dev.log('⚠️ [SENSOR OFFLINE] No data for field $fieldId');
+      return;
+    }
+
+    final now = DateTime.now();
+    final dataAge = now.difference(sensorData.timestamp);
+    final isOffline = dataAge.inHours >= 3;
+
+    _sensorOfflineStatus[fieldId] = isOffline;
+
+    if (isOffline) {
+      final hoursOld = dataAge.inHours;
+      _sensorOfflineError = 'Sensor data is $hoursOld hours old. Please check your sensors.';
+      dev.log('⚠️ [SENSOR OFFLINE] Field $fieldId data is $hoursOld hours old (last update: ${sensorData.timestamp})');
+    } else {
+      // Clear error if data is fresh
+      final offlineCount = _sensorOfflineStatus.values.where((v) => v).length;
+      if (offlineCount == 0) {
+        _sensorOfflineError = null;
+      }
+      dev.log('✅ [SENSOR ONLINE] Field $fieldId data is ${dataAge.inMinutes} minutes old');
     }
   }
 

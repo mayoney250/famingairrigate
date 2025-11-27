@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensor Data Diagnostics</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 { color: #2c3e50; }
+        h2 { color: #34495e; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .status { padding: 10px; border-radius: 4px; margin: 10px 0; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .warning { background: #fff3cd; color: #856404; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            border-left: 4px solid #3498db;
+        }
+        button {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover { background: #2980b9; }
+        .data-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .data-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            border-left: 4px solid #3498db;
+        }
+        .data-card h3 { margin-top: 0; color: #2c3e50; }
+        .data-card p { margin: 5px 0; }
+        .label { font-weight: bold; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Sensor Data Diagnostics</h1>
+    
+    <div class="section">
+        <h2>Authentication Status</h2>
+        <div id="authStatus"></div>
+    </div>
+
+    <div class="section">
+        <h2>User Fields</h2>
+        <button onclick="checkFields()">Check Fields</button>
+        <div id="fieldsResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>Sensors Configuration</h2>
+        <button onclick="checkSensors()">Check Sensors</button>
+        <div id="sensorsResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>Sensor Data (Latest Path)</h2>
+        <button onclick="checkLatestSensorData()">Check Latest Data</button>
+        <div id="latestDataResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>Legacy Sensor Data Collection</h2>
+        <button onclick="checkLegacySensorData()">Check Legacy Data</button>
+        <div id="legacyDataResult"></div>
+    </div>
+
+    <div class="section">
+        <h2>Dashboard Provider Simulation</h2>
+        <button onclick="simulateDashboard()">Simulate Dashboard Load</button>
+        <div id="dashboardResult"></div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        import { getFirestore, collection, query, where, getDocs, doc, getDoc, orderBy, limit } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyDN8w2Jlp_L5Uj6bVODJCFqvvBRdDHUJKI",
+            authDomain: "faminga-irrigation.firebaseapp.com",
+            projectId: "faminga-irrigation",
+            storageBucket: "faminga-irrigation.firebasestorage.app",
+            messagingSenderId: "1031600338302",
+            appId: "1:1031600338302:web:f9d0c0f1f3d3d3d3d3d3d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            const authDiv = document.getElementById('authStatus');
+            if (user) {
+                authDiv.innerHTML = `
+                    <div class="status success">
+                        ✅ Signed in as: ${user.email}<br>
+                        User ID: <code>${user.uid}</code>
+                    </div>
+                `;
+            } else {
+                authDiv.innerHTML = `
+                    <div class="status error">
+                        ❌ Not signed in. Please sign in to the app first.
+                    </div>
+                `;
+            }
+        });
+
+        window.checkFields = async function() {
+            const resultDiv = document.getElementById('fieldsResult');
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="status error">Please sign in first</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="status info">Loading fields...</div>';
+                
+                const fieldsQuery = query(
+                    collection(db, 'fields'),
+                    where('userId', '==', currentUser.uid)
+                );
+                
+                const snapshot = await getDocs(fieldsQuery);
+                
+                if (snapshot.empty) {
+                    resultDiv.innerHTML = '<div class="status warning">No fields found for this user</div>';
+                    return;
+                }
+
+                let html = `<div class="status success">Found ${snapshot.size} field(s)</div>`;
+                html += '<div class="data-grid">';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    html += `
+                        <div class="data-card">
+                            <h3>${data.name || data.label || doc.id}</h3>
+                            <p><span class="label">Field ID:</span> <code>${doc.id}</code></p>
+                            <p><span class="label">User ID:</span> <code>${data.userId || 'N/A'}</code></p>
+                            <p><span class="label">Location:</span> ${data.location || 'N/A'}</p>
+                            <p><span class="label">Size:</span> ${data.size || 'N/A'}</p>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+                
+                // Store field IDs for later use
+                window.fieldIds = snapshot.docs.map(d => d.id);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        };
+
+        window.checkSensors = async function() {
+            const resultDiv = document.getElementById('sensorsResult');
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="status error">Please sign in first</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="status info">Loading sensors...</div>';
+                
+                // Get all sensors
+                const sensorsQuery = query(collection(db, 'sensors'));
+                const snapshot = await getDocs(sensorsQuery);
+                
+                if (snapshot.empty) {
+                    resultDiv.innerHTML = '<div class="status warning">No sensors found</div>';
+                    return;
+                }
+
+                let html = `<div class="status success">Found ${snapshot.size} sensor(s)</div>`;
+                html += '<div class="data-grid">';
+                
+                for (const sensorDoc of snapshot.docs) {
+                    const data = sensorDoc.data();
+                    
+                    // Check if this sensor has latest/current data
+                    const latestRef = doc(db, 'sensors', sensorDoc.id, 'latest', 'current');
+                    const latestSnap = await getDoc(latestRef);
+                    const hasLatest = latestSnap.exists();
+                    
+                    html += `
+                        <div class="data-card">
+                            <h3>Sensor: ${sensorDoc.id}</h3>
+                            <p><span class="label">Field ID:</span> <code>${data.fieldId || data.farmId || data.assignedFieldId || 'N/A'}</code></p>
+                            <p><span class="label">User ID:</span> <code>${data.userId || 'N/A'}</code></p>
+                            <p><span class="label">Type:</span> ${data.type || 'N/A'}</p>
+                            <p><span class="label">Status:</span> ${data.status || 'N/A'}</p>
+                            <p><span class="label">Latest Data:</span> ${hasLatest ? '✅ Yes' : '❌ No'}</p>
+                            ${hasLatest ? `<pre>${JSON.stringify(latestSnap.data(), null, 2)}</pre>` : ''}
+                        </div>
+                    `;
+                }
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        };
+
+        window.checkLatestSensorData = async function() {
+            const resultDiv = document.getElementById('latestDataResult');
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="status error">Please sign in first</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="status info">Checking latest sensor data for all fields...</div>';
+                
+                if (!window.fieldIds || window.fieldIds.length === 0) {
+                    resultDiv.innerHTML = '<div class="status warning">Please check fields first</div>';
+                    return;
+                }
+
+                let html = '';
+                let foundCount = 0;
+                
+                for (const fieldId of window.fieldIds) {
+                    // Try to find sensor for this field
+                    const sensorsQuery = query(
+                        collection(db, 'sensors'),
+                        where('fieldId', '==', fieldId),
+                        limit(1)
+                    );
+                    
+                    let sensorSnapshot = await getDocs(sensorsQuery);
+                    
+                    // Try farmId if fieldId didn't work
+                    if (sensorSnapshot.empty) {
+                        const farmQuery = query(
+                            collection(db, 'sensors'),
+                            where('farmId', '==', fieldId),
+                            limit(1)
+                        );
+                        sensorSnapshot = await getDocs(farmQuery);
+                    }
+                    
+                    // Try assignedFieldId
+                    if (sensorSnapshot.empty) {
+                        const assignedQuery = query(
+                            collection(db, 'sensors'),
+                            where('assignedFieldId', '==', fieldId),
+                            limit(1)
+                        );
+                        sensorSnapshot = await getDocs(assignedQuery);
+                    }
+                    
+                    if (sensorSnapshot.empty) {
+                        html += `
+                            <div class="status warning">
+                                Field <code>${fieldId}</code>: No sensor configured
+                            </div>
+                        `;
+                        continue;
+                    }
+                    
+                    const sensorDoc = sensorSnapshot.docs[0];
+                    const latestRef = doc(db, 'sensors', sensorDoc.id, 'latest', 'current');
+                    const latestSnap = await getDoc(latestRef);
+                    
+                    if (latestSnap.exists()) {
+                        foundCount++;
+                        const data = latestSnap.data();
+                        html += `
+                            <div class="status success">
+                                <strong>Field <code>${fieldId}</code></strong> (Sensor: ${sensorDoc.id})<br>
+                                <pre>${JSON.stringify(data, null, 2)}</pre>
+                            </div>
+                        `;
+                    } else {
+                        html += `
+                            <div class="status warning">
+                                Field <code>${fieldId}</code>: Sensor found (${sensorDoc.id}) but no latest data
+                            </div>
+                        `;
+                    }
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="status ${foundCount > 0 ? 'success' : 'warning'}">
+                        Found latest data for ${foundCount} out of ${window.fieldIds.length} field(s)
+                    </div>
+                    ${html}
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        };
+
+        window.checkLegacySensorData = async function() {
+            const resultDiv = document.getElementById('legacyDataResult');
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="status error">Please sign in first</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="status info">Checking legacy sensorData collection...</div>';
+                
+                const sensorDataQuery = query(
+                    collection(db, 'sensorData'),
+                    where('userId', '==', currentUser.uid),
+                    orderBy('timestamp', 'desc'),
+                    limit(10)
+                );
+                
+                const snapshot = await getDocs(sensorDataQuery);
+                
+                if (snapshot.empty) {
+                    resultDiv.innerHTML = '<div class="status warning">No data in sensorData collection</div>';
+                    return;
+                }
+
+                let html = `<div class="status info">Found ${snapshot.size} recent reading(s) in sensorData collection</div>`;
+                html += '<div class="data-grid">';
+                
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    const timestamp = data.timestamp?.toDate?.() || new Date(data.timestamp);
+                    html += `
+                        <div class="data-card">
+                            <h3>Reading ${doc.id.substring(0, 8)}...</h3>
+                            <p><span class="label">Field ID:</span> <code>${data.fieldId || 'N/A'}</code></p>
+                            <p><span class="label">Moisture:</span> ${data.moisture || data.soilMoisture || 'N/A'}%</p>
+                            <p><span class="label">Temperature:</span> ${data.temperature || 'N/A'}°C</p>
+                            <p><span class="label">Timestamp:</span> ${timestamp.toLocaleString()}</p>
+                            <p><span class="label">Status:</span> ${data.status || 'N/A'}</p>
+                        </div>
+                    `;
+                });
+                
+                html += '</div>';
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error: ${error.message}<br>Note: This might fail if sensorData collection doesn't have proper indexes</div>`;
+                console.error(error);
+            }
+        };
+
+        window.simulateDashboard = async function() {
+            const resultDiv = document.getElementById('dashboardResult');
+            if (!currentUser) {
+                resultDiv.innerHTML = '<div class="status error">Please sign in first</div>';
+                return;
+            }
+
+            try {
+                resultDiv.innerHTML = '<div class="status info">Simulating dashboard provider flow...</div>';
+                
+                let log = [];
+                
+                // Step 1: Load fields
+                log.push('📋 Step 1: Loading fields...');
+                const fieldsQuery = query(
+                    collection(db, 'fields'),
+                    where('userId', '==', currentUser.uid)
+                );
+                const fieldsSnapshot = await getDocs(fieldsQuery);
+                log.push(`✅ Found ${fieldsSnapshot.size} fields`);
+                
+                if (fieldsSnapshot.empty) {
+                    resultDiv.innerHTML = `<div class="status warning">${log.join('<br>')}<br><br>❌ Cannot continue - no fields found</div>`;
+                    return;
+                }
+                
+                const fields = fieldsSnapshot.docs.map(d => ({
+                    id: d.id,
+                    name: d.data().name || d.data().label || d.id
+                }));
+                
+                log.push(`<br>📡 Step 2: Subscribing to sensor data for each field...`);
+                
+                let sensorDataFound = 0;
+                let sensorDataMissing = 0;
+                
+                for (const field of fields) {
+                    log.push(`<br>🔍 Checking field: ${field.name} (${field.id})`);
+                    
+                    // Find sensor for this field (same logic as SensorDataService)
+                    let sensorDoc = null;
+                    
+                    // Try fieldId
+                    let q = query(collection(db, 'sensors'), where('fieldId', '==', field.id), limit(1));
+                    let snap = await getDocs(q);
+                    if (!snap.empty) sensorDoc = snap.docs[0];
+                    
+                    // Try farmId
+                    if (!sensorDoc) {
+                        q = query(collection(db, 'sensors'), where('farmId', '==', field.id), limit(1));
+                        snap = await getDocs(q);
+                        if (!snap.empty) sensorDoc = snap.docs[0];
+                    }
+                    
+                    // Try assignedFieldId
+                    if (!sensorDoc) {
+                        q = query(collection(db, 'sensors'), where('assignedFieldId', '==', field.id), limit(1));
+                        snap = await getDocs(q);
+                        if (!snap.empty) sensorDoc = snap.docs[0];
+                    }
+                    
+                    if (!sensorDoc) {
+                        log.push(`  ❌ No sensor configured for this field`);
+                        sensorDataMissing++;
+                        continue;
+                    }
+                    
+                    log.push(`  ✅ Found sensor: ${sensorDoc.id}`);
+                    
+                    // Check latest data
+                    const latestRef = doc(db, 'sensors', sensorDoc.id, 'latest', 'current');
+                    const latestSnap = await getDoc(latestRef);
+                    
+                    if (latestSnap.exists()) {
+                        const data = latestSnap.data();
+                        const timestamp = data.timestamp?.toDate?.() || new Date(data.timestamp);
+                        log.push(`  ✅ Latest data found:`);
+                        log.push(`     - Moisture: ${data.moisture || data.soil_moisture || data.soilMoisture || 'N/A'}%`);
+                        log.push(`     - Temperature: ${data.temperature || data.temp || 'N/A'}°C`);
+                        log.push(`     - Timestamp: ${timestamp.toLocaleString()}`);
+                        log.push(`     - Age: ${Math.round((Date.now() - timestamp.getTime()) / 1000 / 60)} minutes old`);
+                        sensorDataFound++;
+                    } else {
+                        log.push(`  ❌ No data in sensors/${sensorDoc.id}/latest/current`);
+                        sensorDataMissing++;
+                    }
+                }
+                
+                log.push(`<br>📊 Summary:`);
+                log.push(`  - Fields with sensor data: ${sensorDataFound}`);
+                log.push(`  - Fields missing sensor data: ${sensorDataMissing}`);
+                
+                const statusClass = sensorDataFound > 0 ? 'success' : 'error';
+                resultDiv.innerHTML = `<div class="status ${statusClass}"><pre>${log.join('\n')}</pre></div>`;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="status error">Error: ${error.message}</div>`;
+                console.error(error);
+            }
+        };
+    </script>
+</body>
+</html>
