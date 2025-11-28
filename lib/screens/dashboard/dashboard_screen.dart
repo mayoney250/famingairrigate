@@ -254,14 +254,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // User Insight Card - Farm Overview
+        _buildUserInsightCard(dashboardProvider),
+        SizedBox(height: isSmallScreen ? 16 : 20),
+        
         // System Status Card
         _buildSystemStatusCard(dashboardProvider),
         
         // Sensor Offline Error Banner
         _buildSensorOfflineBanner(dashboardProvider),
-        
-        SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildUserInsightCard(dashboardProvider),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
         // Quick Actions
@@ -325,10 +326,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               flex: 2,
               child: Column(
                 children: [
-                  _buildSystemStatusCard(dashboardProvider),
-                  _buildSensorOfflineBanner(dashboardProvider), // Added banner here
-                  const SizedBox(height: 20),
                   _buildUserInsightCard(dashboardProvider),
+                  const SizedBox(height: 20),
+                  _buildSystemStatusCard(dashboardProvider),
+                  _buildSensorOfflineBanner(dashboardProvider),
                   const SizedBox(height: 20),
                   Text(
                     context.l10n.quickActions,
@@ -405,7 +406,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Sensor Offline',
+                    'Sensor Not Logging Data',
                     style: TextStyle(
                       color: Colors.red.shade900,
                       fontWeight: FontWeight.bold,
@@ -414,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    dashboardProvider.sensorOfflineError!,
+                    'Your sensor has not sent data in over 3 hours. Please check the sensor connection and power supply.',
                     style: TextStyle(
                       color: Colors.red.shade800,
                       fontSize: 13,
@@ -766,7 +767,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildUserInsightCard(DashboardProvider dashboardProvider) {
-    // Greeting + per-field insight based on individual sensor data
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
     final name = user?.firstName ?? user?.email?.split('@').first ?? 'Farmer';
@@ -774,11 +774,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final sensors = dashboardProvider.latestSensorDataPerField;
     final fields = dashboardProvider.fields;
     
-    // Build per-field data lines
-    List<Widget> fieldDataWidgets = [];
-    bool hasAnyData = false;
-    bool hasDrainageIssue = false;
-    bool hasMissingData = false;
+    // Build field status items
+    List<Widget> fieldItems = [];
+    bool hasAnyIssues = false;
     
     for (final field in fields) {
       final fieldId = field['id']!;
@@ -786,224 +784,225 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final sensor = sensors[fieldId];
       final aiRec = dashboardProvider.aiRecommendations[fieldId];
       
+      bool isHealthy = sensor != null && sensor.soilMoisture != null;
+      bool hasDrainage = sensor?.soilMoisture != null && sensor!.soilMoisture >= 100;
+      
+      if (!isHealthy) hasAnyIssues = true;
+      if (hasDrainage) hasAnyIssues = true;
+      
+      // Status icon and color
+      IconData statusIcon = isHealthy ? Icons.check_circle : Icons.warning_amber_rounded;
+      Color statusColor = isHealthy ? Colors.green : Colors.orange;
+      String statusText = isHealthy ? 'is healthy' : 'needs attention';
+      
+      // Build status description
+      String description = '';
+      String action = '';
+      
       if (sensor == null) {
-        // Alert for missing data
-        hasMissingData = true;
-        fieldDataWidgets.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Row(
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 16, color: Colors.orange),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    '$fieldName: No sensor data available',
-                    style: const TextStyle(
-                      color: Colors.orange,
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        description = 'Sensor is not responding';
+        action = 'Please check the sensor connection';
+      } else if (hasDrainage) {
+        description = 'Soil is waterlogged';
+        action = 'Stop watering and check drainage';
+        statusIcon = Icons.warning_amber_rounded;
+        statusColor = Colors.red;
+        statusText = 'needs urgent attention';
       } else {
-        hasAnyData = true;
-        final moisture = sensor.soilMoisture?.toStringAsFixed(0) ?? '--';
-        final temp = sensor.temperature?.toStringAsFixed(1) ?? '--';
+        // Build natural language description
+        final moisture = sensor.soilMoisture?.round() ?? 0;
+        final temp = sensor.temperature?.round() ?? 0;
         
-        // Check for drainage issue
-        if (sensor.soilMoisture != null && sensor.soilMoisture >= 100) {
-          hasDrainageIssue = true;
+        String moistureDesc = moisture < 40 ? 'dry' : (moisture > 80 ? 'very wet' : 'moist');
+        String tempDesc = temp < 20 ? 'cool' : (temp > 30 ? 'hot' : 'good');
+        
+        description = 'Soil is $moistureDesc, temperature is $tempDesc';
+        
+        // Get action from AI or default
+        if (aiRec != null) {
+          final decision = aiRec.recommendation.toLowerCase();
+          if (decision.contains('irrigate') || decision.contains('water')) {
+            action = 'Water your crops now';
+          } else if (decision.contains('hold') || decision.contains('wait')) {
+            action = 'Keep watering as usual';
+          } else {
+            action = 'Continue your current schedule';
+          }
+        } else {
+          action = moisture < 40 ? 'Consider watering soon' : 'Keep watering as usual';
         }
-        
-        fieldDataWidgets.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 4),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$fieldName: $moisture% moisture, $temp°C',
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 13,
-                  ),
-                ),
-                if (aiRec != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2, left: 8),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.psychology,
-                              size: 14,
-                              color: _getRecColor(aiRec.recommendation),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              'AI: ${aiRec.recommendation} (${aiRec.cropType})',
-                              style: TextStyle(
-                                color: _getRecColor(aiRec.recommendation),
-                                fontWeight: FontWeight.bold,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 18),
-                          child: Text(
-                            aiRec.reasoning,
-                            style: const TextStyle(
-                              color: FamingaBrandColors.textSecondary,
-                              fontSize: 11,
-                              fontStyle: FontStyle.italic,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+      }
+      
+      fieldItems.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(statusIcon, color: statusColor, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      '$fieldName $statusText',
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
-              ],
-            ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Padding(
+                padding: const EdgeInsets.only(left: 28),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      description,
+                      style: const TextStyle(
+                        color: FamingaBrandColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      action,
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white.withOpacity(0.9)
+                            : FamingaBrandColors.textPrimary,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-        );
-      }
+        ),
+      );
     }
 
-    // Determine recommendation based on field data
-    String recommendation;
-    if (!hasAnyData && hasMissingData) {
-      recommendation = 'Please check your sensors to start receiving field insights.';
-    } else if (hasDrainageIssue) {
-      recommendation = 'Hold off irrigation and monitor drainage to prevent waterlogging.';
-    } else {
-      // Use existing l10n logic for other cases
-      final l10n = context.l10n;
-      double totalMoisture = 0.0;
-      int moistureCount = 0;
-      sensors.forEach((_, sensor) {
-        try {
-          if (sensor != null && sensor.soilMoisture != null) {
-            totalMoisture += sensor.soilMoisture;
-            moistureCount += 1;
-          }
-        } catch (_) {}
-      });
-      
-      final double? avgMoisture = moistureCount > 0 ? totalMoisture / moistureCount : null;
-      
-      if (avgMoisture == null) {
-        recommendation = l10n.userInsightNoDataRecommendation;
-      } else if (avgMoisture < 40) {
-        recommendation = l10n.userInsightDryRecommendation;
-      } else if (avgMoisture > 80) {
-        recommendation = l10n.userInsightWetRecommendation;
-      } else {
-        recommendation = l10n.userInsightOptimalRecommendation;
-      }
-    }
+    // Overall recommendation
+    final daily = dashboardProvider.dailyWaterUsage;
+    String waterText = daily > 0 ? '${daily.toStringAsFixed(0)} liters' : 'No data';
+    String overallAdvice = hasAnyIssues 
+        ? 'Check the issues above and take action'
+        : 'Your farm is doing well';
 
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: FamingaBrandColors.borderColor),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Small user avatar
-          CircleAvatar(
-            backgroundColor: FamingaBrandColors.primaryOrange,
-            radius: 22,
-            child: Text(
-              user?.firstName.substring(0, 1).toUpperCase() ?? 'U',
-              style: const TextStyle(
-                color: FamingaBrandColors.white,
-                fontWeight: FontWeight.bold,
-              ),
+          // Greeting
+          Text(
+            'Hello, $name',
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : FamingaBrandColors.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  context.l10n.userInsightGreeting(name),
+          const SizedBox(height: 16),
+          
+          // Section title
+          Text(
+            'Today\'s Farm Status',
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white.withOpacity(0.7)
+                  : FamingaBrandColors.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Divider(color: FamingaBrandColors.borderColor),
+          const SizedBox(height: 16),
+          
+          // Field items
+          if (fieldItems.isNotEmpty) ...fieldItems,
+          if (fieldItems.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No fields configured yet. Add a field to start monitoring.',
+                style: const TextStyle(
+                  color: FamingaBrandColors.textSecondary,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          
+          // Divider
+          Divider(color: FamingaBrandColors.borderColor),
+          const SizedBox(height: 12),
+          
+          // Water usage
+          Row(
+            children: [
+              const Text(
+                'Water Usage:',
+                style: TextStyle(
+                  color: FamingaBrandColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                waterText,
+                style: TextStyle(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : FamingaBrandColors.textPrimary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          
+          // Overall advice
+          Row(
+            children: [
+              const Text(
+                'Advice:',
+                style: TextStyle(
+                  color: FamingaBrandColors.textSecondary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  overallAdvice,
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
                         : FamingaBrandColors.textPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-                const SizedBox(height: 8),
-                // Per-field data display
-                if (fieldDataWidgets.isNotEmpty) ...fieldDataWidgets,
-                if (fieldDataWidgets.isEmpty)
-                  const Text(
-                    'No fields configured yet. Add a field to start monitoring.',
-                    style: TextStyle(
-                      color: FamingaBrandColors.textSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                const SizedBox(height: 8),
-                Text(
-                  recommendation,
-                  style: const TextStyle(
-                    color: FamingaBrandColors.textSecondary,
-                    fontSize: 12,
-                    fontStyle: FontStyle.italic,
-                  ),
-                ),
-                _buildAiRecommendationDetail(dashboardProvider),
-              ],
-            ),
-          ),
-          // View buttons
-          Column(
-            children: [
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/fields');
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: FamingaBrandColors.primaryOrange,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('View fields'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/sensors');
-                },
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: FamingaBrandColors.primaryOrange,
-                  side: const BorderSide(color: FamingaBrandColors.primaryOrange),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: const Text('View sensors'),
               ),
             ],
           ),
