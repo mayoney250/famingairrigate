@@ -46,6 +46,14 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name, crop}]
   Map<String, AIRecommendation> _aiRecommendations = {}; // Cache per field
   
+  // USB Sensor Data
+  Map<String, dynamic>? _usbSensorData;
+  AIRecommendation? _usbAiRecommendation;
+  StreamSubscription<DocumentSnapshot>? _usbSensorSubscription;
+
+  Map<String, dynamic>? get usbSensorData => _usbSensorData;
+  AIRecommendation? get usbAiRecommendation => _usbAiRecommendation;
+  
   Map<String, AIRecommendation> get aiRecommendations => _aiRecommendations;
 
   // Add location fields to DashboardProvider
@@ -284,6 +292,9 @@ class DashboardProvider with ChangeNotifier {
           return null;
         }),
       ]);
+
+      // Initialize USB sensor listener
+      _initUsbSensorListener();
 
       // Defer non-critical tasks
       Future(() async {
@@ -552,6 +563,7 @@ class DashboardProvider with ChangeNotifier {
   void dispose() {
     _statusTimer?.cancel();
     _aggTimer?.cancel();
+    _usbSensorSubscription?.cancel();
     super.dispose();
   }
 
@@ -869,6 +881,50 @@ class DashboardProvider with ChangeNotifier {
         _sensorOfflineError = null;
       }
       dev.log('✅ [SENSOR ONLINE] Field $fieldId data is ${dataAge.inMinutes} minutes old');
+    }
+  }
+
+  void _initUsbSensorListener() {
+    _usbSensorSubscription?.cancel();
+    _usbSensorSubscription = _firestore
+        .collection('faminga_sensors')
+        .doc('latest')
+        .snapshots()
+        .listen((snapshot) {
+      if (snapshot.exists && snapshot.data() != null) {
+        _usbSensorData = snapshot.data();
+        notifyListeners();
+        
+        // Fetch AI recommendation for USB sensor
+        _fetchUsbAIRecommendation();
+      }
+    }, onError: (e) {
+      dev.log('Error listening to USB sensor: $e');
+    });
+  }
+
+  Future<void> _fetchUsbAIRecommendation() async {
+    if (_usbSensorData == null || _weatherData == null) return;
+
+    try {
+      final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+      final moisture = (_usbSensorData!['moisture'] as num?)?.toDouble() ?? 0.0;
+      final temperature = (_usbSensorData!['temperature'] as num?)?.toDouble() ?? 0.0;
+      
+      // Use generic values for USB sensor
+      final rec = await _aiService.getIrrigationAdvice(
+        userId: userId,
+        fieldId: 'usb_sensor',
+        soilMoisture: moisture,
+        temperature: temperature,
+        humidity: _weatherData!.humidity.toDouble(),
+        cropType: 'General',
+      );
+
+      _usbAiRecommendation = rec;
+      notifyListeners();
+    } catch (e) {
+      dev.log('Error fetching AI for USB sensor: $e');
     }
   }
 

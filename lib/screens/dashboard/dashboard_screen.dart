@@ -263,6 +263,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         
         // Sensor Offline Error Banner
         _buildSensorOfflineBanner(dashboardProvider),
+        
+        // USB Sensor Card
+        _buildUsbSensorCard(dashboardProvider),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
         // Quick Actions
@@ -328,9 +331,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildUserInsightCard(dashboardProvider),
                   const SizedBox(height: 20),
-                  // _buildSystemStatusCard(dashboardProvider), // Removed
                   _buildSensorOfflineBanner(dashboardProvider),
+                  
+                  // USB Sensor Card
+                  _buildUsbSensorCard(dashboardProvider),
                   const SizedBox(height: 20),
+                  
                   Text(
                     context.l10n.quickActions,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -2537,6 +2543,277 @@ class _DashboardScreenState extends State<DashboardScreen> {
       label: context.l10n.profile,
       ),
       ],
+    );
+  }
+
+  Widget _buildUsbSensorCard(DashboardProvider dashboardProvider) {
+    final usbData = dashboardProvider.usbSensorData;
+    final aiRec = dashboardProvider.usbAiRecommendation;
+    
+    if (usbData == null) {
+      return const SizedBox.shrink();
+    }
+
+    final moisture = (usbData['moisture'] as num?)?.toDouble() ?? 0.0;
+    final temperature = (usbData['temperature'] as num?)?.toDouble() ?? 0.0;
+    final moistureStatus = usbData['moisture_status'] as String? ?? 'Unknown';
+    final tempStatus = usbData['temp_status'] as String? ?? 'Unknown';
+    final timestamp = usbData['timestamp'] as Timestamp?;
+    
+    // Check if data is stale (> 15 seconds old)
+    final isStale = timestamp != null &&
+        DateTime.now().difference(timestamp.toDate()).inSeconds > 15;
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: FamingaBrandColors.borderColor),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: (isStale ? Colors.red : Colors.green).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.usb,
+                  color: isStale ? Colors.red : Colors.green,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '🌱 USB Soil Sensor',
+                      style: TextStyle(
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.white
+                            : FamingaBrandColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    if (timestamp != null)
+                      Text(
+                        'Last update: ${DateFormat('HH:mm:ss').format(timestamp.toDate())}',
+                        style: TextStyle(
+                          color: FamingaBrandColors.textSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  color: isStale ? Colors.red : Colors.green,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isStale ? Colors.red : Colors.green).withOpacity(0.4),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          
+          if (isStale) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Sensor offline - data not updating',
+                      style: TextStyle(
+                        color: Colors.orange.shade900,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          
+          const SizedBox(height: 16),
+          
+          // Sensor Readings
+          Row(
+            children: [
+              Expanded(
+                child: _buildUsbMetricCard(
+                  'Moisture',
+                  moisture.toStringAsFixed(0),
+                  '%',
+                  Icons.water_drop,
+                  Colors.blue,
+                  moistureStatus,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildUsbMetricCard(
+                  'Temperature',
+                  temperature.toStringAsFixed(0),
+                  '°C',
+                  Icons.thermostat,
+                  Colors.orange,
+                  tempStatus,
+                ),
+              ),
+            ],
+          ),
+          
+          // AI Recommendation
+          if (aiRec != null) ...[
+            const SizedBox(height: 16),
+            const Divider(color: FamingaBrandColors.borderColor),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  color: FamingaBrandColors.primaryOrange,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'AI Recommendation',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '${aiRec.recommendation}',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : FamingaBrandColors.textPrimary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              aiRec.reasoning,
+              style: TextStyle(
+                color: FamingaBrandColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsbMetricCard(
+    String title,
+    String value,
+    String unit,
+    IconData icon,
+    Color color,
+    String status,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            title.toUpperCase(),
+            style: TextStyle(
+              color: FamingaBrandColors.textSecondary,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? Colors.white
+                      : FamingaBrandColors.textPrimary,
+                ),
+              ),
+              const SizedBox(width: 2),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 3),
+                child: Text(
+                  unit,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: FamingaBrandColors.textSecondary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            status,
+            style: TextStyle(
+              fontSize: 11,
+              color: FamingaBrandColors.textSecondary,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
