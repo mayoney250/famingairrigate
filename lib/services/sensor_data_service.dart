@@ -88,6 +88,28 @@ class SensorDataService {
     dev.log('ℹ️ [SensorDataService] deleteOldReadings skipped (live feed only)');
   }
 
+  /// Check if a field has any historical data in the legacy collection
+  Future<bool> hasHistoricalData(String fieldId) async {
+    try {
+      // Check legacy collection
+      final legacyQuery = await _firestore
+          .collection('sensorData')
+          .where('fieldId', isEqualTo: fieldId)
+          .limit(1)
+          .get();
+      
+      if (legacyQuery.docs.isNotEmpty) return true;
+
+      // Also check the new structure if applicable (though currently we only write to 'current')
+      // If we start logging history to a subcollection, check that too.
+      
+      return false;
+    } catch (e) {
+      dev.log('Error checking historical data for $fieldId: $e');
+      return false;
+    }
+  }
+
   Future<DocumentReference<Map<String, dynamic>>?> _resolveLatestDocForField(
     String fieldId,
   ) async {

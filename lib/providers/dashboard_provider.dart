@@ -823,25 +823,45 @@ class DashboardProvider with ChangeNotifier {
     }
   }
 
-  /// Check if sensor data is stale (older than 3 hours)
-  void _checkSensorOffline(String fieldId, SensorDataModel? sensorData) {
+  /// Check if sensor data is stale (older than 3 hours) or missing
+  Future<void> _checkSensorOffline(String fieldId, SensorDataModel? sensorData) async {
     if (sensorData == null) {
       _sensorOfflineStatus[fieldId] = true;
-      _sensorOfflineError = 'No sensor data available. Please check your sensors.';
-      dev.log('⚠️ [SENSOR OFFLINE] No data for field $fieldId');
+      
+      // Check if this field has EVER had data
+      final hasHistory = await _sensorDataService.hasHistoricalData(fieldId);
+      final fieldName = _fields.firstWhere((f) => f['id'] == fieldId, orElse: () => {'name': fieldId})['name'] ?? fieldId;
+      
+      if (hasHistory) {
+        _sensorOfflineError = 'Sensor for $fieldName is not logging data. Please check connection.';
+        dev.log('⚠️ [SENSOR OFFLINE] Field $fieldId has history but no current data');
+      } else {
+        // If no history, it's likely a configuration issue or new field
+        // We might want to show a different message or no error at all depending on UX
+        // For now, let's be specific
+        _sensorOfflineError = 'No sensor configured for $fieldName. Please add a sensor.';
+        dev.log('ℹ️ [SENSOR MISSING] Field $fieldId has no historical data');
+      }
       return;
     }
 
     final now = DateTime.now();
-    final dataAge = now.difference(sensorData.timestamp);
+    var dataAge = now.difference(sensorData.timestamp);
+    
+    // Handle clock skew (future timestamps)
+    if (dataAge.isNegative) {
+      dataAge = Duration.zero;
+    }
+
     final isOffline = dataAge.inHours >= 3;
 
     _sensorOfflineStatus[fieldId] = isOffline;
 
     if (isOffline) {
       final hoursOld = dataAge.inHours;
-      _sensorOfflineError = 'Sensor data is $hoursOld hours old. Please check your sensors.';
-      dev.log('⚠️ [SENSOR OFFLINE] Field $fieldId data is $hoursOld hours old (last update: ${sensorData.timestamp})');
+      final fieldName = _fields.firstWhere((f) => f['id'] == fieldId, orElse: () => {'name': fieldId})['name'] ?? fieldId;
+      _sensorOfflineError = 'Sensor for $fieldName is not logging data. Last update: $hoursOld hours ago.';
+      dev.log('⚠️ [SENSOR OFFLINE] Field $fieldId ($fieldName) data is $hoursOld hours old (last update: ${sensorData.timestamp})');
     } else {
       // Clear error if data is fresh
       final offlineCount = _sensorOfflineStatus.values.where((v) => v).length;

@@ -258,8 +258,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
         _buildUserInsightCard(dashboardProvider),
         SizedBox(height: isSmallScreen ? 16 : 20),
         
-        // System Status Card
-        _buildSystemStatusCard(dashboardProvider),
+        // System Status Card - Removed
+        // _buildSystemStatusCard(dashboardProvider),
         
         // Sensor Offline Error Banner
         _buildSensorOfflineBanner(dashboardProvider),
@@ -328,7 +328,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   _buildUserInsightCard(dashboardProvider),
                   const SizedBox(height: 20),
-                  _buildSystemStatusCard(dashboardProvider),
+                  // _buildSystemStatusCard(dashboardProvider), // Removed
                   _buildSensorOfflineBanner(dashboardProvider),
                   const SizedBox(height: 20),
                   Text(
@@ -415,7 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Your sensor has not sent data in over 3 hours. Please check the sensor connection and power supply.',
+                    dashboardProvider.sensorOfflineError ?? 'Sensor data is not available.',
                     style: TextStyle(
                       color: Colors.red.shade800,
                       fontSize: 13,
@@ -657,97 +657,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ],
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildSystemStatusCard(DashboardProvider dashboardProvider) {
-    final systemMsg = dashboardProvider.systemSoilStatusSummary();
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    Color cardBg = isDark ? Theme.of(context).colorScheme.primaryContainer : FamingaBrandColors.darkGreen;
-    IconData cardIcon = Icons.check_circle;
-    if (systemMsg.contains('dry')) {
-      cardBg = Colors.orange.shade700;
-      cardIcon = Icons.warning_amber_outlined;
-    } else if (systemMsg.contains('wet')) {
-      cardBg = Colors.blue.shade700;
-      cardIcon = Icons.water_drop_outlined;
-    } else if (systemMsg.contains('optimal')) {
-      cardBg = isDark ? Theme.of(context).colorScheme.primaryContainer : Colors.green.shade700;
-      cardIcon = Icons.check_circle;
-    } else if (systemMsg.contains('No soil moisture data')) {
-      cardBg = Colors.grey.shade600;
-      cardIcon = Icons.info_outline;
-    }
-    // Optionally: hide card if all no-data
-    if (systemMsg.contains('No soil moisture data')) {
-      return const SizedBox.shrink();
-    }
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: cardBg,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: cardBg.withOpacity(0.18),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Icon(
-                        cardIcon,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                    context.l10n.systemStatus,
-                    style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  systemMsg,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(cardIcon, color: Colors.white, size: 32),
-          ),
         ],
       ),
     );
@@ -818,16 +728,27 @@ class _DashboardScreenState extends State<DashboardScreen> {
         
         description = 'Soil is $moistureDesc, temperature is $tempDesc';
         
-        // Get action from AI or default
+        // Get detailed action from AI or default
         if (aiRec != null) {
-          final decision = aiRec.recommendation.toLowerCase();
-          if (decision.contains('irrigate') || decision.contains('water')) {
-            action = 'Water your crops now';
-          } else if (decision.contains('hold') || decision.contains('wait')) {
-            action = 'Keep watering as usual';
+          final cropType = field['crop'] ?? 'crops';
+          final decision = aiRec.recommendation.toUpperCase();
+          
+          // Build detailed recommendation
+          String actionVerb = '';
+          if (decision.contains('IRRIGATE') || decision.contains('WATER')) {
+            actionVerb = 'Water your $cropType now';
+          } else if (decision.contains('HOLD') || decision.contains('WAIT')) {
+            actionVerb = 'Hold off watering';
           } else {
-            action = 'Continue your current schedule';
+            actionVerb = 'Monitor your $cropType';
           }
+          
+          // Add reasoning if available
+          String reasoning = aiRec.reasoning.isNotEmpty 
+              ? aiRec.reasoning 
+              : 'Based on current soil moisture levels';
+          
+          action = '$actionVerb. $reasoning';
         } else {
           action = moisture < 40 ? 'Consider watering soon' : 'Keep watering as usual';
         }
@@ -890,12 +811,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
       );
     }
 
-    // Overall recommendation
+    // Get AI recommendation for display - prioritize AI advice
     final daily = dashboardProvider.dailyWaterUsage;
     String waterText = daily > 0 ? '${daily.toStringAsFixed(0)} liters' : 'No data';
-    String overallAdvice = hasAnyIssues 
-        ? 'Check the issues above and take action'
-        : 'Your farm is doing well';
+    
+    // Always show AI advice if available
+    String overallAdvice = '';
+    for (final field in fields) {
+      final fieldId = field['id']!;
+      final aiRec = dashboardProvider.aiRecommendations[fieldId];
+      
+      if (aiRec != null) {
+        final cropType = field['crop'] ?? 'crops';
+        
+        // Build advice from AI data
+        if (aiRec.reasoning.isNotEmpty) {
+          // Use AI's reasoning if available
+          overallAdvice = '${cropType.toUpperCase()}: ${aiRec.reasoning}';
+        } else {
+          // Fallback to recommendation if no reasoning
+          overallAdvice = '${cropType.toUpperCase()}: ${aiRec.recommendation}';
+        }
+        break; // Use first field with AI recommendation
+      }
+    }
+    
+    // Only use generic fallback if absolutely no AI data
+    if (overallAdvice.isEmpty) {
+      overallAdvice = hasAnyIssues 
+          ? 'Check your sensors and field conditions'
+          : 'Continue monitoring your fields';
+    }
 
     return Container(
       padding: const EdgeInsets.all(20),
