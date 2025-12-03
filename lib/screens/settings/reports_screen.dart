@@ -12,11 +12,13 @@ import '../../services/irrigation_log_service.dart';
 import '../../services/irrigation_schedule_service.dart';
 import '../../services/sensor_data_service.dart';
 import '../../services/alert_service.dart';
+import '../../services/irrigation_ai_service.dart';
 import '../../models/irrigation_log_model.dart';
 import '../../models/irrigation_schedule_model.dart';
 import '../../models/user_model.dart';
 import '../../models/alert_model.dart';
 import '../../models/sensor_data_model.dart';
+import '../../models/ai_recommendation_model.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
 
 class ReportsScreen extends StatefulWidget {
@@ -31,6 +33,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
   final IrrigationScheduleService _scheduleService = IrrigationScheduleService();
   final SensorDataService _sensorService = SensorDataService();
   final AlertService _alertService = AlertService();
+  final IrrigationAIService _aiService = IrrigationAIService();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   
   // Selection State
@@ -80,6 +83,11 @@ class _ReportsScreenState extends State<ReportsScreen> {
   
   // Trend Data
   double _previousPeriodWaterUsage = 0.0;
+  
+  // AI Recommendations
+  AIRecommendation? _aiRecommendation;
+  double? _avgMoistureForPeriod;
+  bool _isLoadingAI = false;
 
   @override
   void initState() {
@@ -142,6 +150,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
 
       _startRealTimeRunningCyclesListener(user.uid, start, end);
       _calculateMetrics();
+      
+      // Calculate average moisture and fetch AI recommendation
+      await _calculateAverageMoisture();
+      await _fetchAIRecommendation();
       
       setState(() {
         _isReportGenerated = true;
@@ -290,13 +302,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Future<void> _loadSensorData(DateTime start, DateTime end) async {
     try {
       if (_selectedFieldId != null) {
-        _sensorReadings = await _sensorService.getReadingsInRange(
-          _selectedFieldId!,
-          start,
-          end,
-        );
-        // Sort by timestamp
-        _sensorReadings.sort((a, b) => a.timestamp.compareTo(b.timestamp));
+        debugPrint('📊 [Reports] Loading sensor data for field: $_selectedFieldId');
+        debugPrint('📊 [Reports] Date range: ${start.toIso8601String()} to ${end.toIso8601String()}');
+        
+        // For reports, we want to show the latest sensor reading regardless of date range
+        // since we only have one "current" reading per field, not historical data
+        final latestReading = await _sensorService.getLatestReading(_selectedFieldId!);
+        
+        if (latestReading != null) {
+          debugPrint('📊 [Reports] Got latest reading: ${latestReading.soilMoisture}% at ${latestReading.timestamp}');
+          _sensorReadings = [latestReading];
+        } else {
+          debugPrint('⚠️ [Reports] No sensor reading available for field $_selectedFieldId');
+          _sensorReadings = [];
+        }
+        
+        debugPrint('📊 [Reports] Final sensor readings count: ${_sensorReadings.length}');
       }
     } catch (e) {
       debugPrint('Error loading sensor data: $e');
@@ -336,6 +357,74 @@ class _ReportsScreenState extends State<ReportsScreen> {
     } catch (e) {
       debugPrint('Error calculating previous period usage: $e');
       _previousPeriodWaterUsage = 0.0;
+    }
+  }
+
+  Future<void> _calculateAverageMoisture() async {
+    try {
+      if (_sensorReadings.isEmpty) {
+        _avgMoistureForPeriod = null;
+        return;
+      }
+      
+      final sum = _sensorReadings.fold<double>(
+        0.0,
+        (sum, reading) => sum + reading.soilMoisture,
+      );
+      
+      _avgMoistureForPeriod = sum / _sensorReadings.length;
+      debugPrint('📊 Average moisture for period: ${_avgMoistureForPeriod?.toStringAsFixed(1)}%');
+    } catch (e) {
+      debugPrint('Error calculating average moisture: $e');
+      _avgMoistureForPeriod = null;
+    }
+  }
+
+  Future<void> _fetchAIRecommendation() async {
+    try {
+      if (_avgMoistureForPeriod == null || _cropType == null) {
+        debugPrint('⚠️ Cannot fetch AI: avgMoisture=$_avgMoistureForPeriod, crop=$_cropType');
+        return;
+      }
+
+      setState(() => _isLoadingAI = true);
+
+      // Get latest sensor reading for temperature and humidity
+      final latestReading = _sensorReadings.isNotEmpty ? _sensorReadings.last : null;
+      final temperature = latestReading?.temperature ?? 25.0;
+      final humidity = latestReading?.humidity ?? 60.0;
+
+      debugPrint('🤖 Fetching AI recommendation for field $_selectedFieldId');
+      debugPrint('   Avg Moisture: ${_avgMoistureForPeriod?.toStringAsFixed(1)}%');
+      debugPrint('   Crop: $_cropType');
+      debugPrint('   Temp: ${temperature.toStringAsFixed(1)}°C');
+      debugPrint('   Humidity: ${humidity.toStringAsFixed(1)}%');
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final recommendation = await _aiService.getIrrigationAdvice(
+        userId: user.uid,
+        fieldId: _selectedFieldId!,
+        soilMoisture: _avgMoistureForPeriod!,
+        temperature: temperature,
+        humidity: humidity,
+        cropType: _cropType!,
+      );
+
+      setState(() {
+        _aiRecommendation = recommendation;
+        _isLoadingAI = false;
+      });
+
+      debugPrint('✅ AI Recommendation: ${recommendation.recommendation}');
+      debugPrint('   Reasoning: ${recommendation.reasoning}');
+    } catch (e) {
+      debugPrint('❌ Error fetching AI recommendation: $e');
+      setState(() {
+        _aiRecommendation = null;
+        _isLoadingAI = false;
+      });
     }
   }
 
@@ -1358,9 +1447,283 @@ class _ReportsScreenState extends State<ReportsScreen> {
   }
 
   Widget _buildModernRecommendations(bool isDark) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            FamingaBrandColors.primaryOrange.withOpacity(0.1),
+            FamingaBrandColors.primaryOrange.withOpacity(0.05),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb, color: FamingaBrandColors.primaryOrange, size: 24),
+              const SizedBox(width: 12),
+              Text(
+                'AI Recommendations',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
+              ),
+              const Spacer(),
+              if (_isLoadingAI)
+                const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          
+          // Display data context
+          _buildDataContext(isDark),
+          const SizedBox(height: 20),
+          
+          // Display AI recommendation or fallback
+          if (_aiRecommendation != null)
+            _buildAIRecommendation(_aiRecommendation!, isDark)
+          else if (!_isLoadingAI)
+            _buildFallbackRecommendations(isDark),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataContext(bool isDark) {
+    final completedCount = _allLogs.where((log) => log.action == IrrigationAction.completed).length;
+    final currentMoisture = _sensorReadings.isNotEmpty ? _sensorReadings.last.soilMoisture : 0.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: FamingaBrandColors.primaryOrange.withOpacity(0.2),
+        ),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _buildContextItem(
+                  'Current Moisture',
+                  '${currentMoisture.toStringAsFixed(1)}%',
+                  Icons.water_drop,
+                  _getMoistureCardColor(currentMoisture, isDark),
+                  isDark,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildContextItem(
+                  'Avg Moisture',
+                  _avgMoistureForPeriod != null 
+                    ? '${_avgMoistureForPeriod!.toStringAsFixed(1)}%'
+                    : 'N/A',
+                  Icons.analytics,
+                  Colors.blue,
+                  isDark,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildContextItem(
+                  'Irrigations',
+                  '$completedCount',
+                  Icons.check_circle,
+                  Colors.green,
+                  isDark,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _buildContextItem(
+                  'Total Water',
+                  '${_totalWaterUsed.toStringAsFixed(0)}L',
+                  Icons.water,
+                  Colors.cyan,
+                  isDark,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContextItem(String label, String value, IconData icon, Color color, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 16, color: color),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                ),
+              ),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAIRecommendation(AIRecommendation recommendation, bool isDark) {
+    Color color;
+    IconData icon;
+    
+    switch (recommendation.recommendation.toUpperCase()) {
+      case 'IRRIGATE':
+        color = Colors.green;
+        icon = Icons.water;
+        break;
+      case 'HOLD':
+        color = Colors.orange;
+        icon = Icons.pause_circle;
+        break;
+      case 'ALERT':
+        color = Colors.red;
+        icon = Icons.warning_amber_rounded;
+        break;
+      default:
+        color = Colors.grey;
+        icon = Icons.info;
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          recommendation.recommendation.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: color.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            '${(recommendation.confidence * 100).toStringAsFixed(0)}%',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'For ${recommendation.cropType}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).textTheme.bodySmall?.color?.withOpacity(0.6),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: isDark ? Colors.black.withOpacity(0.2) : Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Text(
+              recommendation.reasoning,
+              style: TextStyle(
+                fontSize: 13,
+                color: Theme.of(context).textTheme.bodyMedium?.color,
+                height: 1.4,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFallbackRecommendations(bool isDark) {
     final recommendations = <Map<String, dynamic>>[];
     
-    // Generate top 3 actionable insights
+    // Generate fallback recommendations
     if (_missedCycles > 0) {
       recommendations.add({
         'icon': Icons.warning_amber_rounded,
@@ -1415,61 +1778,24 @@ class _ReportsScreenState extends State<ReportsScreen> {
     // Take top 3
     final topRecommendations = recommendations.take(3).toList();
 
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            FamingaBrandColors.primaryOrange.withOpacity(0.1),
-            FamingaBrandColors.primaryOrange.withOpacity(0.05),
+    return Column(
+      children: topRecommendations.asMap().entries.map((entry) {
+        final index = entry.key;
+        final rec = entry.value;
+        return Column(
+          children: [
+            if (index > 0) const SizedBox(height: 16),
+            _buildRecommendationItem(
+              rec['icon'] as IconData,
+              rec['color'] as Color,
+              rec['title'] as String,
+              rec['description'] as String,
+              rec['priority'] as String,
+              isDark,
+            ),
           ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: FamingaBrandColors.primaryOrange.withOpacity(0.3),
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.lightbulb, color: FamingaBrandColors.primaryOrange, size: 24),
-              const SizedBox(width: 12),
-              Text(
-                'AI Recommendations',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).textTheme.bodyLarge?.color,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          
-          ...topRecommendations.asMap().entries.map((entry) {
-            final index = entry.key;
-            final rec = entry.value;
-            return Column(
-              children: [
-                if (index > 0) const SizedBox(height: 16),
-                _buildRecommendationItem(
-                  rec['icon'] as IconData,
-                  rec['color'] as Color,
-                  rec['title'] as String,
-                  rec['description'] as String,
-                  rec['priority'] as String,
-                  isDark,
-                ),
-              ],
-            );
-          }).toList(),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
@@ -1592,10 +1918,22 @@ class _ReportsScreenState extends State<ReportsScreen> {
   Widget _buildMoistureChart(bool isDark) {
     if (_sensorReadings.isEmpty) return const SizedBox.shrink();
 
-    // Downsample if too many points to avoid clutter
-    final points = _sensorReadings.length > 50 
-        ? _sensorReadings.where((e) => _sensorReadings.indexOf(e) % (_sensorReadings.length ~/ 50) == 0).toList()
-        : _sensorReadings;
+    // PERFORMANCE OPTIMIZATION:
+    // Use O(N) stride-based downsampling instead of O(N^2) indexOf lookup.
+    List<SensorDataModel> points;
+    if (_sensorReadings.length > 50) {
+      points = [];
+      final int stride = (_sensorReadings.length / 50).ceil();
+      for (int i = 0; i < _sensorReadings.length; i += stride) {
+        points.add(_sensorReadings[i]);
+      }
+      // Always ensure the last point is included for up-to-date context
+      if (points.last != _sensorReadings.last) {
+        points.add(_sensorReadings.last);
+      }
+    } else {
+      points = _sensorReadings;
+    }
 
     final spots = points.asMap().entries.map((e) {
       return FlSpot(e.key.toDouble(), e.value.soilMoisture.toDouble());

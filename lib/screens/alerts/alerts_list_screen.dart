@@ -111,42 +111,83 @@ class _AlertsListScreenState extends State<AlertsListScreen> {
                         const SizedBox(height: 400),
                       ],
                     )
-                  : ListView.separated(
-                      itemCount: _alerts.length,
-            separatorBuilder: (_, __) => Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.3)),
-            itemBuilder: (context, index) {
-                        final a = _alerts[index];
-              final color = _severityColor(context, a.severity);
-              final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? scheme.onSurface;
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                child: ListTile(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  tileColor: scheme.surface,
-                  leading: Icon(_severityIcon(a.severity), color: color),
-                            title: Text(a.message, style: TextStyle(color: textColor)),
-                            subtitle: Text(a.type, style: TextStyle(color: scheme.onSurfaceVariant)),
-                            trailing: a.read
-                      ? Icon(Icons.check, color: scheme.primary)
-                                : Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: color.withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                                      a.severity.toUpperCase(),
-                              style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
-                            ),
-                          ),
-                  onTap: () => Get.toNamed('/alert-detail', arguments: a),
-                ),
-              );
-            },
-                    ),
+          : ListView.separated(
+              itemCount: _alerts.length,
+              separatorBuilder: (_, __) => Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.3)),
+              itemBuilder: (context, index) {
+                return _AlertListItem(alert: _alerts[index]);
+              },
+            ),
       ),
     );
   }
 }
+
+class _AlertListItem extends StatelessWidget {
+  final AlertModel alert;
+
+  const _AlertListItem({Key? key, required this.alert}) : super(key: key);
+
+  Color _severityColor(BuildContext context, String severity) {
+    switch (severity) {
+      case 'high':
+      case 'critical':
+        return Colors.red;
+      case 'medium':
+        return Colors.orange;
+      case 'low':
+      case 'info':
+      default:
+        return Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.green;
+    }
+  }
+
+  IconData _severityIcon(String severity) {
+    switch (severity) {
+      case 'high':
+      case 'critical':
+        return Icons.warning;
+      case 'medium':
+        return Icons.warning_amber;
+      case 'low':
+      case 'info':
+      default:
+        return Icons.info;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final color = _severityColor(context, alert.severity);
+    final textColor = Theme.of(context).textTheme.bodyMedium?.color ?? scheme.onSurface;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      child: ListTile(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        tileColor: scheme.surface,
+        leading: Icon(_severityIcon(alert.severity), color: color),
+        title: Text(alert.message, style: TextStyle(color: textColor)),
+        subtitle: Text(alert.type, style: TextStyle(color: scheme.onSurfaceVariant)),
+        trailing: alert.read
+            ? Icon(Icons.check, color: scheme.primary)
+            : Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  alert.severity.toUpperCase(),
+                  style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700),
+                ),
+              ),
+        onTap: () => Get.toNamed('/alert-detail', arguments: alert),
+      ),
+    );
+  }
+}
+
 
 

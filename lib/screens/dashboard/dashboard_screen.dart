@@ -20,6 +20,9 @@ import '../../services/alert_local_service.dart';
 import '../../models/alert_model.dart';
 import '../../utils/l10n_extensions.dart';
 import '../../models/forecast_day_model.dart';
+import '../../models/sensor_data_model.dart';
+import '../../models/ai_recommendation_model.dart';
+
 
 // dev-only simulation imports removed
 
@@ -691,130 +694,28 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final fields = dashboardProvider.fields;
     
     // Build field status items
-    List<Widget> fieldItems = [];
-    bool hasAnyIssues = false;
-    
-    for (final field in fields) {
+    final fieldItems = fields.map((field) {
       final fieldId = field['id']!;
-      final fieldName = field['name']!;
       final sensor = sensors[fieldId];
       final aiRec = dashboardProvider.aiRecommendations[fieldId];
-      
+      return _FieldStatusItem(
+        field: field,
+        sensor: sensor,
+        aiRec: aiRec,
+      );
+    }).toList();
+    
+    // Check for issues for overall status
+    bool hasAnyIssues = false;
+    for (final field in fields) {
+      final fieldId = field['id']!;
+      final sensor = sensors[fieldId];
       bool isHealthy = sensor != null && sensor.soilMoisture != null;
       bool hasDrainage = sensor?.soilMoisture != null && sensor!.soilMoisture >= 100;
-      
-      if (!isHealthy) hasAnyIssues = true;
-      if (hasDrainage) hasAnyIssues = true;
-      
-      // Status icon and color
-      IconData statusIcon = isHealthy ? Icons.check_circle : Icons.warning_amber_rounded;
-      Color statusColor = isHealthy ? Colors.green : Colors.orange;
-      String statusText = isHealthy ? 'is healthy' : 'needs attention';
-      
-      // Build status description
-      String description = '';
-      String action = '';
-      
-      if (sensor == null) {
-        description = 'Sensor is not responding';
-        action = 'Please check the sensor connection';
-      } else if (hasDrainage) {
-        description = 'Soil is waterlogged';
-        action = 'Stop watering and check drainage';
-        statusIcon = Icons.warning_amber_rounded;
-        statusColor = Colors.red;
-        statusText = 'needs urgent attention';
-      } else {
-        // Build natural language description
-        final moisture = sensor.soilMoisture?.round() ?? 0;
-        final temp = sensor.temperature?.round() ?? 0;
-        
-        String moistureDesc = moisture < 40 ? 'dry' : (moisture > 80 ? 'very wet' : 'moist');
-        String tempDesc = temp < 20 ? 'cool' : (temp > 30 ? 'hot' : 'good');
-        
-        description = 'Soil is $moistureDesc, temperature is $tempDesc';
-        
-        // Get detailed action from AI or default
-        if (aiRec != null) {
-          final cropType = field['crop'] ?? 'crops';
-          final decision = aiRec.recommendation.toUpperCase();
-          
-          // Build detailed recommendation
-          String actionVerb = '';
-          if (decision.contains('IRRIGATE') || decision.contains('WATER')) {
-            actionVerb = 'Water your $cropType now';
-          } else if (decision.contains('HOLD') || decision.contains('WAIT')) {
-            actionVerb = 'Hold off watering';
-          } else {
-            actionVerb = 'Monitor your $cropType';
-          }
-          
-          // Add reasoning if available
-          String reasoning = aiRec.reasoning.isNotEmpty 
-              ? aiRec.reasoning 
-              : 'Based on current soil moisture levels';
-          
-          action = '$actionVerb. $reasoning';
-        } else {
-          action = moisture < 40 ? 'Consider watering soon' : 'Keep watering as usual';
-        }
+      if (!isHealthy || hasDrainage) {
+        hasAnyIssues = true;
+        break;
       }
-      
-      fieldItems.add(
-        Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(statusIcon, color: statusColor, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      '$fieldName $statusText',
-                      style: TextStyle(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white
-                            : FamingaBrandColors.textPrimary,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Padding(
-                padding: const EdgeInsets.only(left: 28),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      description,
-                      style: const TextStyle(
-                        color: FamingaBrandColors.textSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      action,
-                      style: TextStyle(
-                        color: Theme.of(context).brightness == Brightness.dark
-                            ? Colors.white.withOpacity(0.9)
-                            : FamingaBrandColors.textPrimary,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
     }
 
     // Get AI recommendation for display - prioritize AI advice
@@ -3063,5 +2964,134 @@ class AlertCenterBottomSheet extends StatelessWidget {
   if (d.inHours < 1) return context.l10n.minutesAgo(d.inMinutes);
   if (d.inDays < 1) return context.l10n.hoursAgo(d.inHours);
   return context.l10n.daysAgo(d.inDays);
+  }
+}
+
+class _FieldStatusItem extends StatelessWidget {
+  final Map<String, dynamic> field;
+  final SensorDataModel? sensor;
+  final AIRecommendation? aiRec;
+
+  const _FieldStatusItem({
+    Key? key,
+    required this.field,
+    this.sensor,
+    this.aiRec,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final fieldName = field['name']!;
+    
+    bool isHealthy = sensor != null && sensor!.soilMoisture != null;
+    bool hasDrainage = sensor?.soilMoisture != null && sensor!.soilMoisture >= 100;
+    
+    // Status icon and color
+    IconData statusIcon = isHealthy ? Icons.check_circle : Icons.warning_amber_rounded;
+    Color statusColor = isHealthy ? Colors.green : Colors.orange;
+    String statusText = isHealthy ? 'is healthy' : 'needs attention';
+    
+    // Build status description
+    String description = '';
+    String action = '';
+    
+    if (sensor == null) {
+      description = 'Sensor is not responding';
+      action = 'Please check the sensor connection';
+    } else if (hasDrainage) {
+      description = 'Soil is waterlogged';
+      action = 'Stop watering and check drainage';
+      statusIcon = Icons.warning_amber_rounded;
+      statusColor = Colors.red;
+      statusText = 'needs urgent attention';
+    } else {
+      // Build natural language description
+      final moisture = sensor!.soilMoisture?.round() ?? 0;
+      final temp = sensor!.temperature?.round() ?? 0;
+      
+      String moistureDesc = moisture < 40 ? 'dry' : (moisture > 80 ? 'very wet' : 'moist');
+      String tempDesc = temp < 20 ? 'cool' : (temp > 30 ? 'hot' : 'good');
+      
+      description = 'Soil is $moistureDesc, temperature is $tempDesc';
+      
+      // Get detailed action from AI or default
+      if (aiRec != null) {
+        final cropType = field['crop'] ?? 'crops';
+        final decision = aiRec!.recommendation.toUpperCase();
+        
+        // Build detailed recommendation
+        String actionVerb = '';
+        if (decision.contains('IRRIGATE') || decision.contains('WATER')) {
+          actionVerb = 'Water your $cropType now';
+        } else if (decision.contains('HOLD') || decision.contains('WAIT')) {
+          actionVerb = 'Hold off watering';
+        } else {
+          actionVerb = 'Monitor your $cropType';
+        }
+        
+        // Add reasoning if available
+        String reasoning = aiRec!.reasoning.isNotEmpty 
+            ? aiRec!.reasoning 
+            : 'Based on current soil moisture levels';
+        
+        action = '$actionVerb. $reasoning';
+      } else {
+        action = moisture < 40 ? 'Consider watering soon' : 'Keep watering as usual';
+      }
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(statusIcon, color: statusColor, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '$fieldName $statusText',
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Padding(
+            padding: const EdgeInsets.only(left: 28),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  action,
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white.withOpacity(0.9)
+                        : FamingaBrandColors.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

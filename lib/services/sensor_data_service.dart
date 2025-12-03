@@ -21,11 +21,32 @@ class SensorDataService {
   }
 
   Future<SensorDataModel?> getLatestReading(String fieldId) async {
+    dev.log('🔍 [getLatestReading] Called for fieldId: $fieldId');
+    
     final latestRef = await _resolveLatestDocForField(fieldId);
-    if (latestRef == null) return null;
+    if (latestRef == null) {
+      dev.log('⚠️ [getLatestReading] No sensor configured for field $fieldId');
+      return null;
+    }
 
+    dev.log('🔍 [getLatestReading] Fetching from path: ${latestRef.path}');
     final snapshot = await latestRef.get();
-    return _toModel(snapshot, fieldId);
+    
+    if (!snapshot.exists) {
+      dev.log('⚠️ [getLatestReading] Snapshot does not exist at ${latestRef.path}');
+      return null;
+    }
+    
+    dev.log('🔍 [getLatestReading] Snapshot exists, calling _toModel');
+    final model = _toModel(snapshot, fieldId);
+    
+    if (model == null) {
+      dev.log('⚠️ [getLatestReading] _toModel returned null');
+    } else {
+      dev.log('✅ [getLatestReading] Returning model with moisture: ${model.soilMoisture}%');
+    }
+    
+    return model;
   }
 
   Stream<SensorDataModel?> streamLatestReading(String fieldId) async* {
@@ -44,11 +65,31 @@ class SensorDataService {
     DateTime startDate,
     DateTime endDate,
   ) async {
+    dev.log('📊 [getReadingsInRange] Fetching for field: $fieldId');
+    dev.log('📊 [getReadingsInRange] Date range: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
+    
     final reading = await getLatestReading(fieldId);
-    if (reading == null) return [];
-    if (!reading.timestamp.isBefore(startDate) && !reading.timestamp.isAfter(endDate)) {
+    
+    if (reading == null) {
+      dev.log('⚠️ [getReadingsInRange] No reading returned from getLatestReading');
+      return [];
+    }
+    
+    dev.log('📊 [getReadingsInRange] Got reading with timestamp: ${reading.timestamp.toIso8601String()}');
+    dev.log('📊 [getReadingsInRange] Moisture: ${reading.soilMoisture}%, Temp: ${reading.temperature}°C');
+    
+    // Check if reading is within date range
+    final isAfterStart = reading.timestamp.isAfter(startDate) || reading.timestamp.isAtSameMomentAs(startDate);
+    final isBeforeEnd = reading.timestamp.isBefore(endDate) || reading.timestamp.isAtSameMomentAs(endDate);
+    
+    dev.log('📊 [getReadingsInRange] isAfterStart: $isAfterStart, isBeforeEnd: $isBeforeEnd');
+    
+    if (isAfterStart && isBeforeEnd) {
+      dev.log('✅ [getReadingsInRange] Reading is within range, returning it');
       return [reading];
     }
+    
+    dev.log('⚠️ [getReadingsInRange] Reading is outside date range, returning empty list');
     return [];
   }
 
@@ -149,15 +190,17 @@ class SensorDataService {
     // Extract the fieldId from the sensor data
     final dataFieldId = (data['fieldId'] ?? meta?['fieldId'] ?? meta?['farmId']).toString();
     
-    // VALIDATION: Only return data if the sensor's fieldId matches the requested fieldId
-    if (dataFieldId.isNotEmpty && dataFieldId != fieldId) {
-      dev.log('⚠️ [SensorDataService] Field ID mismatch: sensor has "$dataFieldId" but requested "$fieldId" - returning null');
-      return null;
-    }
-    
-    // If no fieldId in sensor data, log warning but allow it (for backward compatibility)
-    if (dataFieldId.isEmpty) {
-      dev.log('⚠️ [SensorDataService] No fieldId found in sensor data for field "$fieldId"');
+    // UPDATED VALIDATION: Only validate if sensor data has an explicit fieldId
+    // This allows a shared sensor to serve multiple fields
+    if (dataFieldId.isNotEmpty && data.containsKey('fieldId')) {
+      // If sensor explicitly specifies a fieldId, it must match the requested field
+      if (dataFieldId != fieldId) {
+        dev.log('⚠️ [SensorDataService] Field ID mismatch: sensor has "$dataFieldId" but requested "$fieldId" - returning null');
+        return null;
+      }
+    } else {
+      // If no explicit fieldId in sensor data, this is a shared sensor - use requested fieldId
+      dev.log('📡 [SensorDataService] Shared sensor detected - using requested fieldId "$fieldId"');
     }
     
     final resolvedUserId = (data['userId'] ?? meta?['userId'] ?? '').toString();
@@ -168,7 +211,7 @@ class SensorDataService {
           ? '${meta?['id'] ?? dataFieldId}_current'
           : snapshot.id,
       userId: resolvedUserId,
-      fieldId: dataFieldId.isNotEmpty ? dataFieldId : fieldId,
+      fieldId: dataFieldId.isNotEmpty ? dataFieldId : fieldId, // Use sensor's fieldId if available, else requested
       sensorId: meta?['id']?.toString(),
       soilMoisture: _toDouble(
         data['soil_moisture'] ??

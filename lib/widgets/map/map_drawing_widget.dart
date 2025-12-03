@@ -194,28 +194,39 @@ class _MapDrawingWidgetState extends State<MapDrawingWidget> {
     _markers.clear();
     _polylines.clear();
     _polygons.clear();
-    
-    for (int i = 0; i < _points.length; i++) {
-      _markers.add(
-        Marker(
-          markerId: MarkerId('point_$i'),
-          position: _points[i],
-          draggable: true,
-          onDragEnd: (newPosition) {
-            setState(() {
-              _points[i] = newPosition;
-              _updateDrawing();
-            });
-          },
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            _drawingMode == DrawingMode.polygon ? BitmapDescriptor.hueBlue : BitmapDescriptor.hueRed,
+
+    // PERFORMANCE OPTIMIZATION:
+    // If there are too many points, we only render a subset of markers to prevent UI lag.
+    // We always render the first and last point.
+    // For intermediate points, we skip based on a stride.
+    final int totalPoints = _points.length;
+    final bool isLargeSet = totalPoints > 20;
+    final int stride = isLargeSet ? (totalPoints / 20).ceil() : 1;
+
+    for (int i = 0; i < totalPoints; i++) {
+      // Always show first and last point, otherwise check stride
+      if (i == 0 || i == totalPoints - 1 || i % stride == 0) {
+        _markers.add(
+          Marker(
+            markerId: MarkerId('point_$i'),
+            position: _points[i],
+            draggable: true,
+            onDragEnd: (newPosition) {
+              setState(() {
+                _points[i] = newPosition;
+                _updateDrawing();
+              });
+            },
+            icon: BitmapDescriptor.defaultMarkerWithHue(
+              _drawingMode == DrawingMode.polygon ? BitmapDescriptor.hueBlue : BitmapDescriptor.hueRed,
+            ),
+            infoWindow: InfoWindow(
+              title: 'Point ${i + 1}',
+              snippet: '${_points[i].latitude.toStringAsFixed(6)}, ${_points[i].longitude.toStringAsFixed(6)}',
+            ),
           ),
-          infoWindow: InfoWindow(
-            title: 'Point ${i + 1}',
-            snippet: '${_points[i].latitude.toStringAsFixed(6)}, ${_points[i].longitude.toStringAsFixed(6)}',
-          ),
-        ),
-      );
+        );
+      }
     }
     
     if (_points.length >= 2) {
