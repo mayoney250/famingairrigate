@@ -21,6 +21,7 @@ import 'dart:developer' as dev;
 import '../services/irrigation_ai_service.dart';
 import '../models/ai_recommendation_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../utils/stream_debounce.dart';
 
 class DashboardProvider with ChangeNotifier {
   final IrrigationService _irrigationService = IrrigationService();
@@ -783,8 +784,10 @@ class DashboardProvider with ChangeNotifier {
         notifyListeners();
       }).catchError((_) {});
       
-      // Sensor readings
-      _sensorDataService.streamLatestReading(fieldId).listen((sensorData) {
+      // Sensor readings with 3-second debounce to reduce UI jank
+      _sensorDataService.streamLatestReading(fieldId)
+        .debounce(const Duration(seconds: 3))
+        .listen((sensorData) {
         dev.log('🟢 [DASHBOARD] Stream update for $fieldId: moisture=${sensorData?.soilMoisture}, temp=${sensorData?.temperature}');
         _latestSensorDataPerField[fieldId] = sensorData;
         _checkSensorOffline(fieldId, sensorData);
@@ -804,7 +807,9 @@ class DashboardProvider with ChangeNotifier {
         _refreshDailyWaterUsage(userId: userId);
         notifyListeners();
       }).catchError((_) {});
-      _flowMeterService.streamLatestReading(fieldId, userId: userId).listen((flowData) {
+      _flowMeterService.streamLatestReading(fieldId, userId: userId)
+        .debounce(const Duration(seconds: 3))
+        .listen((flowData) {
         _latestFlowDataPerField[fieldId] = flowData;
         _refreshWeeklyWaterUsage(userId: userId);
         _refreshDailyWaterUsage(userId: userId);
@@ -890,6 +895,7 @@ class DashboardProvider with ChangeNotifier {
         .collection('faminga_sensors')
         .doc('latest')
         .snapshots()
+        .debounce(const Duration(seconds: 3))
         .listen((snapshot) {
       if (snapshot.exists && snapshot.data() != null) {
         _usbSensorData = snapshot.data();

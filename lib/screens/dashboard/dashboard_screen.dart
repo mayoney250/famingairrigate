@@ -200,9 +200,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(width: 16),
         ],
       ),
-      body: Consumer<DashboardProvider>(
-        builder: (context, dashboardProvider, _) {
-          if (dashboardProvider.isLoading) {
+      body: Selector<DashboardProvider, bool>(
+        selector: (_, provider) => provider.isLoading,
+        builder: (context, isLoading, _) {
+          if (isLoading) {
             return const SingleChildScrollView(
               child: Column(
                 children: [
@@ -219,6 +220,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           return RefreshIndicator(
             onRefresh: () async {
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
               if (authProvider.currentUser != null) {
                 await dashboardProvider.refresh(authProvider.currentUser!.userId);
               }
@@ -236,9 +238,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (isLargeScreen)
-                        _buildLargeScreenLayout(dashboardProvider)
+                        _buildLargeScreenLayout()
                       else
-                        _buildMobileLayout(dashboardProvider, isSmallScreen),
+                        _buildMobileLayout(isSmallScreen),
                       
                       const SizedBox(height: 24),
                     ],
@@ -253,75 +255,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildMobileLayout(DashboardProvider dashboardProvider, bool isSmallScreen) {
+  Widget _buildMobileLayout(bool isSmallScreen) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // User Insight Card - Farm Overview
-        _buildUserInsightCard(dashboardProvider),
+        // User Insight Card - Farm Overview (with RepaintBoundary)
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({List<Map<String, String>> fields, Map<String, SensorDataModel?> sensors, Map<String, AIRecommendation> aiRecs, double dailyWater})>(
+            selector: (_, provider) => (
+              fields: provider.fields,
+              sensors: provider.latestSensorDataPerField,
+              aiRecs: provider.aiRecommendations,
+              dailyWater: provider.dailyWaterUsage,
+            ),
+            builder: (_, data, __) => _buildUserInsightCard(data.fields, data.sensors, data.aiRecs, data.dailyWater),
+          ),
+        ),
         SizedBox(height: isSmallScreen ? 16 : 20),
-        
-        // System Status Card - Removed
-        // _buildSystemStatusCard(dashboardProvider),
         
         // Sensor Offline Error Banner
-        _buildSensorOfflineBanner(dashboardProvider),
+        Selector<DashboardProvider, String?>(
+          selector: (_, provider) => provider.sensorOfflineError,
+          builder: (_, error, __) => _buildSensorOfflineBanner(error),
+        ),
         
-        // USB Sensor Card
-        _buildUsbSensorCard(dashboardProvider),
+        // USB Sensor Card (with RepaintBoundary)
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({Map<String, dynamic>? usbData, AIRecommendation? usbAi})>(
+            selector: (_, provider) => (usbData: provider.usbSensorData, usbAi: provider.usbAiRecommendation),
+            builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
+          ),
+        ),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
-        // Quick Actions
-        Text(
-          context.l10n.quickActions,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        // Quick Actions (const title)
+        const _SectionTitle(titleKey: 'quickActions'),
         const SizedBox(height: 12),
         _buildQuickActions(),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
-        // Weather + compact soil gauge
-        _buildFullWidthSoilCard(dashboardProvider),
+        // Weather + compact soil gauge (with RepaintBoundary)
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({double? avgMoisture, double dailyWater})>(
+            selector: (_, provider) => (avgMoisture: provider.avgSoilMoisture, dailyWater: provider.dailyWaterUsage),
+            builder: (_, data, __) => _buildFullWidthSoilCard(data.avgMoisture, data.dailyWater),
+          ),
+        ),
         SizedBox(height: isSmallScreen ? 16 : 20),
-        _buildWeatherCard(dashboardProvider),
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({WeatherData? weather, List<Map<String, dynamic>> forecast})>(
+            selector: (_, provider) => (weather: provider.weatherData, forecast: provider.forecast5Day),
+            builder: (_, data, __) => _buildWeatherCard(data.weather, data.forecast),
+          ),
+        ),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
-        // Next Schedule Cycle
-        Text(
-          context.l10n.nextScheduleCycle,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        // Next Schedule Cycle (const title)
+        const _SectionTitle(titleKey: 'nextScheduleCycle'),
         const SizedBox(height: 12),
-        _buildNextScheduleCard(dashboardProvider),
+        Selector<DashboardProvider, List<IrrigationScheduleModel>>(
+          selector: (_, provider) => provider.upcomingSchedules,
+          builder: (_, schedules, __) => _buildNextScheduleCard(schedules),
+        ),
         SizedBox(height: isSmallScreen ? 16 : 20),
 
-        // Weekly Performance
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        // Weekly Performance (const title)
+        const _SectionTitle(titleKey: 'weeklyPerformance'),
         const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({double weekly, double daily, double savings})>(
+            selector: (_, provider) => (weekly: provider.weeklyWaterUsage, daily: provider.dailyWaterUsage, savings: provider.weeklySavings),
+            builder: (_, data, __) => _buildWeeklyPerformance(data.weekly, data.daily, data.savings),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildLargeScreenLayout(DashboardProvider dashboardProvider) {
+  Widget _buildLargeScreenLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -332,23 +343,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
               flex: 2,
               child: Column(
                 children: [
-                  _buildUserInsightCard(dashboardProvider),
+                  RepaintBoundary(
+                    child: Selector<DashboardProvider, ({List<Map<String, String>> fields, Map<String, SensorDataModel?> sensors, Map<String, AIRecommendation> aiRecs, double dailyWater})>(
+                      selector: (_, provider) => (
+                        fields: provider.fields,
+                        sensors: provider.latestSensorDataPerField,
+                        aiRecs: provider.aiRecommendations,
+                        dailyWater: provider.dailyWaterUsage,
+                      ),
+                      builder: (_, data, __) => _buildUserInsightCard(data.fields, data.sensors, data.aiRecs, data.dailyWater),
+                    ),
+                  ),
                   const SizedBox(height: 20),
-                  _buildSensorOfflineBanner(dashboardProvider),
+                  Selector<DashboardProvider, String?>(
+                    selector: (_, provider) => provider.sensorOfflineError,
+                    builder: (_, error, __) => _buildSensorOfflineBanner(error),
+                  ),
                   
                   // USB Sensor Card
-                  _buildUsbSensorCard(dashboardProvider),
+                  RepaintBoundary(
+                    child: Selector<DashboardProvider, ({Map<String, dynamic>? usbData, AIRecommendation? usbAi})>(
+                      selector: (_, provider) => (usbData: provider.usbSensorData, usbAi: provider.usbAiRecommendation),
+                      builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
+                    ),
+                  ),
                   const SizedBox(height: 20),
                   
-                  Text(
-                    context.l10n.quickActions,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                  ),
+                  const _SectionTitle(titleKey: 'quickActions'),
                   const SizedBox(height: 12),
                   _buildQuickActions(),
                 ],
@@ -360,42 +381,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWeatherAndGauge(dashboardProvider, true),
-                  const SizedBox(height: 20),
-                  Text(
-                    context.l10n.nextScheduleCycle,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: Theme.of(context).brightness == Brightness.dark
-                              ? Colors.white
-                              : FamingaBrandColors.textPrimary,
-                          fontWeight: FontWeight.bold,
-                        ),
+                  Selector<DashboardProvider, ({double? avgMoisture, double dailyWater, WeatherData? weather, List<Map<String, dynamic>> forecast})>(
+                    selector: (_, provider) => (
+                      avgMoisture: provider.avgSoilMoisture,
+                      dailyWater: provider.dailyWaterUsage,
+                      weather: provider.weatherData,
+                      forecast: provider.forecast5Day,
+                    ),
+                    builder: (_, data, __) => _buildWeatherAndGauge(data.avgMoisture, data.dailyWater, data.weather, data.forecast, true),
                   ),
+                  const SizedBox(height: 20),
+                  const _SectionTitle(titleKey: 'nextScheduleCycle'),
                   const SizedBox(height: 12),
-                  _buildNextScheduleCard(dashboardProvider),
+                  Selector<DashboardProvider, List<IrrigationScheduleModel>>(
+                    selector: (_, provider) => provider.upcomingSchedules,
+                    builder: (_, schedules, __) => _buildNextScheduleCard(schedules),
+                  ),
                 ],
               ),
             ),
           ],
         ),
         const SizedBox(height: 20),
-        Text(
-          context.l10n.weeklyPerformance,
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? Colors.white
-                    : FamingaBrandColors.textPrimary,
-                fontWeight: FontWeight.bold,
-              ),
-        ),
+        const _SectionTitle(titleKey: 'weeklyPerformance'),
         const SizedBox(height: 12),
-        _buildWeeklyPerformance(dashboardProvider),
+        RepaintBoundary(
+          child: Selector<DashboardProvider, ({double weekly, double daily, double savings})>(
+            selector: (_, provider) => (weekly: provider.weeklyWaterUsage, daily: provider.dailyWaterUsage, savings: provider.weeklySavings),
+            builder: (_, data, __) => _buildWeeklyPerformance(data.weekly, data.daily, data.savings),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSensorOfflineBanner(DashboardProvider dashboardProvider) {
-    if (dashboardProvider.sensorOfflineError == null) return const SizedBox.shrink();
+  Widget _buildSensorOfflineBanner(String? sensorOfflineError) {
+    if (sensorOfflineError == null) return const SizedBox.shrink();
     
     return Padding(
       padding: const EdgeInsets.only(top: 16),
@@ -424,7 +445,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    dashboardProvider.sensorOfflineError ?? 'Sensor data is not available.',
+                    sensorOfflineError ?? 'Sensor data is not available.',
                     style: TextStyle(
                       color: Colors.red.shade800,
                       fontSize: 13,
@@ -685,19 +706,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildUserInsightCard(DashboardProvider dashboardProvider) {
+  Widget _buildUserInsightCard(List<Map<String, String>> fields, Map<String, SensorDataModel?> sensors, Map<String, AIRecommendation> aiRecs, double dailyWater) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
     final name = user?.firstName ?? user?.email?.split('@').first ?? 'Farmer';
-
-    final sensors = dashboardProvider.latestSensorDataPerField;
-    final fields = dashboardProvider.fields;
     
     // Build field status items
     final fieldItems = fields.map((field) {
       final fieldId = field['id']!;
       final sensor = sensors[fieldId];
-      final aiRec = dashboardProvider.aiRecommendations[fieldId];
+      final aiRec = aiRecs[fieldId];
       return _FieldStatusItem(
         field: field,
         sensor: sensor,
@@ -719,14 +737,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     // Get AI recommendation for display - prioritize AI advice
-    final daily = dashboardProvider.dailyWaterUsage;
-    String waterText = daily > 0 ? '${daily.toStringAsFixed(0)} liters' : 'No data';
+    String waterText = dailyWater > 0 ? '${dailyWater.toStringAsFixed(0)} liters' : 'No data';
     
     // Always show AI advice if available
     String overallAdvice = '';
     for (final field in fields) {
       final fieldId = field['id']!;
-      final aiRec = dashboardProvider.aiRecommendations[fieldId];
+      final aiRec = aiRecs[fieldId];
       
       if (aiRec != null) {
         final cropType = field['crop'] ?? 'crops';
@@ -1142,8 +1159,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWeatherCard(DashboardProvider dashboardProvider) {
-    final forecast = dashboardProvider.forecast5Day;
+  Widget _buildWeatherCard(WeatherData? weatherData, List<Map<String, dynamic>> forecast5Day) {
+    final forecast = forecast5Day;
     
     if (forecast.isEmpty) {
       return Container(
@@ -1778,9 +1795,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildNextScheduleCard(DashboardProvider dashboardProvider) {
-    final upcoming = dashboardProvider.upcomingSchedules;
-    final schedule = dashboardProvider.nextSchedule;
+  Widget _buildNextScheduleCard(List<IrrigationScheduleModel> upcomingSchedules) {
+    final upcoming = upcomingSchedules;
+    final schedule = upcomingSchedules.isNotEmpty ? upcomingSchedules.first : null;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Container(
@@ -2248,7 +2265,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWeeklyPerformance(DashboardProvider dashboardProvider) {
+  Widget _buildWeeklyPerformance(double weeklyWaterUsage, double dailyWaterUsage, double weeklySavings) {
     return Row(
       children: [
         Expanded(
@@ -2281,7 +2298,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  '${dashboardProvider.weeklyWaterUsage.round()}',
+                  '${weeklyWaterUsage.round()}',
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
@@ -2349,7 +2366,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  dashboardProvider.weeklySavings.round().toStringAsFixed(0),
+                  weeklySavings.round().toStringAsFixed(0),
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
@@ -2447,9 +2464,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildUsbSensorCard(DashboardProvider dashboardProvider) {
-    final usbData = dashboardProvider.usbSensorData;
-    final aiRec = dashboardProvider.usbAiRecommendation;
+  Widget _buildUsbSensorCard(Map<String, dynamic>? usbSensorData, AIRecommendation? usbAiRecommendation) {
+    final usbData = usbSensorData;
+    final aiRec = usbAiRecommendation;
     
     if (usbData == null) {
       return const SizedBox.shrink();
@@ -3092,6 +3109,41 @@ class _FieldStatusItem extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Helper widget for section titles (const for performance)
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({required this.titleKey});
+  
+  final String titleKey;
+  
+  @override
+  Widget build(BuildContext context) {
+    String title;
+    switch (titleKey) {
+      case 'quickActions':
+        title = context.l10n.quickActions;
+        break;
+      case 'nextScheduleCycle':
+        title = context.l10n.nextScheduleCycle;
+        break;
+      case 'weeklyPerformance':
+        title = context.l10n.weeklyPerformance;
+        break;
+      default:
+        title = titleKey;
+    }
+    
+    return Text(
+      title,
+      style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            color: Theme.of(context).brightness == Brightness.dark
+                ? Colors.white
+                : FamingaBrandColors.textPrimary,
+            fontWeight: FontWeight.bold,
+          ),
     );
   }
 }
