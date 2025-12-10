@@ -899,17 +899,19 @@ class DashboardProvider with ChangeNotifier {
     _usbSensorSubscription?.cancel();
     _usbSensorSubscription = _firestore
         .collection('faminga_sensors')
-        .where('userId', isEqualTo: userId)  // Filter by logged-in user
+        .where('userId', isEqualTo: userId)
         .snapshots()
         .debounce(const Duration(seconds: 3))
         .listen((snapshot) {
       final sensors = <String, Map<String, dynamic>>{};
+      final now = DateTime.now();
       
       for (var doc in snapshot.docs) {
         if (doc.exists && doc.data() != null) {
-          sensors[doc.id] = doc.data();
-          // Fetch AI recommendation for each sensor
-          _fetchSensorAIRecommendation(doc.id, doc.data());
+          final processedData = DashboardProvider.processSensorData(doc.data()!, doc.id);
+          sensors[doc.id] = processedData;
+          
+          _fetchSensorAIRecommendation(doc.id, processedData);
         }
       }
       
@@ -918,6 +920,46 @@ class DashboardProvider with ChangeNotifier {
     }, onError: (e) {
       dev.log('Error listening to USB sensors: $e');
     });
+  }
+
+  @visibleForTesting
+  static Map<String, dynamic> processSensorData(Map<String, dynamic> rawData, String docId, {DateTime? testNow}) {
+    final data = Map<String, dynamic>.from(rawData);
+    final now = testNow ?? DateTime.now();
+    
+    // Data Normalization
+    if (!data.containsKey('moisture')) {
+      data['moisture'] = data['soilMoisture'] ?? data['soil_moisture'] ?? 0.0;
+    }
+    if (!data.containsKey('temperature')) {
+      data['temperature'] = data['temp'] ?? 0.0;
+    }
+
+    // Offline Check
+    bool isOffline = true; // Default to offline unless proven active recently
+    int minutesSince = 0;
+    
+    if (data['timestamp'] != null) {
+      DateTime? ts;
+      if (data['timestamp'] is Timestamp) {
+        ts = (data['timestamp'] as Timestamp).toDate();
+      } else if (data['timestamp'] is String) {
+        // Handle string timestamps if any (legacy/testing)
+        ts = DateTime.tryParse(data['timestamp']);
+      }
+      
+      if (ts != null) {
+        final diff = now.difference(ts);
+        
+        // Consider offline if no data for > 60 seconds (sensor updates every 5s)
+        minutesSince = diff.inMinutes;
+        data['minutesSinceUpdate'] = minutesSince; // Just for display
+        isOffline = diff.inSeconds > 60;
+      }
+    }
+      
+    data['isOffline'] = isOffline;
+    return data;
   }
 
   Future<void> _fetchSensorAIRecommendation(String hardwareId, Map<String, dynamic> sensorData) async {

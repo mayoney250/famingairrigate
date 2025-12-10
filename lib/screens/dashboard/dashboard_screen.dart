@@ -2521,6 +2521,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final usbData = usbSensorData;
     final aiRec = usbAiRecommendation;
     
+    // Always show if data exists (provider handles offline flag)
     if (usbData == null) {
       return const SizedBox.shrink();
     }
@@ -2531,9 +2532,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final tempStatus = usbData['temp_status'] as String? ?? 'Unknown';
     final timestamp = usbData['timestamp'] as Timestamp?;
     
-    // Check if data is stale (> 15 seconds old)
-    final isStale = timestamp != null &&
-        DateTime.now().difference(timestamp.toDate()).inSeconds > 15;
+    // Use provider's offline status if available, fallback to local check (60 secs)
+    bool isOffline = usbData['isOffline'] == true;
+    final minutesSince = usbData['minutesSinceUpdate'] as int?;
+    
+    if (!usbData.containsKey('isOffline') && timestamp != null) {
+       isOffline = DateTime.now().difference(timestamp.toDate()).inSeconds > 60;
+    }
+
+    // Determine visual state
+    final statusColor = isOffline ? Colors.red : Colors.green;
 
     return Container(
       padding: const EdgeInsets.all(20),
@@ -2558,12 +2566,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: (isStale ? Colors.red : Colors.green).withOpacity(0.1),
+                  color: statusColor.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
                   Icons.usb,
-                  color: isStale ? Colors.red : Colors.green,
+                  color: statusColor,
                   size: 20,
                 ),
               ),
@@ -2584,7 +2592,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ),
                     if (timestamp != null)
                       Text(
-                        'Last update: ${DateFormat('HH:mm:ss').format(timestamp.toDate())}',
+                        isOffline 
+                            ? 'Last update: ${minutesSince != null ? "$minutesSince mins ago" : DateFormat('HH:mm').format(timestamp.toDate())}'
+                            : 'Last update: ${DateFormat('HH:mm:ss').format(timestamp.toDate())}',
                         style: TextStyle(
                           color: FamingaBrandColors.textSecondary,
                           fontSize: 12,
@@ -2597,11 +2607,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 width: 12,
                 height: 12,
                 decoration: BoxDecoration(
-                  color: isStale ? Colors.red : Colors.green,
+                  color: statusColor,
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: (isStale ? Colors.red : Colors.green).withOpacity(0.4),
+                      color: statusColor.withOpacity(0.4),
                       blurRadius: 8,
                       spreadRadius: 2,
                     ),
@@ -2611,25 +2621,26 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           
-          if (isStale) ...[
+          if (isOffline) ...[
             const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade50,
+                color: Colors.red.shade50,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.shade200),
+                border: Border.all(color: Colors.red.shade200),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 20),
+                  Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Sensor offline - data not updating',
+                      'Sensor disconnected - Check USB connection',
                       style: TextStyle(
-                        color: Colors.orange.shade900,
+                        color: Colors.red.shade900,
                         fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),

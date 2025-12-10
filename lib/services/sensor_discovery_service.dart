@@ -10,7 +10,16 @@ class SensorDiscoveryService {
         .collection('unassigned_sensors')
         .snapshots()
         .map((snapshot) {
-      return snapshot.docs.map((doc) {
+      final now = DateTime.now();
+      return snapshot.docs.where((doc) {
+        final data = doc.data();
+        final lastSeen = data['lastSeen'] as Timestamp?;
+        // If no timestamp, assume valid (or invalid? existing behavior kept all). 
+        // Let's keep it if null, to avoid hiding creating-in-progress ones.
+        if (lastSeen == null) return true; 
+        final diff = now.difference(lastSeen.toDate());
+        return diff.inMinutes <= 5; // active in last 5 mins
+      }).map((doc) {
         final data = doc.data();
         return UnassignedSensor(
           hardwareId: data['hardwareId'] ?? doc.id,
