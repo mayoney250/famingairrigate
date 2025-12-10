@@ -9,6 +9,8 @@ import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_functions/cloud_functions.dart';
 import '../models/user_model.dart';
+import '../models/field_model.dart';
+import '../models/sensor_model.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -249,6 +251,45 @@ class AuthService {
       log('User data updated successfully');
     } catch (e) {
       log('Update user data error: $e');
+      rethrow;
+    }
+  }
+
+  // Update user fields and sensors
+  Future<void> updateUserFieldsAndSensors(
+    String userId,
+    List<FieldModel> fields,
+    List<SensorModel> sensors,
+  ) async {
+    try {
+      await _firestore.collection('users').doc(userId).update({
+        'fields': fields.map((f) => f.toMap()).toList(),
+        'sensors': sensors.map((s) => s.toMap()).toList(),
+      });
+      log('User fields and sensors updated successfully');
+    } catch (e) {
+      log('Update user fields and sensors error: $e');
+      rethrow;
+    }
+  }
+
+  // Update selected field and sensor
+  Future<void> updateSelectedFieldAndSensor(
+    String userId, {
+    String? fieldId,
+    String? sensorId,
+  }) async {
+    try {
+      final Map<String, dynamic> updates = {};
+      if (fieldId != null) updates['fieldId'] = fieldId;
+      if (sensorId != null) updates['sensorId'] = sensorId;
+
+      if (updates.isNotEmpty) {
+        await _firestore.collection('users').doc(userId).update(updates);
+        log('User selected field/sensor updated successfully');
+      }
+    } catch (e) {
+      log('Update user selected field/sensor error: $e');
       rethrow;
     }
   }

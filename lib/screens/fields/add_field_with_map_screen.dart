@@ -463,7 +463,6 @@ class _AddFieldWithMapScreenState extends State<AddFieldWithMapScreen> {
               validator: (val) {
                 final v = val?.trim() ?? '';
                 if (v.isEmpty) return 'Please enter crop type';
-                if (!isValidCropType(v)) return 'Enter a valid crop type';
                 return null;
               },
             ),

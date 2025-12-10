@@ -9,7 +9,9 @@ import '../../providers/dashboard_provider.dart';
 import '../../providers/language_provider.dart';
 import '../../services/sensor_local_service.dart';
 import '../../utils/l10n_extensions.dart';
-import 'usb_sensor_screen.dart'; // Import the new USB sensor screen
+import 'usb_sensor_screen_with_sessions.dart'; // Import the new USB sensor screen
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class SensorsScreen extends StatefulWidget {
   const SensorsScreen({super.key});
@@ -64,7 +66,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const UsbSensorScreen()),
+                MaterialPageRoute(builder: (context) => const UsbSensorScreenWithSessions()),
               );
             },
           ),
@@ -154,7 +156,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (context) => const UsbSensorScreen()),
+              MaterialPageRoute(builder: (context) => const UsbSensorScreenWithSessions()),
             );
           },
           borderRadius: BorderRadius.circular(16),
@@ -352,42 +354,56 @@ class _SensorsScreenState extends State<SensorsScreen> {
                               onChanged: (v) => setState(() => pairingMethod = v!),
                             ),
                             const SizedBox(height: 16),
-                            if (pairingMethod == 'BLE')
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  labelText: context.l10n.bleMacAddress,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: scheme.surfaceVariant.withOpacity(0.3),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                ),
-                                validator: (v) => pairingMethod == 'BLE' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
-                                onChanged: (v) => bleMac = v,
-                              ),
-                            if (pairingMethod == 'WiFi')
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  labelText: context.l10n.wifiSsid,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: scheme.surfaceVariant.withOpacity(0.3),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                ),
-                                validator: (v) => pairingMethod == 'WiFi' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
-                                onChanged: (v) => wifiSsid = v,
-                              ),
-                            if (pairingMethod == 'LoRaWAN')
-                              TextFormField(
-                                decoration: InputDecoration(
-                                  labelText: context.l10n.gatewayIdName,
-                                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                                  filled: true,
-                                  fillColor: scheme.surfaceVariant.withOpacity(0.3),
-                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                ),
-                                validator: (v) => pairingMethod == 'LoRaWAN' && (v == null || v.isEmpty) ? context.l10n.requiredField : null,
-                                onChanged: (v) => loraGateway = v,
-                              ),
+                            StreamBuilder<QuerySnapshot>(
+                              stream: FirebaseFirestore.instance
+                                  .collection('fields')
+                                  .where('userId', isEqualTo: FirebaseAuth.instance.currentUser?.uid)
+                                  .snapshots(),
+                              builder: (context, snapshot) {
+                                if (!snapshot.hasData) {
+                                  return const Center(child: CircularProgressIndicator());
+                                }
+                                
+                                final fields = snapshot.data!.docs;
+                                
+                                if (fields.isEmpty) {
+                                  return Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: scheme.errorContainer,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Text(
+                                      'No fields available. Please create a field first.',
+                                      style: TextStyle(color: scheme.onErrorContainer),
+                                    ),
+                                  );
+                                }
+                                
+                                return DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    labelText: 'Assign to Field',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    filled: true,
+                                    fillColor: scheme.surfaceVariant.withOpacity(0.3),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                  ),
+                                  value: bleMac.isEmpty ? null : bleMac,
+                                  items: fields.map((field) {
+                                    final data = field.data() as Map<String, dynamic>;
+                                    final label = data['label'] ?? 'Unknown Field';
+                                    return DropdownMenuItem(
+                                      value: field.id,
+                                      child: Text(label),
+                                    );
+                                  }).toList(),
+                                  validator: (v) => v == null || v.isEmpty 
+                                      ? 'Please select a field' 
+                                      : null,
+                                  onChanged: (v) => setState(() => bleMac = v ?? ''),
+                                );
+                              },
+                            ),
                             const SizedBox(height: 20),
                             Theme(
                               data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
@@ -459,7 +475,7 @@ class _SensorsScreenState extends State<SensorsScreen> {
                                       ),
                                     ),
                                   ],
-                                  TextFormField(
+                                   TextFormField(
                                     decoration: InputDecoration(
                                       labelText: context.l10n.fieldZoneAssignment,
                                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

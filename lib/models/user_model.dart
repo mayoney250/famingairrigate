@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:hive/hive.dart';
+
 part 'user_model.g.dart';
 
 @HiveType(typeId: 5)
@@ -50,6 +51,14 @@ class UserModel extends HiveObject {
   final String? gender;
   @HiveField(22)
   final DateTime? dateOfBirth;
+  @HiveField(23)
+  final String? fieldId;
+  @HiveField(24)
+  final String? sensorId;
+  @HiveField(25)
+  final List<String>? fieldIds;
+  @HiveField(26)
+  final List<String>? sensorIds;
 
   UserModel({
     required this.userId,
@@ -75,6 +84,10 @@ class UserModel extends HiveObject {
     this.idNumber,
     this.gender,
     this.dateOfBirth,
+    this.fieldId,
+    this.sensorId,
+    this.fieldIds,
+    this.sensorIds,
   });
 
   String get fullName => '$firstName $lastName';
@@ -104,6 +117,10 @@ class UserModel extends HiveObject {
       'idNumber': idNumber,
       'gender': gender,
       'dateOfBirth': dateOfBirth != null ? Timestamp.fromDate(dateOfBirth!) : null,
+      'fieldId': fieldId,
+      'sensorId': sensorId,
+      'fieldIds': fieldIds,
+      'sensorIds': sensorIds,
     };
   }
 
@@ -132,6 +149,14 @@ class UserModel extends HiveObject {
       idNumber: map['idNumber'],
       gender: map['gender'],
       dateOfBirth: (map['dateOfBirth'] as Timestamp?)?.toDate(),
+      fieldId: map['fieldId'],
+      sensorId: map['sensorId'],
+      fieldIds: map['fieldIds'] != null
+          ? List<String>.from(map['fieldIds'] as List<dynamic>)
+          : null,
+      sensorIds: map['sensorIds'] != null
+          ? List<String>.from(map['sensorIds'] as List<dynamic>)
+          : null,
     );
   }
 
@@ -164,6 +189,10 @@ class UserModel extends HiveObject {
     String? idNumber,
     String? gender,
     DateTime? dateOfBirth,
+    String? fieldId,
+    String? sensorId,
+    List<String>? fieldIds,
+    List<String>? sensorIds,
   }) {
     return UserModel(
       userId: userId ?? this.userId,
@@ -189,6 +218,10 @@ class UserModel extends HiveObject {
       idNumber: idNumber ?? this.idNumber,
       gender: gender ?? this.gender,
       dateOfBirth: dateOfBirth ?? this.dateOfBirth,
+      fieldId: fieldId ?? this.fieldId,
+      sensorId: sensorId ?? this.sensorId,
+      fieldIds: fieldIds ?? this.fieldIds,
+      sensorIds: sensorIds ?? this.sensorIds,
     );
   }
 }

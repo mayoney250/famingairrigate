@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, render_template_string, request
+import argparse
 import minimalmodbus
 import serial
 import serial.tools.list_ports
@@ -33,6 +34,83 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize Firebase: {e}")
     db = None
+
+# --- Sensor Configuration (Session-Based) ---
+# These will be set from command-line arguments or session
+HARDWARE_ID = None
+sensor_user_id = None
+sensor_field_id = None
+
+# Session timeout in minutes
+SESSION_TIMEOUT_MINUTES = 10
+
+# Offline buffering
+offline_buffer = []
+MAX_OFFLINE_BUFFER = 50
+
+# --- Auto-Discovery Functions ---
+
+def get_unique_hardware_id():
+    """Generate a stable Hardware ID based on the USB device."""
+    try:
+        import serial.tools.list_ports
+        ports = list(serial.tools.list_ports.comports())
+        for port in ports:
+            # Look for CH340 or generic USB-Serial or specific USB VID/PID
+            if "USB-SERIAL" in port.description.upper() or "CH340" in port.description.upper() or "USB SERIAL" in port.description.upper():
+                if port.serial_number:
+                    return f"FAMINGA_{port.serial_number}"
+                # Fallback if no serial number (common with cheap clones)
+                return f"FAMINGA_{port.device.replace('/', '_').replace('COM', '')}"
+    except Exception as e:
+        logger.error(f"Error checking ports: {e}")
+    
+    # Fallback for when no obvious USB-Serial found (maybe generic)
+    return "FAMINGA_UNKNOWN_DEVICE"
+
+def scan_for_sensor_port():
+    """Scan all ports to find the Modbus sensor"""
+    import serial.tools.list_ports
+    ports = list(serial.tools.list_ports.comports())
+    
+    for port in ports:
+        try:
+            # Skip bluetooth ports often named like this
+            if "Bluetooth" in port.description: continue
+            
+            logger.debug(f"Scanning port {port.device}...")
+            # Try to connect and read something
+            temp_instr = minimalmodbus.Instrument(port.device, 1)
+            temp_instr.serial.baudrate = 9600
+            temp_instr.serial.timeout = 0.5
+            temp_instr.close_port_after_each_call = True
+            
+            # Read one register to verify it's our sensor
+            temp_instr.read_register(0, 0, 3)
+            logger.info(f"OK Found sensor on {port.device}")
+            return port.device
+        except:
+            continue
+    return None
+
+def announce_presence(hardware_id):
+    """Tell Firestore we are here and waiting for assignment"""
+    if db is None: return
+    
+    try:
+        doc_ref = db.collection('unassigned_sensors').document(hardware_id)
+        doc_ref.set({
+            'hardwareId': hardware_id,
+            'status': 'waiting',
+            'lastSeen': firestore.SERVER_TIMESTAMP,
+            'deviceInfo': {
+                 'platform': 'windows',
+                 'version': '1.0'
+            }
+        })
+        logger.info(f"> Announced presence as {hardware_id} - Waiting for app...")
+    except Exception as e:
+        logger.error(f"Failed to announce: {e}")
 
 # --- Modbus RS485 Sensor Setup ---
 instrument = None
@@ -78,6 +156,152 @@ def initialize_sensor(port='COM6'):
     except Exception as e:
         logger.error(f"Failed to initialize sensor: {e}")
         instrument = None
+        return False
+
+def get_active_session(hardware_id):
+    """Get the active session for a sensor from Firestore"""
+    if db is None:
+        logger.error("Firebase not initialized, cannot get session")
+        return None
+    
+    try:
+        session_ref = db.collection('sensor_sessions').document(hardware_id)
+        session_doc = session_ref.get()
+        
+        if not session_doc.exists:
+            logger.warning(f"No session found for sensor {hardware_id}")
+            return None
+        
+        session_data = session_doc.to_dict()
+        
+        # Check if session is active
+        if not session_data.get('active', False):
+            logger.warning(f"Session for {hardware_id} is not active")
+            return None
+        
+        # Check if session is expired (no heartbeat in last 10 minutes)
+        last_heartbeat = session_data.get('lastHeartbeat')
+        if last_heartbeat:
+            from datetime import datetime, timezone
+            now = datetime.now(timezone.utc)
+            heartbeat_time = last_heartbeat.replace(tzinfo=timezone.utc)
+            age_minutes = (now - heartbeat_time).total_seconds() / 60
+            
+            if age_minutes > SESSION_TIMEOUT_MINUTES:
+                logger.warning(f"Session for {hardware_id} expired ({age_minutes:.1f} minutes old)")
+                return None
+        
+        logger.info(f"Active session found for {hardware_id}: user={session_data.get('userId')}, field={session_data.get('fieldId')}")
+        return session_data
+        
+    except Exception as e:
+        logger.error(f"Failed to get session: {e}")
+        return None
+
+def validate_session(hardware_id, expected_user_id):
+    """Validate that the session is still active and belongs to expected user"""
+    session = get_active_session(hardware_id)
+    
+    if session is None:
+        return False
+    
+    if session.get('userId') != expected_user_id:
+        logger.error(f"Session user mismatch: expected {expected_user_id}, got {session.get('userId')}")
+        return False
+    
+    return True
+
+def update_heartbeat(hardware_id):
+    """Update the session heartbeat timestamp"""
+    if db is None:
+        return False
+    
+    try:
+        session_ref = db.collection('sensor_sessions').document(hardware_id)
+        session_ref.update({
+            'lastHeartbeat': firestore.SERVER_TIMESTAMP
+        })
+        return True
+    except Exception as e:
+        logger.error(f"Failed to update heartbeat: {e}")
+        return False
+
+def create_session(hardware_id, user_id, field_id):
+    """Create a new session for the sensor"""
+    if db is None:
+        return False
+        
+    try:
+        session_ref = db.collection('sensor_sessions').document(hardware_id)
+        
+        # Check if already active for another user
+        doc = session_ref.get()
+        if doc.exists:
+            data = doc.to_dict()
+            if data.get('active') and data.get('userId') != user_id:
+                # Check timeout
+                last_heartbeat = data.get('lastHeartbeat')
+                if last_heartbeat:
+                    from datetime import datetime, timezone
+                    now = datetime.now(timezone.utc)
+                    heartbeat_time = last_heartbeat.replace(tzinfo=timezone.utc)
+                    age_minutes = (now - heartbeat_time).total_seconds() / 60
+                    if age_minutes < SESSION_TIMEOUT_MINUTES:
+                        logger.error(f"Sensor claimed by another user: {data.get('userId')}")
+                        return False
+        
+        # Create/Overwrite session
+        session_ref.set({
+            'userId': user_id,
+            'fieldId': field_id,
+            'active': True,
+            'claimedAt': firestore.SERVER_TIMESTAMP,
+            'lastHeartbeat': firestore.SERVER_TIMESTAMP
+        })
+        logger.info(f"OK Created new session for {hardware_id}")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to create session: {e}")
+        return False
+
+def get_sensor_registration(hardware_id):
+    """Query Firestore to get sensor registration (userId and fieldId)"""
+    global sensor_user_id, sensor_field_id
+    
+    if db is None:
+        logger.error("Firebase not initialized, cannot lookup sensor registration")
+        return False
+    
+    try:
+        logger.info(f"Looking up registration for sensor: {hardware_id}")
+        sensors_ref = db.collection('sensors')
+        query = sensors_ref.where('hardwareId', '==', hardware_id).limit(1).get()
+        
+        if not query:
+            logger.error(f"Sensor {hardware_id} is not registered in Firestore!")
+            logger.error("Please register this sensor in the app first.")
+            return False
+        
+        sensor_doc = query[0]
+        sensor_data = sensor_doc.to_dict()
+        
+        sensor_user_id = sensor_data.get('userId')
+        sensor_field_id = sensor_data.get('farmId') or sensor_data.get('fieldId')  # Support both field names
+        
+        if not sensor_user_id:
+            logger.error("Sensor registration missing userId!")
+            return False
+        
+        logger.info(f"✅ Sensor registered to user: {sensor_user_id}")
+        if sensor_field_id:
+            logger.info(f"✅ Sensor assigned to field: {sensor_field_id}")
+        else:
+            logger.warning("⚠️ Sensor not assigned to a field yet")
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Failed to lookup sensor registration: {e}")
         return False
 
 # --- Global state with thread safety ---
@@ -140,10 +364,10 @@ def evaluate_conditions(moisture, temperature):
 
     return moisture_status, temp_status
 
-def read_soil_sensor():
+def read_soil_sensor(port_name, user_id, field_id):
     """Background thread that continuously reads Modbus RS485 soil sensor data."""
     global sensor_active, instrument
-    logger.info("Sensor thread started")
+    logger.info(f"Sensor thread started on {port_name} for User: {user_id}")
     
     consecutive_errors = 0
     max_consecutive_errors = 3
@@ -152,9 +376,16 @@ def read_soil_sensor():
     while True:
         try:
             if sensor_active:
+                # SESSION VALIDATION: Check if session is still valid
+                if not validate_session(HARDWARE_ID, user_id):
+                    logger.error("ERR Session lost or invalid - stopping sensor loop")
+                    with data_lock:
+                        latest_data["status"] = "session_lost"
+                    break  # Exit the loop
+                
                 if instrument is None:
-                    logger.info("Initializing sensor connection...")
-                    if initialize_sensor():
+                    logger.info(f"Initializing sensor connection on {port_name}...")
+                    if initialize_sensor(port_name):
                         consecutive_errors = 0
                         time.sleep(1)  # Give sensor time to stabilize
                     else:
@@ -192,17 +423,37 @@ def read_soil_sensor():
                         latest_data["temp_status"] = temp_status
 
                     # Upload to Firestore
-                    if db:
+                    if db and user_id:
                         try:
-                            doc_ref = db.collection('faminga_sensors').document('latest')
+                            # Write to sensor-specific document using hardwareId (latest snapshot)
+                            doc_ref = db.collection('faminga_sensors').document(HARDWARE_ID)
                             doc_ref.set({
+                                'userId': user_id,
+                                'fieldId': field_id,
+                                'hardwareId': HARDWARE_ID,
                                 'moisture': round(moisture, 1),
                                 'temperature': round(temperature, 1),
                                 'moisture_status': moisture_status,
                                 'temp_status': temp_status,     
                                 'timestamp': firestore.SERVER_TIMESTAMP
                             })
-                            logger.info("Data uploaded to Firestore")
+                            logger.info(f"Data uploaded to faminga_sensors/{HARDWARE_ID}")
+                            
+                            # Add to historical readings subcollection
+                            readings_ref = doc_ref.collection('readings')
+                            readings_ref.add({
+                                'userId': user_id,
+                                'fieldId': field_id,
+                                'moisture': round(moisture, 1),
+                                'temperature': round(temperature, 1),
+                                'moisture_status': moisture_status,
+                                'temp_status': temp_status,
+                                'timestamp': firestore.SERVER_TIMESTAMP
+                            })
+                            
+                            # Update session heartbeat
+                            update_heartbeat(HARDWARE_ID)
+                            
                         except Exception as e:
                             logger.error(f"Failed to upload to Firestore: {e}")
 
@@ -704,24 +955,102 @@ def health_check():
         "last_reading": timestamp
     }), 200 if is_healthy else 503
 
+
+def run_flask_app():
+    """Run Flask app serving the dashboard"""
+    try:
+        app.run(host='0.0.0.0', port=2000, debug=False, use_reloader=False)
+    except Exception as e:
+        logger.error(f"Flask init failed: {e}")
+
+# --- Initialize and start ---
 # --- Initialize and start ---
 if __name__ == '__main__':
-    logger.info("=" * 60)
-    logger.info("Starting FAMINGA Soil Reader")
-    logger.info("=" * 60)
+    # Parse command-line arguments (Optional now)
+    parser = argparse.ArgumentParser(description='FAMINGA Soil Sensor Reader with Session Management')
+    parser.add_argument('--hardware-id', help='Override Hardware ID')
+    parser.add_argument('--user-id', help='Pre-claim User ID')
+    parser.add_argument('--field-id', help='Pre-claim Field ID')
+    parser.add_argument('--port', help='Override Serial Port')
     
-    # List available ports
-    list_available_ports()
+    args = parser.parse_args()
+    
+    # 1. Hardware ID Detection
+    if args.hardware_id:
+        HARDWARE_ID = args.hardware_id
+    else:
+        HARDWARE_ID = get_unique_hardware_id()
+        logger.info(f"> Detected Hardware ID: {HARDWARE_ID}")
 
+    # 2. Port Detection
+    detected_port = args.port if args.port else scan_for_sensor_port()
+    if not detected_port:
+        logger.error("ERR No sensor found on any USB port!")
+        logger.info("Please check connections.")
+        time.sleep(5)
+        exit(1)
+        
+    logger.info(f"> Using Port: {detected_port}")
+    
+    # 3. Firestore Init
+    if db is None:
+        logger.error("ERR Cannot reach Firestore! Check firebase_key.json")
+        exit(1)
+        
     if ENABLE_CSV_LOGGING:
         initialize_csv()
 
-    # Start sensor thread (it will initialize on its own)
-    sensor_thread = threading.Thread(target=read_soil_sensor, daemon=True)
-    sensor_thread.start()
+    # Start Web Server (Daemon)
+    flask_thread = threading.Thread(target=run_flask_app)
+    flask_thread.daemon = True
+    flask_thread.start()
+    logger.info("Web server started on port 2000")
 
-    logger.info("Web server starting on http://0.0.0.0:2000")
-    logger.info("Access dashboard at http://localhost:2000")
-    
-    app.run(host='0.0.0.0', port=2000, debug=False)
+    # 4. Main Waiting Loop
+    logger.info("=" * 60)
+    logger.info("FAMINGA Sensor Service Started")
+    logger.info("   Waiting for assignment from App...")
+    logger.info("=" * 60)
+
+    while True:
+        # Check for active session
+        session = get_active_session(HARDWARE_ID)
+        
+        if session and session.get('active'):
+            # WE HAVE A SESSION!
+            sensor_user_id = session.get('userId')
+            sensor_field_id = session.get('fieldId')
+            
+            logger.info("=" * 60)
+            logger.info(f"OK Session Found / Assigned!")
+            logger.info(f"   User: {sensor_user_id}")
+            logger.info(f"   Field: {sensor_field_id}")
+            logger.info("=" * 60)
+            
+            # Reset error count
+            with data_lock:
+                latest_data["status"] = "initializing"
+            
+            # Start the main sensor loop (BLOCKING)
+            # This will run until session is lost/invalid
+            sensor_active = True
+            read_soil_sensor(detected_port, sensor_user_id, sensor_field_id) 
+            
+            # If we return here, session was lost.
+            logger.info("! Session ended or lost. Returning to waiting mode...")
+            time.sleep(2)
+            
+        else:
+            # No session - Announce and wait
+            announce_presence(HARDWARE_ID)
+            
+            # Use CLI args if provided to auto-create (fallback for dev)
+            if args.user_id and args.field_id:
+                logger.info("Using CLI args to auto-create session...")
+                create_session(HARDWARE_ID, args.user_id, args.field_id)
+                time.sleep(1)
+                continue
+                
+            time.sleep(3) # Wait before polling again
+
 

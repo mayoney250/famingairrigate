@@ -22,6 +22,10 @@ import '../../utils/l10n_extensions.dart';
 import '../../models/forecast_day_model.dart';
 import '../../models/sensor_data_model.dart';
 import '../../models/ai_recommendation_model.dart';
+import '../../models/weather_model.dart';
+import '../../models/irrigation_schedule_model.dart';
+import '../../services/sensor_discovery_service.dart';
+import '../../widgets/sensors/new_sensor_dialog.dart';
 
 
 // dev-only simulation imports removed
@@ -43,6 +47,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isManualStartHighlighted = false;
   Timer? _highlightTimer;
   bool _isWeatherCardExpanded = false;
+
+  StreamSubscription? _discoverySubscription;
+  final Set<String> _ignoredSensors = {};
 
   @override
   void initState() {
@@ -76,9 +83,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
       final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
       if (authProvider.currentUser != null) {
         dashboardProvider.loadDashboardData(authProvider.currentUser!.userId);
+        _initSensorDiscovery();
       }
       _loadAlerts();
       _startAutoRefresh();
+    });
+  }
+
+  void _initSensorDiscovery() {
+    // Listen for new sensors (Plug-and-Play)
+    _discoverySubscription = SensorDiscoveryService().unassignedSensorsStream.listen((sensors) {
+      if (!mounted) return;
+      
+      for (final sensor in sensors) {
+        if (!_ignoredSensors.contains(sensor.hardwareId)) {
+          _ignoredSensors.add(sensor.hardwareId); // Prevent multiple popups
+          
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (_) => NewSensorDialog(hardwareId: sensor.hardwareId),
+          ).then((_) {
+            // If dialog closed without claiming (e.g. ignored), keep it ignored for this session
+            // or remove from ignore list to show again later? 
+            // For now, keep ignored to avoid spam.
+          });
+          break; // Show one at a time
+        }
+      }
     });
   }
 
@@ -95,6 +127,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void dispose() {
     _refreshTimer?.cancel();
     _highlightTimer?.cancel();
+    _discoverySubscription?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
@@ -279,10 +312,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
           builder: (_, error, __) => _buildSensorOfflineBanner(error),
         ),
         
-        // USB Sensor Card (with RepaintBoundary)
         RepaintBoundary(
           child: Selector<DashboardProvider, ({Map<String, dynamic>? usbData, AIRecommendation? usbAi})>(
-            selector: (_, provider) => (usbData: provider.usbSensorData, usbAi: provider.usbAiRecommendation),
+            selector: (_, provider) {
+              // Get first sensor's data for backward compatibility
+              final firstSensor = provider.usbSensorsData.values.isNotEmpty 
+                  ? provider.usbSensorsData.values.first 
+                  : null;
+              final firstAi = provider.usbAiRecommendations.values.isNotEmpty
+                  ? provider.usbAiRecommendations.values.first
+                  : null;
+              return (usbData: firstSensor, usbAi: firstAi);
+            },
             builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
           ),
         ),
@@ -363,7 +404,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   // USB Sensor Card
                   RepaintBoundary(
                     child: Selector<DashboardProvider, ({Map<String, dynamic>? usbData, AIRecommendation? usbAi})>(
-                      selector: (_, provider) => (usbData: provider.usbSensorData, usbAi: provider.usbAiRecommendation),
+                      selector: (_, provider) {
+                        // Get first sensor's data for backward compatibility
+                        final firstSensor = provider.usbSensorsData.values.isNotEmpty 
+                            ? provider.usbSensorsData.values.first 
+                            : null;
+                        final firstAi = provider.usbAiRecommendations.values.isNotEmpty
+                            ? provider.usbAiRecommendations.values.first
+                            : null;
+                        return (usbData: firstSensor, usbAi: firstAi);
+                      },
                       builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
                     ),
                   ),
@@ -460,9 +510,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildWeatherAndGauge(DashboardProvider dashboardProvider, bool isWideScreen) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
+  Widget _buildWeatherAndGauge(double? avgMoisture, double dailyWater, WeatherData? weatherData, List<Map<String, dynamic>> forecast5Day, bool isWideScreen) {
+    final avg = avgMoisture;
+    final daily = dailyWater;
 
     // Soil Moisture Card
     Widget moistureCard = Container(
@@ -565,7 +615,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          _buildWeatherCard(dashboardProvider),
+          _buildWeatherCard(weatherData, forecast5Day),
         ],
       );
     } else {
@@ -581,25 +631,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ],
               ),
               const SizedBox(height: 16),
-              _buildWeatherCard(dashboardProvider),
+              _buildWeatherCard(weatherData, forecast5Day),
             ],
           );
         }
         // Mobile: Use the full width card
         return Column(
           children: [
-            _buildFullWidthSoilCard(dashboardProvider),
+            _buildFullWidthSoilCard(avg, daily),
             const SizedBox(height: 16),
-            _buildWeatherCard(dashboardProvider),
+            _buildWeatherCard(weatherData, forecast5Day),
           ],
         );
       });
     }
   }
 
-  Widget _buildFullWidthSoilCard(DashboardProvider dashboardProvider) {
-    final avg = dashboardProvider.avgSoilMoisture;
-    final daily = dashboardProvider.dailyWaterUsage;
+  Widget _buildFullWidthSoilCard(double? avgMoisture, double dailyWater) {
+    final avg = avgMoisture;
+    final daily = dailyWater;
 
     return Container(
       width: double.infinity,
@@ -1946,6 +1996,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ElevatedButton(
                         onPressed: () async {
                           final uid = authProvider.currentUser!.userId;
+                          final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
                           final ok = await dashboardProvider.startScheduledCycleNow(sched.id, uid);
                           if (!ok) {
                             Get.snackbar(context.l10n.error, context.l10n.failedStartIrrigation);
@@ -1958,6 +2009,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       OutlinedButton(
                         onPressed: () async {
                           final uid = authProvider.currentUser!.userId;
+                          final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
                           final ok = await dashboardProvider.stopCycle(sched.id, uid);
                           if (!ok) {
                             Get.snackbar(context.l10n.error, context.l10n.failedStopIrrigation);
@@ -1992,6 +2044,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () async {
+                  final dashboardProvider = Provider.of<DashboardProvider>(context, listen: false);
                   // Check if fields exist before opening manual irrigation
                   if (dashboardProvider.fields.isEmpty) {
                     _showNoFieldsModal(context, authProvider.currentUser!.userId);

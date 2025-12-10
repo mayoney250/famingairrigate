@@ -24,6 +24,16 @@ class FieldService {
       final fresh = [...cached, {...fieldData, 'id': docRef.id}];
       await cache.cacheJsonList(cacheKey, fresh);
 
+      // Add fieldId to user's fieldIds array
+      try {
+        await _firestore.collection('users').doc(field.userId).update({
+          'fieldIds': FieldValue.arrayUnion([docRef.id]),
+        });
+        dev.log('Added fieldId ${docRef.id} to user ${field.userId}');
+      } catch (e) {
+        dev.log('Error updating user fieldIds: $e');
+      }
+
       return docRef.id;
     } catch (e) {
       dev.log('Error creating field (offline?): $e');
@@ -172,10 +182,32 @@ class FieldService {
   }
 
   // Delete field
-  Future<bool> deleteField(String fieldId) async {
+  Future<bool> deleteField(String fieldId, {String? userId}) async {
     try {
+      // If userId is not provided, fetch it from the field document
+      String? fieldUserId = userId;
+      if (fieldUserId == null) {
+        final fieldDoc = await _firestore.collection(_collection).doc(fieldId).get();
+        if (fieldDoc.exists) {
+          fieldUserId = fieldDoc.data()?['userId'] as String?;
+        }
+      }
+
       await _firestore.collection(_collection).doc(fieldId).delete();
       dev.log('Field deleted: $fieldId');
+
+      // Remove fieldId from user's fieldIds array
+      if (fieldUserId != null) {
+        try {
+          await _firestore.collection('users').doc(fieldUserId).update({
+            'fieldIds': FieldValue.arrayRemove([fieldId]),
+          });
+          dev.log('Removed fieldId $fieldId from user $fieldUserId');
+        } catch (e) {
+          dev.log('Error updating user fieldIds: $e');
+        }
+      }
+
       return true;
     } catch (e) {
       dev.log('Error deleting field: $e');

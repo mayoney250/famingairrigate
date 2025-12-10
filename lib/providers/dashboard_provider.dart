@@ -47,13 +47,13 @@ class DashboardProvider with ChangeNotifier {
   List<Map<String, String>> _fields = <Map<String, String>>[]; // [{id, name, crop}]
   Map<String, AIRecommendation> _aiRecommendations = {}; // Cache per field
   
-  // USB Sensor Data
-  Map<String, dynamic>? _usbSensorData;
-  AIRecommendation? _usbAiRecommendation;
-  StreamSubscription<DocumentSnapshot>? _usbSensorSubscription;
+  // USB Sensor Data - Changed to support multiple sensors
+  Map<String, Map<String, dynamic>> _usbSensorsData = {};  // Map of hardwareId -> sensor data
+  Map<String, AIRecommendation> _usbAiRecommendations = {};  // Map of hardwareId -> AI recommendation
+  StreamSubscription<QuerySnapshot>? _usbSensorSubscription;
 
-  Map<String, dynamic>? get usbSensorData => _usbSensorData;
-  AIRecommendation? get usbAiRecommendation => _usbAiRecommendation;
+  Map<String, Map<String, dynamic>> get usbSensorsData => _usbSensorsData;
+  Map<String, AIRecommendation> get usbAiRecommendations => _usbAiRecommendations;
   
   Map<String, AIRecommendation> get aiRecommendations => _aiRecommendations;
 
@@ -890,47 +890,58 @@ class DashboardProvider with ChangeNotifier {
   }
 
   void _initUsbSensorListener() {
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    if (userId == null) {
+      dev.log('No user logged in, skipping USB sensor listener');
+      return;
+    }
+
     _usbSensorSubscription?.cancel();
     _usbSensorSubscription = _firestore
         .collection('faminga_sensors')
-        .doc('latest')
+        .where('userId', isEqualTo: userId)  // Filter by logged-in user
         .snapshots()
         .debounce(const Duration(seconds: 3))
         .listen((snapshot) {
-      if (snapshot.exists && snapshot.data() != null) {
-        _usbSensorData = snapshot.data();
-        notifyListeners();
-        
-        // Fetch AI recommendation for USB sensor
-        _fetchUsbAIRecommendation();
+      final sensors = <String, Map<String, dynamic>>{};
+      
+      for (var doc in snapshot.docs) {
+        if (doc.exists && doc.data() != null) {
+          sensors[doc.id] = doc.data();
+          // Fetch AI recommendation for each sensor
+          _fetchSensorAIRecommendation(doc.id, doc.data());
+        }
       }
+      
+      _usbSensorsData = sensors;
+      notifyListeners();
     }, onError: (e) {
-      dev.log('Error listening to USB sensor: $e');
+      dev.log('Error listening to USB sensors: $e');
     });
   }
 
-  Future<void> _fetchUsbAIRecommendation() async {
-    if (_usbSensorData == null || _weatherData == null) return;
+  Future<void> _fetchSensorAIRecommendation(String hardwareId, Map<String, dynamic> sensorData) async {
+    if (sensorData == null || _weatherData == null) return;
 
     try {
       final userId = FirebaseAuth.instance.currentUser?.uid ?? '';
-      final moisture = (_usbSensorData!['moisture'] as num?)?.toDouble() ?? 0.0;
-      final temperature = (_usbSensorData!['temperature'] as num?)?.toDouble() ?? 0.0;
+      final moisture = (sensorData['moisture'] as num?)?.toDouble() ?? 0.0;
+      final temperature = (sensorData['temperature'] as num?)?.toDouble() ?? 0.0;
+      final fieldId = sensorData['fieldId'] as String? ?? 'unknown';
       
-      // Use generic values for USB sensor
       final rec = await _aiService.getIrrigationAdvice(
         userId: userId,
-        fieldId: 'usb_sensor',
+        fieldId: fieldId,
         soilMoisture: moisture,
         temperature: temperature,
         humidity: _weatherData!.humidity.toDouble(),
         cropType: 'General',
       );
 
-      _usbAiRecommendation = rec;
+      _usbAiRecommendations[hardwareId] = rec;
       notifyListeners();
     } catch (e) {
-      dev.log('Error fetching AI for USB sensor: $e');
+      dev.log('Error fetching AI for sensor $hardwareId: $e');
     }
   }
 

@@ -8,6 +8,7 @@ import '../services/error_service.dart';
 import '../services/user_local_service.dart';
 import '../services/notification_service.dart';
 import '../services/fcm_service.dart';
+import '../services/sensor_session_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
@@ -214,6 +215,11 @@ class AuthProvider with ChangeNotifier {
     try {
       _isLoading = true;
       notifyListeners();
+
+      if (_currentUser != null) {
+        // Release all sensor sessions for this user
+        await SensorSessionService().releaseAllSessionsForUser(_currentUser!.userId);
+      }
 
       await _authService.signOut();
       _currentUser = null;

@@ -157,6 +157,49 @@ service cloud.firestore {
       allow update, delete: if isVerified() && resource.data.userId == request.auth.uid;
     }
     
+    // USB Sensor Data - faminga_sensors collection
+    match /faminga_sensors/{hardwareId} {
+      // Users can only read their own sensor data
+      allow read: if isVerified() && resource.data.userId == request.auth.uid;
+      // Python script writes (uses service account or allow write for now)
+      allow write: if true;  // TODO: Restrict to service account in production
+      
+      // Historical readings subcollection
+      match /readings/{readingId} {
+        allow read: if isVerified() && resource.data.userId == request.auth.uid;
+        allow write: if true;  // Python script writes
+      }
+    }
+    
+    // Sensor Sessions - for session-based sensor assignment
+    // Unassigned Sensors (for Plug-and-Play discovery)
+  match /unassigned_sensors/{hardwareId} {
+    // Authenticated users can see waiting sensors
+    allow read: if request.auth != null;
+    // Users can "claim" (delete) them when creating a session
+    allow delete: if request.auth != null;
+    // Only Admin SDK (Python) creates them (bypasses rules)
+  }
+
+  match /sensor_sessions/{hardwareId} {
+      // Users can create sessions for themselves
+      allow create: if isAuthenticated() && 
+        request.resource.data.userId == request.auth.uid &&
+        request.resource.data.active == true;
+      
+      // Users can read their own sessions
+      allow read: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can update/delete their own sessions
+      allow update, delete: if isAuthenticated() && 
+        resource.data.userId == request.auth.uid;
+      
+      // Python script can update heartbeat (allow write for now)
+      // TODO: Restrict to service account in production
+      allow update: if true;
+    }
+    
     // Irrigation zones - NEW: Enhanced for irrigation planning module
     match /irrigation_zones/{zoneId} {
       allow read: if isVerified() &&
