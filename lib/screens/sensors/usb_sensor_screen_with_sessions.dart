@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
 import '../../services/sensor_session_service.dart';
+import '../../utils/l10n_extensions.dart';
 
 class UsbSensorScreenWithSessions extends StatefulWidget {
   const UsbSensorScreenWithSessions({super.key});
@@ -23,7 +24,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
   Future<void> _claimSensor(String hardwareId) async {
     if (_selectedFieldId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a field first')),
+        SnackBar(content: Text(context.l10n.pleaseSelectFieldFirst)),
       );
       return;
     }
@@ -41,7 +42,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ Sensor $hardwareId claimed successfully!'),
+            content: Text(context.l10n.sensorClaimedSuccess(hardwareId)),
             backgroundColor: Colors.green,
           ),
         );
@@ -49,8 +50,8 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     } else {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('❌ Sensor is already in use by another user'),
+          SnackBar(
+            content: Text(context.l10n.sensorInUseError),
             backgroundColor: Colors.red,
           ),
         );
@@ -68,7 +69,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     if (success && mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('✅ Sensor $hardwareId released'),
+          content: Text(context.l10n.sensorReleasedSuccess(hardwareId)),
           backgroundColor: Colors.orange,
         ),
       );
@@ -81,20 +82,20 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     
     if (userId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('🌱 USB Soil Sensors')),
-        body: const Center(child: Text('Please log in to view sensors')),
+        appBar: AppBar(title: Text(context.l10n.usbSoilSensor)),
+        body: Center(child: Text(context.l10n.pleaseLoginToViewSensors)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          '🌱 USB Soil Sensors',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          context.l10n.usbSoilSensor,
+          style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
@@ -156,11 +157,12 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
   }
 
   Widget _buildFieldSelector(String userId) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
@@ -173,12 +175,12 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Select Field to Monitor',
+          Text(
+            context.l10n.selectFieldToMonitor,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.bold,
-              color: Colors.black87,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 12),
@@ -195,16 +197,16 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
               final fields = snapshot.data!.docs;
 
               if (fields.isEmpty) {
-                return const Text(
-                  'No fields available. Create a field first.',
-                  style: TextStyle(color: Colors.grey),
+                return Text(
+                  context.l10n.noFieldsCreateFirst,
+                  style: const TextStyle(color: Colors.grey),
                 );
               }
 
               return DropdownButtonFormField<String>(
                 value: _selectedFieldId,
                 decoration: InputDecoration(
-                  hintText: 'Choose a field',
+                  hintText: context.l10n.chooseField,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -271,10 +273,11 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Sensor: $hardwareId',
-                            style: const TextStyle(
+                            context.l10n.sensorLabel(hardwareId),
+                            style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
                           if (fieldId != null)
@@ -286,12 +289,12 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                               builder: (context, fieldSnapshot) {
                                 if (fieldSnapshot.hasData && fieldSnapshot.data!.exists) {
                                   final fieldData = fieldSnapshot.data!.data() as Map<String, dynamic>;
-                                  final fieldName = fieldData['label'] ?? 'Unknown Field';
+                                  final fieldName = fieldData['label'] ?? context.l10n.unknownField;
                                   return Text(
-                                    'Field: $fieldName',
+                                    context.l10n.fieldLabel(fieldName),
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.grey[600],
+                                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                                     ),
                                   );
                                 }
@@ -313,7 +316,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                     Expanded(
                       child: _buildMetricCard(
                         context,
-                        title: 'Moisture',
+                        title: context.l10n.soilMoisture,
                         value: '$moisture',
                         unit: '%',
                         icon: Icons.water_drop,
@@ -325,7 +328,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                     Expanded(
                       child: _buildMetricCard(
                         context,
-                        title: 'Temperature',
+                        title: context.l10n.tempLabel,
                         value: '$temperature',
                         unit: '°C',
                         icon: Icons.thermostat,
@@ -340,10 +343,10 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                 if (timestamp != null) ...[ 
                   const SizedBox(height: 12),
                   Text(
-                    'Last updated: ${DateFormat('MMM d, HH:mm:ss').format(timestamp.toDate())}',
+                    '${context.l10n.lastUpdate}: ${DateFormat('MMM d, HH:mm:ss').format(timestamp.toDate())}',
                     style: TextStyle(
                       fontSize: 12,
-                      color: Colors.grey[600],
+                      color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                     ),
                   ),
                 ],
@@ -366,21 +369,21 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
 
     if (!hasActiveSession) {
       badgeColor = Colors.grey;
-      badgeText = 'AVAILABLE';
+      badgeText = context.l10n.statusAvailable;
       badgeIcon = Icons.sensors_off;
     } else if (isOwnedByCurrentUser) {
       if (isStale) {
         badgeColor = Colors.orange;
-        badgeText = 'OFFLINE';
+        badgeText = context.l10n.statusOffline;
         badgeIcon = Icons.cloud_off;
       } else {
         badgeColor = Colors.green;
-        badgeText = 'ACTIVE';
+        badgeText = context.l10n.statusActive;
         badgeIcon = Icons.check_circle;
       }
     } else {
       badgeColor = Colors.red;
-      badgeText = 'IN USE';
+      badgeText = context.l10n.statusInUse;
       badgeIcon = Icons.lock;
     }
 
@@ -431,7 +434,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'Sensor is offline. Data hasn\'t been updated in over 15 seconds.',
+                    context.l10n.sensorOfflineMessage,
                     style: TextStyle(color: Colors.orange[800], fontSize: 13),
                   ),
                 ),
@@ -444,7 +447,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
             child: OutlinedButton.icon(
               onPressed: () => _releaseSensor(hardwareId),
               icon: const Icon(Icons.stop),
-              label: const Text('Stop Monitoring'),
+              label: Text(context.l10n.stopMonitoring),
               style: OutlinedButton.styleFrom(
                 foregroundColor: Colors.red,
                 side: const BorderSide(color: Colors.red),
@@ -472,13 +475,13 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.grey.withOpacity(0.3)),
               ),
-              child: const Row(
+              child: Row(
                 children: [
                   Icon(Icons.sensors_off, color: Colors.grey, size: 20),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'No sensor detected. Please connect a USB sensor.',
+                      context.l10n.noSensorDetected,
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                   ),
@@ -491,7 +494,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
               child: ElevatedButton.icon(
                 onPressed: null, // Disabled
                 icon: const Icon(Icons.play_arrow),
-                label: const Text('Start Monitoring'),
+                label: Text(context.l10n.startMonitoring),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,
                   foregroundColor: Colors.white,
@@ -512,7 +515,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
         child: ElevatedButton.icon(
           onPressed: () => _claimSensor(hardwareId),
           icon: const Icon(Icons.play_arrow),
-          label: const Text('Start Monitoring'),
+          label: Text(context.l10n.startMonitoring),
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFFFFA500),
             foregroundColor: Colors.white,
@@ -530,7 +533,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
         child: ElevatedButton.icon(
           onPressed: () => _releaseSensor(hardwareId),
           icon: const Icon(Icons.stop),
-          label: const Text('Stop Monitoring'),
+          label: Text(context.l10n.stopMonitoring),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.red,
             foregroundColor: Colors.white,
@@ -550,13 +553,13 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
           borderRadius: BorderRadius.circular(8),
           border: Border.all(color: Colors.red.withOpacity(0.3)),
         ),
-        child: const Row(
+        child: Row(
           children: [
             Icon(Icons.info_outline, color: Colors.red, size: 20),
             SizedBox(width: 8),
             Expanded(
               child: Text(
-                'This sensor is currently being used by another user',
+                context.l10n.sensorInUseByOther,
                 style: TextStyle(color: Colors.red, fontSize: 13),
               ),
             ),
@@ -575,6 +578,8 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     required Color color,
     required String status,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -589,7 +594,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
           Text(
             title.toUpperCase(),
             style: TextStyle(
-              color: Colors.grey[700],
+              color: scheme.onSurface.withOpacity(0.7),
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
@@ -601,10 +606,10 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: scheme.onSurface,
                 ),
               ),
               const SizedBox(width: 2),
@@ -615,7 +620,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: scheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -626,7 +631,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
             status,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey[700],
+              color: scheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],
@@ -635,20 +640,20 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
   }
 
   Widget _buildNoSensorsMessage() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.sensors_off, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
+          Icon(Icons.sensors_off, size: 64, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
+          const SizedBox(height: 16),
           Text(
-            'No sensors found',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            context.l10n.noSensorsYet,
+            style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Sensors will appear here when they start sending data',
-            style: TextStyle(color: Colors.grey),
+            context.l10n.sensorsWillAppearHere,
+            style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
             textAlign: TextAlign.center,
           ),
         ],

@@ -2337,8 +2337,8 @@ abstract class AppLocalizations {
   /// No description provided for @fieldLabel.
   ///
   /// In en, this message translates to:
-  /// **'Field Label'**
-  String get fieldLabel;
+  /// **'Field: {name}'**
+  String fieldLabel(String name);
 
   /// No description provided for @organicStatus.
   ///
@@ -3827,6 +3827,294 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Please enter a valid phone number'**
   String get pleaseEnterValidPhoneNumber;
+
+  /// No description provided for @todaysFarmStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Today\'s Farm Status'**
+  String get todaysFarmStatus;
+
+  /// No description provided for @noFieldsConfiguredAction.
+  ///
+  /// In en, this message translates to:
+  /// **'No fields configured yet. Add a field to start monitoring.'**
+  String get noFieldsConfiguredAction;
+
+  /// No description provided for @advice.
+  ///
+  /// In en, this message translates to:
+  /// **'Advice'**
+  String get advice;
+
+  /// No description provided for @checkSensorsAndFields.
+  ///
+  /// In en, this message translates to:
+  /// **'Check your sensors and field conditions'**
+  String get checkSensorsAndFields;
+
+  /// No description provided for @continueMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue monitoring your fields'**
+  String get continueMonitoring;
+
+  /// No description provided for @litersSuffix.
+  ///
+  /// In en, this message translates to:
+  /// **'liters'**
+  String get litersSuffix;
+
+  /// No description provided for @noData.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get noData;
+
+  /// No description provided for @sensorNotLoggingData.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor Not Logging Data'**
+  String get sensorNotLoggingData;
+
+  /// No description provided for @sensorDataNotAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor data is not available.'**
+  String get sensorDataNotAvailable;
+
+  /// No description provided for @usbSoilSensor.
+  ///
+  /// In en, this message translates to:
+  /// **'🌱 USB Soil Sensor'**
+  String get usbSoilSensor;
+
+  /// No description provided for @lastUpdate.
+  ///
+  /// In en, this message translates to:
+  /// **'Last update'**
+  String get lastUpdate;
+
+  /// No description provided for @sensorDisconnectedCheckUsb.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor disconnected - Check USB connection'**
+  String get sensorDisconnectedCheckUsb;
+
+  /// No description provided for @aiRecommendation.
+  ///
+  /// In en, this message translates to:
+  /// **'AI Recommendation'**
+  String get aiRecommendation;
+
+  /// No description provided for @pleaseSelectFieldFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'Please select a field first'**
+  String get pleaseSelectFieldFirst;
+
+  /// No description provided for @sensorClaimedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Sensor {hardwareId} claimed successfully!'**
+  String sensorClaimedSuccess(String hardwareId);
+
+  /// No description provided for @sensorInUseError.
+  ///
+  /// In en, this message translates to:
+  /// **'❌ Sensor is already in use by another user'**
+  String get sensorInUseError;
+
+  /// No description provided for @sensorReleasedSuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'✅ Sensor {hardwareId} released'**
+  String sensorReleasedSuccess(String hardwareId);
+
+  /// No description provided for @pleaseLoginToViewSensors.
+  ///
+  /// In en, this message translates to:
+  /// **'Please log in to view sensors'**
+  String get pleaseLoginToViewSensors;
+
+  /// No description provided for @selectFieldToMonitor.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Field to Monitor'**
+  String get selectFieldToMonitor;
+
+  /// No description provided for @noFieldsCreateFirst.
+  ///
+  /// In en, this message translates to:
+  /// **'No fields available. Create a field first.'**
+  String get noFieldsCreateFirst;
+
+  /// No description provided for @chooseField.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a field'**
+  String get chooseField;
+
+  /// No description provided for @unknownField.
+  ///
+  /// In en, this message translates to:
+  /// **'Unknown Field'**
+  String get unknownField;
+
+  /// No description provided for @statusAvailable.
+  ///
+  /// In en, this message translates to:
+  /// **'AVAILABLE'**
+  String get statusAvailable;
+
+  /// No description provided for @statusOffline.
+  ///
+  /// In en, this message translates to:
+  /// **'OFFLINE'**
+  String get statusOffline;
+
+  /// No description provided for @statusActive.
+  ///
+  /// In en, this message translates to:
+  /// **'ACTIVE'**
+  String get statusActive;
+
+  /// No description provided for @statusInUse.
+  ///
+  /// In en, this message translates to:
+  /// **'IN USE'**
+  String get statusInUse;
+
+  /// No description provided for @sensorOfflineMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor is offline. Data hasn\'t been updated in over 15 seconds.'**
+  String get sensorOfflineMessage;
+
+  /// No description provided for @stopMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop Monitoring'**
+  String get stopMonitoring;
+
+  /// No description provided for @noSensorDetected.
+  ///
+  /// In en, this message translates to:
+  /// **'No sensor detected. Please connect a USB sensor.'**
+  String get noSensorDetected;
+
+  /// No description provided for @startMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Start Monitoring'**
+  String get startMonitoring;
+
+  /// No description provided for @sensorInUseByOther.
+  ///
+  /// In en, this message translates to:
+  /// **'This sensor is currently being used by another user'**
+  String get sensorInUseByOther;
+
+  /// No description provided for @sensorsWillAppearHere.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensors will appear here when they start sending data'**
+  String get sensorsWillAppearHere;
+
+  /// No description provided for @accessDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access Denied'**
+  String get accessDenied;
+
+  /// No description provided for @firestoreSecurityRulesBlocking.
+  ///
+  /// In en, this message translates to:
+  /// **'Firestore Security Rules are blocking access.'**
+  String get firestoreSecurityRulesBlocking;
+
+  /// No description provided for @noSensorsRegistered.
+  ///
+  /// In en, this message translates to:
+  /// **'No sensors registered'**
+  String get noSensorsRegistered;
+
+  /// No description provided for @registerSensorInSensorsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Register a sensor in the Sensors page'**
+  String get registerSensorInSensorsPage;
+
+  /// No description provided for @sensorLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Sensor: {id}'**
+  String sensorLabel(String id);
+
+  /// No description provided for @needsAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'needs attention'**
+  String get needsAttention;
+
+  /// No description provided for @needsUrgentAttention.
+  ///
+  /// In en, this message translates to:
+  /// **'needs urgent attention'**
+  String get needsUrgentAttention;
+
+  /// No description provided for @isHealthy.
+  ///
+  /// In en, this message translates to:
+  /// **'is healthy'**
+  String get isHealthy;
+
+  /// No description provided for @cloudData.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloud Data'**
+  String get cloudData;
+
+  /// No description provided for @bothView.
+  ///
+  /// In en, this message translates to:
+  /// **'Both'**
+  String get bothView;
+
+  /// No description provided for @selectFieldLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Field'**
+  String get selectFieldLabel;
+
+  /// No description provided for @dateRangeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Date Range'**
+  String get dateRangeLabel;
+
+  /// No description provided for @selectDatesPlaceholder.
+  ///
+  /// In en, this message translates to:
+  /// **'Select Dates'**
+  String get selectDatesPlaceholder;
+
+  /// No description provided for @generateReportButton.
+  ///
+  /// In en, this message translates to:
+  /// **'GENERATE REPORT'**
+  String get generateReportButton;
+
+  /// No description provided for @generateReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Generate Report'**
+  String get generateReportTitle;
+
+  /// No description provided for @generateReportMessage.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a field and date range to view detailed insights.'**
+  String get generateReportMessage;
 }
 
 class _AppLocalizationsDelegate

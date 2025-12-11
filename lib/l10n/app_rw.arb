@@ -738,5 +738,21 @@
   "passwordRequirementNumber": "Byibuze umubare",
   "reEnterNewPassword": "Ongera wandike ijambo ry'ibanga rishya",
   "chooseStrongPassword": "Hitamo ijambo ry'ibanga rikomeye kugira ngo urinde amakuru yawe y'umurimyi",
-  "pleaseEnterValidPhoneNumber": "Nyamuneka andika nimero ya telefoni ikwiye"
+  "pleaseEnterValidPhoneNumber": "Nyamuneka andika nimero ya telefoni ikwiye",
+  "usbSoilSensor": "🌱 Senzori y'Ubutaka ya USB",
+  "selectFieldToMonitor": "Hitamo Umurima wo Gukurikirana",
+  "chooseField": "Hitamo Umurima",
+  "sensorsWillAppearHere": "Senzori zizagaragara hano nizitangira kohereza amakuru",
+  "todaysFarmStatus": "Imimerere y'Umurima Uyu Munsi",
+  "needsAttention": "birakenewe kwitabwaho",
+  "needsUrgentAttention": "birakenewe kwitabwaho byihutirwa",
+  "isHealthy": "bimeze neza",
+  "cloudData": "Amakuru yo muri Cloud",
+  "bothView": "Byombi",
+  "selectFieldLabel": "Hitamo Umurima",
+  "dateRangeLabel": "Igihe",
+  "selectDatesPlaceholder": "Hitamo Amatariki",
+  "generateReportButton": "KORA RAPORO",
+  "generateReportTitle": "Kora Raporo",
+  "generateReportMessage": "Hitamo umurima n'igihe kugira ngo urebe ibisobanuro birambuye."
 }

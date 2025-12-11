@@ -426,20 +426,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
-                    _buildStatItem(
-                      Icons.landscape,
-                      fieldsCount.toString(),
-                      'Fields',
+                    Expanded(
+                      child: _buildStatItem(
+                        Icons.landscape,
+                        fieldsCount.toString(),
+                        'Fields',
+                      ),
                     ),
-                    _buildStatItem(
-                      Icons.water_drop,
-                      irrigationCount.toString(),
-                      'Systems',
+                    Expanded(
+                      child: _buildStatItem(
+                        Icons.water_drop,
+                        irrigationCount.toString(),
+                        'Systems',
+                      ),
                     ),
-                    _buildStatItem(
-                      Icons.sensors,
-                      sensorsCount.toString(),
-                      'Sensors',
+                    Expanded(
+                      child: _buildStatItem(
+                        Icons.sensors,
+                        sensorsCount.toString(),
+                        'Sensors',
+                      ),
                     ),
                   ],
                 );

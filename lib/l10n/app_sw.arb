@@ -774,6 +774,22 @@
   "passwordRequirementNumber": "Ina nambari",
   "reEnterNewPassword": "Weka tena nenosiri jipya",
   "chooseStrongPassword": "Chagua nenosiri wenye nguvu kuwalinda data yako ya kilimo",
-  "pleaseEnterValidPhoneNumber": "Tafadhali weka nambari halali ya simu"
+  "pleaseEnterValidPhoneNumber": "Tafadhali weka nambari halali ya simu",
+  "usbSoilSensor": "🌱 Sensa ya Udongo ya USB",
+  "selectFieldToMonitor": "Chagua Shamba la Kufuatilia",
+  "chooseField": "Chagua Shamba",
+  "sensorsWillAppearHere": "Sensa zitaonekana hapa zitakapoanza kutuma data",
+  "todaysFarmStatus": "Hali ya Shamba la Leo",
+  "needsAttention": "inahitaji umakini",
+  "needsUrgentAttention": "inahitaji umakini wa haraka",
+  "isHealthy": "ni nzuri",
+  "cloudData": "Data ya Cloud",
+  "bothView": "Zote",
+  "selectFieldLabel": "Chagua Shamba",
+  "dateRangeLabel": "Kipindi",
+  "selectDatesPlaceholder": "Chagua Tarehe",
+  "generateReportButton": "TENGENEZA RIPOTI",
+  "generateReportTitle": "Tengeneza Ripoti",
+  "generateReportMessage": "Chagua shamba na kipindi ili kuona maelezo zaidi."
 }
 

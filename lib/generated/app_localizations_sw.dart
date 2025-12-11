@@ -1211,7 +1211,9 @@ class AppLocalizationsSw extends AppLocalizations {
   String get fieldDetails => 'Maelezo ya Shamba';
 
   @override
-  String get fieldLabel => 'Chapa ya Shamba';
+  String fieldLabel(String name) {
+    return 'Chapa ya Shamba';
+  }
 
   @override
   String get organicStatus => 'Kiasili';
@@ -1978,4 +1980,164 @@ class AppLocalizationsSw extends AppLocalizations {
   @override
   String get pleaseEnterValidPhoneNumber =>
       'Tafadhali weka nambari halali ya simu';
+
+  @override
+  String get todaysFarmStatus => 'Hali ya Shamba la Leo';
+
+  @override
+  String get noFieldsConfiguredAction =>
+      'No fields configured yet. Add a field to start monitoring.';
+
+  @override
+  String get advice => 'Advice';
+
+  @override
+  String get checkSensorsAndFields => 'Check your sensors and field conditions';
+
+  @override
+  String get continueMonitoring => 'Continue monitoring your fields';
+
+  @override
+  String get litersSuffix => 'liters';
+
+  @override
+  String get noData => 'No data';
+
+  @override
+  String get sensorNotLoggingData => 'Sensor Not Logging Data';
+
+  @override
+  String get sensorDataNotAvailable => 'Sensor data is not available.';
+
+  @override
+  String get usbSoilSensor => '🌱 Sensa ya Udongo ya USB';
+
+  @override
+  String get lastUpdate => 'Last update';
+
+  @override
+  String get sensorDisconnectedCheckUsb =>
+      'Sensor disconnected - Check USB connection';
+
+  @override
+  String get aiRecommendation => 'AI Recommendation';
+
+  @override
+  String get pleaseSelectFieldFirst => 'Please select a field first';
+
+  @override
+  String sensorClaimedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId claimed successfully!';
+  }
+
+  @override
+  String get sensorInUseError => '❌ Sensor is already in use by another user';
+
+  @override
+  String sensorReleasedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId released';
+  }
+
+  @override
+  String get pleaseLoginToViewSensors => 'Please log in to view sensors';
+
+  @override
+  String get selectFieldToMonitor => 'Chagua Shamba la Kufuatilia';
+
+  @override
+  String get noFieldsCreateFirst =>
+      'No fields available. Create a field first.';
+
+  @override
+  String get chooseField => 'Chagua Shamba';
+
+  @override
+  String get unknownField => 'Unknown Field';
+
+  @override
+  String get statusAvailable => 'AVAILABLE';
+
+  @override
+  String get statusOffline => 'OFFLINE';
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusInUse => 'IN USE';
+
+  @override
+  String get sensorOfflineMessage =>
+      'Sensor is offline. Data hasn\'t been updated in over 15 seconds.';
+
+  @override
+  String get stopMonitoring => 'Stop Monitoring';
+
+  @override
+  String get noSensorDetected =>
+      'No sensor detected. Please connect a USB sensor.';
+
+  @override
+  String get startMonitoring => 'Start Monitoring';
+
+  @override
+  String get sensorInUseByOther =>
+      'This sensor is currently being used by another user';
+
+  @override
+  String get sensorsWillAppearHere =>
+      'Sensa zitaonekana hapa zitakapoanza kutuma data';
+
+  @override
+  String get accessDenied => 'Access Denied';
+
+  @override
+  String get firestoreSecurityRulesBlocking =>
+      'Firestore Security Rules are blocking access.';
+
+  @override
+  String get noSensorsRegistered => 'No sensors registered';
+
+  @override
+  String get registerSensorInSensorsPage =>
+      'Register a sensor in the Sensors page';
+
+  @override
+  String sensorLabel(String id) {
+    return 'Sensor: $id';
+  }
+
+  @override
+  String get needsAttention => 'inahitaji umakini';
+
+  @override
+  String get needsUrgentAttention => 'inahitaji umakini wa haraka';
+
+  @override
+  String get isHealthy => 'ni nzuri';
+
+  @override
+  String get cloudData => 'Data ya Cloud';
+
+  @override
+  String get bothView => 'Zote';
+
+  @override
+  String get selectFieldLabel => 'Chagua Shamba';
+
+  @override
+  String get dateRangeLabel => 'Kipindi';
+
+  @override
+  String get selectDatesPlaceholder => 'Chagua Tarehe';
+
+  @override
+  String get generateReportButton => 'TENGENEZA RIPOTI';
+
+  @override
+  String get generateReportTitle => 'Tengeneza Ripoti';
+
+  @override
+  String get generateReportMessage =>
+      'Chagua shamba na kipindi ili kuona maelezo zaidi.';
 }

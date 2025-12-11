@@ -686,10 +686,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
                 padding: const EdgeInsets.all(20),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+                  children: [
                     Text(context.l10n.createScheduleName, style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                   TextField(
@@ -859,6 +860,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                   ],
                 ),
               ),
+              ),
             );
           },
         ),
@@ -888,10 +890,11 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
               constraints: const BoxConstraints(maxWidth: 460),
               child: Padding(
                 padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                     Text('Update Irrigation Schedule', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                     const SizedBox(height: 12),
                     TextField(
@@ -1077,6 +1080,7 @@ class _IrrigationListScreenState extends State<IrrigationListScreen> {
                     )
                   ],
                 ),
+              ),
               ),
             );
           },

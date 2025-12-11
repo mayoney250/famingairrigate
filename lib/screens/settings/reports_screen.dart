@@ -20,6 +20,7 @@ import '../../models/alert_model.dart';
 import '../../models/sensor_data_model.dart';
 import '../../models/ai_recommendation_model.dart';
 import '../../widgets/shimmer/shimmer_widgets.dart';
+import '../../utils/l10n_extensions.dart';
 
 class ReportsScreen extends StatefulWidget {
   const ReportsScreen({Key? key}) : super(key: key);
@@ -529,7 +530,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
     return Scaffold(
       backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text('Irrigation Report'),
+        title: Text(context.l10n.reports), // Using generic 'reports' key or 'generateReportTitle'
         leading: _isReportGenerated 
           ? IconButton(
               icon: const Icon(Icons.arrow_back),
@@ -568,7 +569,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
             const SizedBox(height: 32),
             Text(
-              'Generate Report',
+              context.l10n.generateReportTitle,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.bold,
@@ -579,7 +580,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select a field and date range to view detailed insights.',
+              context.l10n.generateReportMessage,
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 color: Theme.of(context).brightness == Brightness.dark
@@ -592,7 +593,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
             DropdownButtonFormField<String>(
               value: _selectedFieldId,
               decoration: InputDecoration(
-                labelText: 'Select Field',
+                labelText: context.l10n.selectFieldLabel,
                 labelStyle: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -638,7 +639,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               borderRadius: BorderRadius.circular(12),
               child: InputDecorator(
                 decoration: InputDecoration(
-                  labelText: 'Date Range',
+                  labelText: context.l10n.dateRangeLabel,
                   labelStyle: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
@@ -652,7 +653,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                 child: Text(
                   _selectedDateRange != null
                       ? '${DateFormat('MMM dd, yyyy').format(_selectedDateRange!.start)} - ${DateFormat('MMM dd, yyyy').format(_selectedDateRange!.end)}'
-                      : 'Select Dates',
+                      : context.l10n.selectDatesPlaceholder,
                   style: TextStyle(
                     color: _selectedDateRange != null 
                         ? (Theme.of(context).brightness == Brightness.dark
@@ -682,13 +683,13 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
               child: _isLoading 
                 ? const SizedBox(
-                    height: 24, 
-                    width: 24, 
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
-                  )
-                : const Text(
-                    'GENERATE REPORT',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        height: 24, 
+                        width: 24, 
+                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                      )
+                : Text(
+                    context.l10n.generateReportButton,
+                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                   ),
             ),
           ],

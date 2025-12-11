@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:intl/intl.dart';
+import '../../utils/l10n_extensions.dart';
 
 class UsbSensorScreen extends StatelessWidget {
   const UsbSensorScreen({super.key});
@@ -16,20 +17,20 @@ class UsbSensorScreen extends StatelessWidget {
     
     if (userId == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text('🌱 USB Soil Sensors')),
-        body: const Center(child: Text('Please log in to view sensors')),
+        appBar: AppBar(title: Text(context.l10n.usbSoilSensor)),
+        body: Center(child: Text(context.l10n.pleaseLoginToViewSensors)),
       );
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
-        title: const Text(
-          '🌱 USB Soil Sensors',
-          style: TextStyle(fontWeight: FontWeight.w600),
+        title: Text(
+          context.l10n.usbSoilSensor,
+          style: TextStyle(fontWeight: FontWeight.w600, color: Theme.of(context).colorScheme.onSurface),
         ),
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black87,
+        backgroundColor: Theme.of(context).appBarTheme.backgroundColor ?? Theme.of(context).colorScheme.surface,
+        iconTheme: IconThemeData(color: Theme.of(context).colorScheme.onSurface),
         elevation: 0,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(4),
@@ -93,13 +94,13 @@ class UsbSensorScreen extends StatelessWidget {
           children: [
             const Icon(Icons.security, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            const Text(
-              'Access Denied',
+            Text(
+              context.l10n.accessDenied,
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            const Text(
-              'Firestore Security Rules are blocking access.',
+            Text(
+              context.l10n.firestoreSecurityRulesBlocking,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),
@@ -110,25 +111,24 @@ class UsbSensorScreen extends StatelessWidget {
   }
 
   Widget _buildNoSensorsMessage() {
-    return const Center(
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.sensors_off, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
+          Icon(Icons.sensors_off, size: 64, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
+          const SizedBox(height: 16),
           Text(
-            'No sensors registered',
-            style: TextStyle(fontSize: 18, color: Colors.grey),
+            context.l10n.noSensorsRegistered,
+            style: TextStyle(fontSize: 18, color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            'Register a sensor in the Sensors page',
-            style: TextStyle(color: Colors.grey),
+            context.l10n.registerSensorInSensorsPage,
+            style: TextStyle(color: Theme.of(context).colorScheme.onBackground.withOpacity(0.5)),
           ),
         ],
       ),
     );
-  }
 
   Widget _buildSensorCard(BuildContext context, String hardwareId, Map<String, dynamic> data) {
     final moisture = data['moisture'] as num? ?? 0;
@@ -159,10 +159,11 @@ class UsbSensorScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Sensor: $hardwareId',
-                      style: const TextStyle(
+                      context.l10n.sensorLabel(hardwareId),
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                     if (fieldId != null)
@@ -173,13 +174,12 @@ class UsbSensorScreen extends StatelessWidget {
                             .get(),
                         builder: (context, fieldSnapshot) {
                           if (fieldSnapshot.hasData && fieldSnapshot.data!.exists) {
-                            final fieldData = fieldSnapshot.data!.data() as Map<String, dynamic>;
-                            final fieldName = fieldData['label'] ?? 'Unknown Field';
-                            return Text(
-                              'Field: $fieldName',
+                                  final fieldName = fieldData['label'] ?? context.l10n.unknownField;
+                                  return Text(
+                                    context.l10n.fieldLabel(fieldName),
                               style: TextStyle(
                                 fontSize: 14,
-                                color: Colors.grey[600],
+                                color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                               ),
                             );
                           }
@@ -207,7 +207,7 @@ class UsbSensorScreen extends StatelessWidget {
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isStale ? 'OFFLINE' : 'ACTIVE',
+                        isStale ? context.l10n.statusOffline : context.l10n.statusActive,
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.bold,
@@ -227,7 +227,7 @@ class UsbSensorScreen extends StatelessWidget {
                 Expanded(
                   child: _buildMetricCard(
                     context,
-                    title: 'Moisture',
+                    title: context.l10n.soilMoisture,
                     value: '$moisture',
                     unit: '%',
                     icon: Icons.water_drop,
@@ -239,7 +239,7 @@ class UsbSensorScreen extends StatelessWidget {
                 Expanded(
                   child: _buildMetricCard(
                     context,
-                    title: 'Temperature',
+                    title: context.l10n.tempLabel,
                     value: '$temperature',
                     unit: '°C',
                     icon: Icons.thermostat,
@@ -254,10 +254,10 @@ class UsbSensorScreen extends StatelessWidget {
             if (timestamp != null) ...[
               const SizedBox(height: 12),
               Text(
-                'Last updated: ${DateFormat('MMM d, HH:mm:ss').format(timestamp.toDate())}',
+                '${context.l10n.lastUpdate}: ${DateFormat('MMM d, HH:mm:ss').format(timestamp.toDate())}',
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
                 ),
               ),
             ],
@@ -276,6 +276,8 @@ class UsbSensorScreen extends StatelessWidget {
     required Color color,
     required String status,
   }) {
+    final scheme = Theme.of(context).colorScheme;
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -290,7 +292,7 @@ class UsbSensorScreen extends StatelessWidget {
           Text(
             title.toUpperCase(),
             style: TextStyle(
-              color: Colors.grey[700],
+              color: scheme.onSurface.withOpacity(0.7),
               fontSize: 10,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
@@ -302,10 +304,10 @@ class UsbSensorScreen extends StatelessWidget {
             children: [
               Text(
                 value,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
-                  color: Colors.black87,
+                  color: scheme.onSurface,
                 ),
               ),
               const SizedBox(width: 2),
@@ -316,7 +318,7 @@ class UsbSensorScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey[600],
+                    color: scheme.onSurface.withOpacity(0.6),
                   ),
                 ),
               ),
@@ -327,7 +329,7 @@ class UsbSensorScreen extends StatelessWidget {
             status,
             style: TextStyle(
               fontSize: 11,
-              color: Colors.grey[700],
+              color: scheme.onSurface.withOpacity(0.7),
             ),
           ),
         ],

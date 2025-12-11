@@ -778,5 +778,21 @@
   "passwordRequirementNumber": "Contient un chiffre",
   "reEnterNewPassword": "Ressaisissez votre nouveau mot de passe",
   "chooseStrongPassword": "Choisissez un mot de passe fort pour protéger vos données agricoles",
-  "pleaseEnterValidPhoneNumber": "Veuillez entrer un numéro de téléphone valide"
+  "pleaseEnterValidPhoneNumber": "Veuillez entrer un numéro de téléphone valide",
+  "usbSoilSensor": "🌱 Capteur de sol USB",
+  "selectFieldToMonitor": "Sélectionner le champ à surveiller",
+  "chooseField": "Choisir un champ",
+  "sensorsWillAppearHere": "Les capteurs apparaîtront ici lorsqu'ils commenceront à envoyer des données",
+  "todaysFarmStatus": "État de la ferme aujourd'hui",
+  "needsAttention": "nécessite une attention",
+  "needsUrgentAttention": "nécessite une attention urgente",
+  "isHealthy": "est en bonne santé",
+  "cloudData": "Données Cloud",
+  "bothView": "Les deux",
+  "selectFieldLabel": "Sélectionner un champ",
+  "dateRangeLabel": "Période",
+  "selectDatesPlaceholder": "Sélectionner les dates",
+  "generateReportButton": "GÉNÉRER LE RAPPORT",
+  "generateReportTitle": "Générer un rapport",
+  "generateReportMessage": "Sélectionnez un champ et une plage de dates pour voir les informations détaillées."
 }

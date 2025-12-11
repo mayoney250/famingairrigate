@@ -1227,7 +1227,9 @@ class AppLocalizationsRw extends AppLocalizations {
   String get fieldDetails => 'Ibisobanuro by’umurima';
 
   @override
-  String get fieldLabel => 'Ikirango cy’umurima';
+  String fieldLabel(String name) {
+    return 'Ikirango cy’umurima';
+  }
 
   @override
   String get organicStatus => 'Uburimyi bwa kinyabuzima';
@@ -2009,4 +2011,164 @@ class AppLocalizationsRw extends AppLocalizations {
   @override
   String get pleaseEnterValidPhoneNumber =>
       'Nyamuneka andika nimero ya telefoni ikwiye';
+
+  @override
+  String get todaysFarmStatus => 'Imimerere y\'Umurima Uyu Munsi';
+
+  @override
+  String get noFieldsConfiguredAction =>
+      'No fields configured yet. Add a field to start monitoring.';
+
+  @override
+  String get advice => 'Advice';
+
+  @override
+  String get checkSensorsAndFields => 'Check your sensors and field conditions';
+
+  @override
+  String get continueMonitoring => 'Continue monitoring your fields';
+
+  @override
+  String get litersSuffix => 'liters';
+
+  @override
+  String get noData => 'No data';
+
+  @override
+  String get sensorNotLoggingData => 'Sensor Not Logging Data';
+
+  @override
+  String get sensorDataNotAvailable => 'Sensor data is not available.';
+
+  @override
+  String get usbSoilSensor => '🌱 Senzori y\'Ubutaka ya USB';
+
+  @override
+  String get lastUpdate => 'Last update';
+
+  @override
+  String get sensorDisconnectedCheckUsb =>
+      'Sensor disconnected - Check USB connection';
+
+  @override
+  String get aiRecommendation => 'AI Recommendation';
+
+  @override
+  String get pleaseSelectFieldFirst => 'Please select a field first';
+
+  @override
+  String sensorClaimedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId claimed successfully!';
+  }
+
+  @override
+  String get sensorInUseError => '❌ Sensor is already in use by another user';
+
+  @override
+  String sensorReleasedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId released';
+  }
+
+  @override
+  String get pleaseLoginToViewSensors => 'Please log in to view sensors';
+
+  @override
+  String get selectFieldToMonitor => 'Hitamo Umurima wo Gukurikirana';
+
+  @override
+  String get noFieldsCreateFirst =>
+      'No fields available. Create a field first.';
+
+  @override
+  String get chooseField => 'Hitamo Umurima';
+
+  @override
+  String get unknownField => 'Unknown Field';
+
+  @override
+  String get statusAvailable => 'AVAILABLE';
+
+  @override
+  String get statusOffline => 'OFFLINE';
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusInUse => 'IN USE';
+
+  @override
+  String get sensorOfflineMessage =>
+      'Sensor is offline. Data hasn\'t been updated in over 15 seconds.';
+
+  @override
+  String get stopMonitoring => 'Stop Monitoring';
+
+  @override
+  String get noSensorDetected =>
+      'No sensor detected. Please connect a USB sensor.';
+
+  @override
+  String get startMonitoring => 'Start Monitoring';
+
+  @override
+  String get sensorInUseByOther =>
+      'This sensor is currently being used by another user';
+
+  @override
+  String get sensorsWillAppearHere =>
+      'Senzori zizagaragara hano nizitangira kohereza amakuru';
+
+  @override
+  String get accessDenied => 'Access Denied';
+
+  @override
+  String get firestoreSecurityRulesBlocking =>
+      'Firestore Security Rules are blocking access.';
+
+  @override
+  String get noSensorsRegistered => 'No sensors registered';
+
+  @override
+  String get registerSensorInSensorsPage =>
+      'Register a sensor in the Sensors page';
+
+  @override
+  String sensorLabel(String id) {
+    return 'Sensor: $id';
+  }
+
+  @override
+  String get needsAttention => 'birakenewe kwitabwaho';
+
+  @override
+  String get needsUrgentAttention => 'birakenewe kwitabwaho byihutirwa';
+
+  @override
+  String get isHealthy => 'bimeze neza';
+
+  @override
+  String get cloudData => 'Amakuru yo muri Cloud';
+
+  @override
+  String get bothView => 'Byombi';
+
+  @override
+  String get selectFieldLabel => 'Hitamo Umurima';
+
+  @override
+  String get dateRangeLabel => 'Igihe';
+
+  @override
+  String get selectDatesPlaceholder => 'Hitamo Amatariki';
+
+  @override
+  String get generateReportButton => 'KORA RAPORO';
+
+  @override
+  String get generateReportTitle => 'Kora Raporo';
+
+  @override
+  String get generateReportMessage =>
+      'Hitamo umurima n\'igihe kugira ngo urebe ibisobanuro birambuye.';
 }

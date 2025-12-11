@@ -1222,7 +1222,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get fieldDetails => 'Détails du champ';
 
   @override
-  String get fieldLabel => 'Étiquette du champ';
+  String fieldLabel(String name) {
+    return 'Étiquette du champ';
+  }
 
   @override
   String get organicStatus => 'Biologique';
@@ -2013,4 +2015,164 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get pleaseEnterValidPhoneNumber =>
       'Veuillez entrer un numéro de téléphone valide';
+
+  @override
+  String get todaysFarmStatus => 'État de la ferme aujourd\'hui';
+
+  @override
+  String get noFieldsConfiguredAction =>
+      'No fields configured yet. Add a field to start monitoring.';
+
+  @override
+  String get advice => 'Advice';
+
+  @override
+  String get checkSensorsAndFields => 'Check your sensors and field conditions';
+
+  @override
+  String get continueMonitoring => 'Continue monitoring your fields';
+
+  @override
+  String get litersSuffix => 'liters';
+
+  @override
+  String get noData => 'No data';
+
+  @override
+  String get sensorNotLoggingData => 'Sensor Not Logging Data';
+
+  @override
+  String get sensorDataNotAvailable => 'Sensor data is not available.';
+
+  @override
+  String get usbSoilSensor => '🌱 Capteur de sol USB';
+
+  @override
+  String get lastUpdate => 'Last update';
+
+  @override
+  String get sensorDisconnectedCheckUsb =>
+      'Sensor disconnected - Check USB connection';
+
+  @override
+  String get aiRecommendation => 'AI Recommendation';
+
+  @override
+  String get pleaseSelectFieldFirst => 'Please select a field first';
+
+  @override
+  String sensorClaimedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId claimed successfully!';
+  }
+
+  @override
+  String get sensorInUseError => '❌ Sensor is already in use by another user';
+
+  @override
+  String sensorReleasedSuccess(String hardwareId) {
+    return '✅ Sensor $hardwareId released';
+  }
+
+  @override
+  String get pleaseLoginToViewSensors => 'Please log in to view sensors';
+
+  @override
+  String get selectFieldToMonitor => 'Sélectionner le champ à surveiller';
+
+  @override
+  String get noFieldsCreateFirst =>
+      'No fields available. Create a field first.';
+
+  @override
+  String get chooseField => 'Choisir un champ';
+
+  @override
+  String get unknownField => 'Unknown Field';
+
+  @override
+  String get statusAvailable => 'AVAILABLE';
+
+  @override
+  String get statusOffline => 'OFFLINE';
+
+  @override
+  String get statusActive => 'ACTIVE';
+
+  @override
+  String get statusInUse => 'IN USE';
+
+  @override
+  String get sensorOfflineMessage =>
+      'Sensor is offline. Data hasn\'t been updated in over 15 seconds.';
+
+  @override
+  String get stopMonitoring => 'Stop Monitoring';
+
+  @override
+  String get noSensorDetected =>
+      'No sensor detected. Please connect a USB sensor.';
+
+  @override
+  String get startMonitoring => 'Start Monitoring';
+
+  @override
+  String get sensorInUseByOther =>
+      'This sensor is currently being used by another user';
+
+  @override
+  String get sensorsWillAppearHere =>
+      'Les capteurs apparaîtront ici lorsqu\'ils commenceront à envoyer des données';
+
+  @override
+  String get accessDenied => 'Access Denied';
+
+  @override
+  String get firestoreSecurityRulesBlocking =>
+      'Firestore Security Rules are blocking access.';
+
+  @override
+  String get noSensorsRegistered => 'No sensors registered';
+
+  @override
+  String get registerSensorInSensorsPage =>
+      'Register a sensor in the Sensors page';
+
+  @override
+  String sensorLabel(String id) {
+    return 'Sensor: $id';
+  }
+
+  @override
+  String get needsAttention => 'nécessite une attention';
+
+  @override
+  String get needsUrgentAttention => 'nécessite une attention urgente';
+
+  @override
+  String get isHealthy => 'est en bonne santé';
+
+  @override
+  String get cloudData => 'Données Cloud';
+
+  @override
+  String get bothView => 'Les deux';
+
+  @override
+  String get selectFieldLabel => 'Sélectionner un champ';
+
+  @override
+  String get dateRangeLabel => 'Période';
+
+  @override
+  String get selectDatesPlaceholder => 'Sélectionner les dates';
+
+  @override
+  String get generateReportButton => 'GÉNÉRER LE RAPPORT';
+
+  @override
+  String get generateReportTitle => 'Générer un rapport';
+
+  @override
+  String get generateReportMessage =>
+      'Sélectionnez un champ et une plage de dates pour voir les informations détaillées.';
 }

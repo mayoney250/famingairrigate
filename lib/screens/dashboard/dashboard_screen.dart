@@ -513,7 +513,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Sensor Not Logging Data',
+                    context.l10n.sensorNotLoggingData,
                     style: TextStyle(
                       color: Colors.red.shade900,
                       fontWeight: FontWeight.bold,
@@ -522,7 +522,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    sensorOfflineError ?? 'Sensor data is not available.',
+                    sensorOfflineError ?? context.l10n.sensorDataNotAvailable,
                     style: TextStyle(
                       color: Colors.red.shade800,
                       fontSize: 13,
@@ -797,9 +797,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     
     // View options
     final viewOptions = {
-      'Cloud Data': 'Cloud Data',
-      'USB Sensor': 'USB Sensor', 
-      'Both': 'Both',
+      'Cloud Data': context.l10n.cloudData,
+      'USB Sensor': context.l10n.usbSoilSensor, 
+      'Both': context.l10n.bothView,
     };
 
     // Build field status items
@@ -828,7 +828,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
 
     // Get AI recommendation for display - prioritize AI advice
-    String waterText = dailyWater > 0 ? '${dailyWater.toStringAsFixed(0)} liters' : 'No data';
+    // Get AI recommendation for display - prioritize AI advice
+    String waterText = dailyWater > 0 ? '${dailyWater.toStringAsFixed(0)} ${context.l10n.litersSuffix}' : context.l10n.noData;
     
     // Always show AI advice if available
     String overallAdvice = '';
@@ -854,8 +855,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     // Only use generic fallback if absolutely no AI data
     if (overallAdvice.isEmpty) {
       overallAdvice = hasAnyIssues 
-          ? 'Check your sensors and field conditions'
-          : 'Continue monitoring your fields';
+          ? context.l10n.checkSensorsAndFields
+          : context.l10n.continueMonitoring;
     }
 
     return Container(
@@ -873,7 +874,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Hello, $name',
+                context.l10n.userInsightGreeting(name),
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
@@ -896,8 +897,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   underline: const SizedBox(),
                   icon: const Icon(Icons.tune, size: 18),
                   items: viewOptions.entries.map((e) => DropdownMenuItem(
-                    value: e.value, 
-                    child: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.normal)),
+                    value: e.key, 
+                    child: Text(e.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.normal)),
                   )).toList(),
                   onChanged: onViewChanged,
                 ),
@@ -911,7 +912,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             
             // Section title
             Text(
-              'Today\'s Farm Status',
+              context.l10n.todaysFarmStatus,
               style: TextStyle(
                 color: Theme.of(context).brightness == Brightness.dark
                     ? Colors.white.withOpacity(0.7)
@@ -931,7 +932,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 child: Text(
-                  'No fields configured yet. Add a field to start monitoring.',
+                  context.l10n.noFieldsConfiguredAction,
                   style: const TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 13,
@@ -946,8 +947,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Water usage
             Row(
               children: [
-                const Text(
-                  'Water Usage:',
+                Text(
+                  '${context.l10n.waterUsage}:',
                   style: TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 13,
@@ -973,8 +974,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             // Overall advice
             Row(
               children: [
-                const Text(
-                  'Advice:',
+                Text(
+                  '${context.l10n.advice}:',
                   style: TextStyle(
                     color: FamingaBrandColors.textSecondary,
                     fontSize: 13,
@@ -2652,7 +2653,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '🌱 USB Soil Sensor',
+                      context.l10n.usbSoilSensor,
                       style: TextStyle(
                         color: Theme.of(context).brightness == Brightness.dark
                             ? Colors.white
@@ -2664,8 +2665,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (timestamp != null)
                       Text(
                         isOffline 
-                            ? 'Last update: ${minutesSince != null ? "$minutesSince mins ago" : DateFormat('HH:mm').format(timestamp.toDate())}'
-                            : 'Last update: ${DateFormat('HH:mm:ss').format(timestamp.toDate())}',
+                            ? '${context.l10n.lastUpdate}: ${minutesSince != null ? context.l10n.minutesAgo(minutesSince) : DateFormat('HH:mm').format(timestamp.toDate())}'
+                            : '${context.l10n.lastUpdate}: ${DateFormat('HH:mm:ss').format(timestamp.toDate())}',
                         style: TextStyle(
                           color: FamingaBrandColors.textSecondary,
                           fontSize: 12,
@@ -2707,7 +2708,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Sensor disconnected - Check USB connection',
+                      context.l10n.sensorDisconnectedCheckUsb,
                       style: TextStyle(
                         color: Colors.red.shade900,
                         fontSize: 12,
@@ -2763,7 +2764,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  'AI Recommendation',
+                  context.l10n.aiRecommendation,
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
@@ -3141,7 +3142,7 @@ class _FieldStatusItem extends StatelessWidget {
     // Status icon and color
     IconData statusIcon = isHealthy ? Icons.check_circle : Icons.warning_amber_rounded;
     Color statusColor = isHealthy ? Colors.green : Colors.orange;
-    String statusText = isHealthy ? 'is healthy' : 'needs attention';
+    String statusText = isHealthy ? context.l10n.isHealthy : context.l10n.needsAttention;
     
     // Build status description
     String description = '';
@@ -3155,7 +3156,7 @@ class _FieldStatusItem extends StatelessWidget {
       action = 'Stop watering and check drainage';
       statusIcon = Icons.warning_amber_rounded;
       statusColor = Colors.red;
-      statusText = 'needs urgent attention';
+      statusText = context.l10n.needsUrgentAttention;
     } else {
       // Build natural language description
       final moisture = sensor!.soilMoisture?.round() ?? 0;

@@ -847,5 +847,82 @@
   "passwordRequirementNumber": "Contains a number",
   "reEnterNewPassword": "Re-enter your new password",
   "chooseStrongPassword": "Choose a strong password to protect your farm data",
-  "pleaseEnterValidPhoneNumber": "Please enter a valid phone number"
+  "pleaseEnterValidPhoneNumber": "Please enter a valid phone number",
+  "todaysFarmStatus": "Today's Farm Status",
+  "noFieldsConfiguredAction": "No fields configured yet. Add a field to start monitoring.",
+  "advice": "Advice",
+  "checkSensorsAndFields": "Check your sensors and field conditions",
+  "continueMonitoring": "Continue monitoring your fields",
+  "litersSuffix": "liters",
+  "noData": "No data",
+  "sensorNotLoggingData": "Sensor Not Logging Data",
+  "sensorDataNotAvailable": "Sensor data is not available.",
+  "usbSoilSensor": "🌱 USB Soil Sensor",
+  "lastUpdate": "Last update",
+  "sensorDisconnectedCheckUsb": "Sensor disconnected - Check USB connection",
+  "aiRecommendation": "AI Recommendation",
+  "pleaseSelectFieldFirst": "Please select a field first",
+  "sensorClaimedSuccess": "✅ Sensor {hardwareId} claimed successfully!",
+  "@sensorClaimedSuccess": {
+    "placeholders": {
+      "hardwareId": {
+        "type": "String"
+      }
+    }
+  },
+  "sensorInUseError": "❌ Sensor is already in use by another user",
+  "sensorReleasedSuccess": "✅ Sensor {hardwareId} released",
+  "@sensorReleasedSuccess": {
+    "placeholders": {
+      "hardwareId": {
+        "type": "String"
+      }
+    }
+  },
+  "pleaseLoginToViewSensors": "Please log in to view sensors",
+  "selectFieldToMonitor": "Select Field to Monitor",
+  "noFieldsCreateFirst": "No fields available. Create a field first.",
+  "chooseField": "Choose a field",
+  "unknownField": "Unknown Field",
+  "statusAvailable": "AVAILABLE",
+  "statusOffline": "OFFLINE",
+  "statusActive": "ACTIVE",
+  "statusInUse": "IN USE",
+  "sensorOfflineMessage": "Sensor is offline. Data hasn't been updated in over 15 seconds.",
+  "stopMonitoring": "Stop Monitoring",
+  "noSensorDetected": "No sensor detected. Please connect a USB sensor.",
+  "startMonitoring": "Start Monitoring",
+  "sensorInUseByOther": "This sensor is currently being used by another user",
+  "sensorsWillAppearHere": "Sensors will appear here when they start sending data",
+  "accessDenied": "Access Denied",
+  "firestoreSecurityRulesBlocking": "Firestore Security Rules are blocking access.",
+  "noSensorsRegistered": "No sensors registered",
+  "registerSensorInSensorsPage": "Register a sensor in the Sensors page",
+  "sensorLabel": "Sensor: {id}",
+  "@sensorLabel": {
+    "placeholders": {
+      "id": {
+        "type": "String"
+      }
+    }
+  },
+  "fieldLabel": "Field: {name}",
+  "@fieldLabel": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "needsAttention": "needs attention",
+  "needsUrgentAttention": "needs urgent attention",
+  "isHealthy": "is healthy",
+  "cloudData": "Cloud Data",
+  "bothView": "Both",
+  "selectFieldLabel": "Select Field",
+  "dateRangeLabel": "Date Range",
+  "selectDatesPlaceholder": "Select Dates",
+  "generateReportButton": "GENERATE REPORT",
+  "generateReportTitle": "Generate Report",
+  "generateReportMessage": "Select a field and date range to view detailed insights."
 }

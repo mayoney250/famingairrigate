@@ -757,10 +757,11 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
         ),
         child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             Text('Field Details', style: textTheme.titleLarge),
             const Divider(height: 24),
             FutureBuilder<Map<String, dynamic>>(
@@ -804,6 +805,7 @@ class __FieldDetailsSheetState extends State<_FieldDetailsSheet> {
             // Actions header and spacing removed per user request.
           ],
         ),
+      ),
       ),
     );
   }
