@@ -47,6 +47,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
   bool _isManualStartHighlighted = false;
   Timer? _highlightTimer;
   bool _isWeatherCardExpanded = false;
+  
+  // Dashboard view state
+  String _dashboardView = 'Both'; // Options: 'Cloud Data', 'USB Sensor', 'Both'
 
   StreamSubscription? _discoverySubscription;
   final Set<String> _ignoredSensors = {};
@@ -301,7 +304,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               aiRecs: provider.aiRecommendations,
               dailyWater: provider.dailyWaterUsage,
             ),
-            builder: (_, data, __) => _buildUserInsightCard(data.fields, data.sensors, data.aiRecs, data.dailyWater),
+            builder: (_, data, __) => _buildUserInsightCard(
+              data.fields, 
+              data.sensors, 
+              data.aiRecs, 
+              data.dailyWater,
+              _dashboardView,
+              (val) => setState(() => _dashboardView = val ?? 'Both'),
+            ),
           ),
         ),
         SizedBox(height: isSmallScreen ? 16 : 20),
@@ -309,7 +319,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         // Sensor Offline Error Banner
         Selector<DashboardProvider, String?>(
           selector: (_, provider) => provider.sensorOfflineError,
-          builder: (_, error, __) => _buildSensorOfflineBanner(error),
+          builder: (_, error, __) {
+            if (_dashboardView == 'USB Sensor') return const SizedBox.shrink();
+            return _buildSensorOfflineBanner(error);
+          },
         ),
         
         RepaintBoundary(
@@ -324,7 +337,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   : null;
               return (usbData: firstSensor, usbAi: firstAi);
             },
-            builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
+            builder: (_, data, __) => (_dashboardView == 'USB Sensor' || _dashboardView == 'Both') 
+                    ? _buildUsbSensorCard(data.usbData, data.usbAi)
+                    : const SizedBox.shrink(),
           ),
         ),
         SizedBox(height: isSmallScreen ? 16 : 20),
@@ -392,13 +407,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         aiRecs: provider.aiRecommendations,
                         dailyWater: provider.dailyWaterUsage,
                       ),
-                      builder: (_, data, __) => _buildUserInsightCard(data.fields, data.sensors, data.aiRecs, data.dailyWater),
+                      builder: (_, data, __) => _buildUserInsightCard(
+                        data.fields, 
+                        data.sensors, 
+                        data.aiRecs, 
+                        data.dailyWater,
+                         _dashboardView,
+                        (val) => setState(() => _dashboardView = val ?? 'Both'),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
                   Selector<DashboardProvider, String?>(
                     selector: (_, provider) => provider.sensorOfflineError,
-                    builder: (_, error, __) => _buildSensorOfflineBanner(error),
+                    builder: (_, error, __) {
+                      if (_dashboardView == 'USB Sensor') return const SizedBox.shrink();
+                      return _buildSensorOfflineBanner(error);
+                    },
                   ),
                   
                   // USB Sensor Card
@@ -414,7 +439,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             : null;
                         return (usbData: firstSensor, usbAi: firstAi);
                       },
-                      builder: (_, data, __) => _buildUsbSensorCard(data.usbData, data.usbAi),
+                      builder: (_, data, __) => (_dashboardView == 'USB Sensor' || _dashboardView == 'Both')
+                          ? _buildUsbSensorCard(data.usbData, data.usbAi)
+                          : const SizedBox.shrink(),
                     ),
                   ),
                   const SizedBox(height: 20),
@@ -756,11 +783,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
-  Widget _buildUserInsightCard(List<Map<String, String>> fields, Map<String, SensorDataModel?> sensors, Map<String, AIRecommendation> aiRecs, double dailyWater) {
+  Widget _buildUserInsightCard(
+    List<Map<String, String>> fields, 
+    Map<String, SensorDataModel?> sensors, 
+    Map<String, AIRecommendation> aiRecs, 
+    double dailyWater,
+    String selectedView,
+    ValueChanged<String?> onViewChanged,
+  ) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
     final name = user?.firstName ?? user?.email?.split('@').first ?? 'Farmer';
     
+    // View options
+    final viewOptions = {
+      'Cloud Data': 'Cloud Data',
+      'USB Sensor': 'USB Sensor', 
+      'Both': 'Both',
+    };
+
     // Build field status items
     final fieldItems = fields.map((field) {
       final fieldId = field['id']!;
@@ -827,94 +868,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Greeting
-          Text(
-            'Hello, $name',
-            style: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white
-                  : FamingaBrandColors.textPrimary,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 16),
-          
-          // Section title
-          Text(
-            'Today\'s Farm Status',
-            style: TextStyle(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? Colors.white.withOpacity(0.7)
-                  : FamingaBrandColors.textSecondary,
-              fontSize: 13,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 0.5,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Divider(color: FamingaBrandColors.borderColor),
-          const SizedBox(height: 16),
-          
-          // Field items
-          if (fieldItems.isNotEmpty) ...fieldItems,
-          if (fieldItems.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'No fields configured yet. Add a field to start monitoring.',
-                style: const TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 13,
-                ),
-              ),
-            ),
-          
-          // Divider
-          Divider(color: FamingaBrandColors.borderColor),
-          const SizedBox(height: 12),
-          
-          // Water usage
+          // Greeting & Dropdown Row
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Water Usage:',
-                style: TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(width: 8),
               Text(
-                waterText,
+                'Hello, $name',
                 style: TextStyle(
                   color: Theme.of(context).brightness == Brightness.dark
                       ? Colors.white
                       : FamingaBrandColors.textPrimary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              // View Selection Dropdown
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[100],
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: FamingaBrandColors.borderColor),
+                ),
+                child: DropdownButton<String>(
+                  value: selectedView,
+                  isDense: true,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.tune, size: 18),
+                  items: viewOptions.entries.map((e) => DropdownMenuItem(
+                    value: e.value, 
+                    child: Text(e.key, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.normal)),
+                  )).toList(),
+                  onChanged: onViewChanged,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
           
-          // Overall advice
-          Row(
-            children: [
-              const Text(
-                'Advice:',
-                style: TextStyle(
-                  color: FamingaBrandColors.textSecondary,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
+          // Conditions to show Cloud Data
+          if (selectedView == 'Cloud Data' || selectedView == 'Both') ...[
+            const SizedBox(height: 16),
+            
+            // Section title
+            Text(
+              'Today\'s Farm Status',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white.withOpacity(0.7)
+                    : FamingaBrandColors.textSecondary,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.5,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Divider(color: FamingaBrandColors.borderColor),
+            const SizedBox(height: 16),
+            
+            // Field items
+            if (fieldItems.isNotEmpty) ...fieldItems,
+            if (fieldItems.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                child: Text(
+                  'No fields configured yet. Add a field to start monitoring.',
+                  style: const TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                  ),
                 ),
               ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  overallAdvice,
+            
+            // Divider
+            Divider(color: FamingaBrandColors.borderColor),
+            const SizedBox(height: 12),
+            
+            // Water usage
+            Row(
+              children: [
+                const Text(
+                  'Water Usage:',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  waterText,
                   style: TextStyle(
                     color: Theme.of(context).brightness == Brightness.dark
                         ? Colors.white
@@ -923,9 +965,38 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
+              ],
+            ),
+
+            const SizedBox(height: 8),
+            
+            // Overall advice
+            Row(
+              children: [
+                const Text(
+                  'Advice:',
+                  style: TextStyle(
+                    color: FamingaBrandColors.textSecondary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    overallAdvice,
+                    style: TextStyle(
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : FamingaBrandColors.textPrimary,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ], // End Cloud Data block
         ],
       ),
     );

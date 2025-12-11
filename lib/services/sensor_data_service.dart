@@ -10,23 +10,36 @@ class SensorDataService {
   final Map<String, DocumentReference<Map<String, dynamic>>?> _latestDocByField = {};
   final Map<String, Map<String, dynamic>> _sensorMetaByField = {};
 
-  Future<SensorDataModel?> getLatestReading(String fieldId) async {
+  Future<SensorDataModel?> getLatestReading(String fieldId, {String? userId}) async {
     try {
-      dev.log('🔍 [getLatestReading] Querying faminga_sensors for fieldId: $fieldId');
+      // dev.log('🔍 [getLatestReading] Querying specific sensor path for fieldId: $fieldId');
       
-      final snapshot = await _firestore
-          .collection('faminga_sensors')
-          .where('fieldId', isEqualTo: fieldId)
-          .limit(1)
-          .get();
+      final doc = await _firestore.doc('sensors/faminga_2in1_sensor/latest/current').get();
 
-      if (snapshot.docs.isEmpty) {
-        dev.log('⚠️ [getLatestReading] No sensor found for field $fieldId');
+      if (!doc.exists) {
+        dev.log('⚠️ [getLatestReading] No sensor data found at specified path');
         return null;
       }
+      
+      final data = doc.data();
+      if (data == null) return null;
 
-      final doc = snapshot.docs.first;
-      dev.log('✅ [getLatestReading] Found sensor ${doc.id} for field $fieldId');
+      // VALIDATION: Check if data belongs to this user and field
+      if (userId != null) {
+        final dataUserId = (data['userId'] ?? '').toString();
+        if (dataUserId != userId) {
+           dev.log('⚠️ [getLatestReading] UserId mismatch: expected $userId, got $dataUserId');
+           return null;
+        }
+      }
+
+      final dataFieldId = (data['fieldId'] ?? '').toString();
+      if (dataFieldId != fieldId) {
+         dev.log('⚠️ [getLatestReading] FieldId mismatch: expected $fieldId, got $dataFieldId');
+         return null; 
+      }
+
+      // dev.log('✅ [getLatestReading] Found matching sensor data for field $fieldId');
       return _toModel(doc, fieldId);
     } catch (e) {
       dev.log('❌ [getLatestReading] Error: $e');
@@ -34,15 +47,26 @@ class SensorDataService {
     }
   }
 
-  Stream<SensorDataModel?> streamLatestReading(String fieldId) {
+  Stream<SensorDataModel?> streamLatestReading(String fieldId, {String? userId}) {
     return _firestore
-        .collection('faminga_sensors')
-        .where('fieldId', isEqualTo: fieldId)
-        .limit(1)
+        .doc('sensors/faminga_2in1_sensor/latest/current')
         .snapshots()
-        .map((snapshot) {
-      if (snapshot.docs.isEmpty) return null;
-      return _toModel(snapshot.docs.first, fieldId);
+        .map((doc) {
+      if (!doc.exists) return null;
+      
+      final data = doc.data();
+      if (data == null) return null;
+
+      // VALIDATION
+      if (userId != null) {
+        final dataUserId = (data['userId'] ?? '').toString();
+        if (dataUserId != userId) return null;
+      }
+
+      final dataFieldId = (data['fieldId'] ?? '').toString();
+      if (dataFieldId != fieldId) return null;
+
+      return _toModel(doc, fieldId);
     });
   }
 
