@@ -118,7 +118,8 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
                   .collection('faminga_sensors')
-                  .snapshots(),  // Get all sensors, filter by session later
+                  .where('userId', isEqualTo: userId)  // Filter by current user
+                  .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));
@@ -237,9 +238,13 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     final fieldId = data['fieldId'] as String?;
     final sensorUserId = data['userId'] as String?;
 
-    // Check if data is stale (>15 seconds old)
+    // Check if data is stale (>15 seconds old) - for offline badge
     final isStale = timestamp != null &&
         DateTime.now().difference(timestamp.toDate()).inSeconds > 15;
+    
+    // Check if data is fresh (<5 seconds old) - for sensor connectivity
+    final isFresh = timestamp != null &&
+        DateTime.now().difference(timestamp.toDate()).inSeconds <= 5;
 
     return StreamBuilder<Map<String, dynamic>?>(
       stream: _sessionService.streamSession(hardwareId),
@@ -345,7 +350,7 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
 
                 // Action buttons
                 const SizedBox(height: 16),
-                _buildActionButtons(hardwareId, hasActiveSession, isOwnedByCurrentUser),
+                _buildActionButtons(hardwareId, hasActiveSession, isOwnedByCurrentUser, isStale, isFresh),
               ],
             ),
           ),
@@ -404,13 +409,104 @@ class _UsbSensorScreenWithSessionsState extends State<UsbSensorScreenWithSession
     );
   }
 
-  Widget _buildActionButtons(String hardwareId, bool hasActiveSession, bool isOwnedByCurrentUser) {
+  Widget _buildActionButtons(String hardwareId, bool hasActiveSession, bool isOwnedByCurrentUser, bool isStale, bool isFresh) {
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
 
+    // If sensor is offline (stale data), show disabled message
+    if (isStale && hasActiveSession && isOwnedByCurrentUser) {
+      return Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.warning_amber, color: Colors.orange, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Sensor is offline. Data hasn\'t been updated in over 15 seconds.',
+                    style: TextStyle(color: Colors.orange[800], fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _releaseSensor(hardwareId),
+              icon: const Icon(Icons.stop),
+              label: const Text('Stop Monitoring'),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.red,
+                side: const BorderSide(color: Colors.red),
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
     if (!hasActiveSession) {
-      // Sensor is available - show claim button
+      // Check if sensor is connected (fresh data)
+      if (!isFresh) {
+        // No sensor detected or data too old
+        return Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.sensors_off, color: Colors.grey, size: 20),
+                  SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'No sensor detected. Please connect a USB sensor.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: null, // Disabled
+                icon: const Icon(Icons.play_arrow),
+                label: const Text('Start Monitoring'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      }
+      
+      // Sensor is connected and available - show enabled claim button
       return SizedBox(
         width: double.infinity,
         child: ElevatedButton.icon(

@@ -24,9 +24,31 @@ class SensorService {
     return ref.id;
   }
 
-  Future<List<SensorModel>> getSensorsForFarm(String farmId) async {
+  Future<List<SensorModel>> getSensorsForFarm(String farmId, {String? userId}) async {
     final query = await _firestore.collection('sensors').where('farmId', isEqualTo: farmId).get();
-    return query.docs.map((doc) => SensorModel.fromFirestore(doc)).toList();
+    final sensors = query.docs.map((doc) => SensorModel.fromFirestore(doc)).toList();
+    
+    // If userId is provided, validate that the farm belongs to the user
+    if (userId != null && sensors.isNotEmpty) {
+      try {
+        final farmDoc = await _firestore.collection('fields').doc(farmId).get();
+        if (farmDoc.exists) {
+          final farmUserId = farmDoc.data()?['userId'] as String?;
+          if (farmUserId != userId) {
+            log('⚠️ [getSensorsForFarm] UserId mismatch: expected $userId, got $farmUserId');
+            return []; // Return empty list if farm doesn't belong to user
+          }
+        } else {
+          log('⚠️ [getSensorsForFarm] Farm not found: $farmId');
+          return [];
+        }
+      } catch (e) {
+        log('❌ [getSensorsForFarm] Error validating userId: $e');
+        return [];
+      }
+    }
+    
+    return sensors;
   }
 
   Future<void> addSensorReading(SensorReadingModel reading) async {

@@ -34,11 +34,15 @@ class _SensorsScreenState extends State<SensorsScreen> {
   Future<void> _loadSensors() async {
     final dash = Provider.of<DashboardProvider>(context, listen: false);
     final farmId = dash.selectedFarmId;
+    
+    // Get current user's ID for validation
+    final userId = FirebaseAuth.instance.currentUser?.uid;
+    
     // 1) show local cache first
     final local = await SensorLocalService.getSensorsForFarm(farmId);
     if (mounted) setState(() => _sensors = local);
     // 2) refresh from remote and cache
-    final remote = await _sensorService.getSensorsForFarm(farmId);
+    final remote = await _sensorService.getSensorsForFarm(farmId, userId: userId);
     await SensorLocalService.upsertSensors(remote);
     if (!mounted) return;
     setState(() => _sensors = remote);
