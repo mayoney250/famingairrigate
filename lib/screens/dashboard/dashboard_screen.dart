@@ -885,7 +885,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
               // View Selection Dropdown
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark ? Colors.grey[800] : Colors.grey[100],
                   borderRadius: BorderRadius.circular(20),
@@ -898,7 +898,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   icon: const Icon(Icons.tune, size: 18),
                   items: viewOptions.entries.map((e) => DropdownMenuItem(
                     value: e.key, 
-                    child: Text(e.value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.normal)),
+                    child: Text(e.value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
                   )).toList(),
                   onChanged: onViewChanged,
                 ),
