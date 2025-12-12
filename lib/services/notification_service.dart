@@ -7,6 +7,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
 import 'package:get/get.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 /// Enhanced Local notification service with comprehensive alert types
 /// Supports: Irrigation AI recommendations, Status changes, Sensor alerts, Weather, and more
@@ -26,14 +27,46 @@ class NotificationService {
   StreamSubscription<User?>? _authSubscription;
   String? _attachedForUid;
   DateTime? _attachCutoff; // Universal cutoff to skip all old events before login
+  
+  // Hive box for persisting alert cooldown timestamps
+  Box<int>? _alertCooldownBox;
 
   Future<void> initialize() async {
     print('Initializing Enhanced Notification Service...');
     await _requestNotificationPermissions();
     await requestBatteryOptimizationExemption();
     await _setupLocalNotifications();
+    await _loadAlertCooldowns(); // Load persisted cooldown timestamps
     _setupAuthBoundListeners();
     print('✅ Enhanced Notification Service initialized');
+  }
+
+  /// Load persisted alert cooldown timestamps from Hive
+  Future<void> _loadAlertCooldowns() async {
+    try {
+      _alertCooldownBox = await Hive.openBox<int>('alertCooldowns');
+      
+      // Load all stored cooldowns into memory
+      final now = DateTime.now();
+      for (var key in _alertCooldownBox!.keys) {
+        final timestamp = _alertCooldownBox!.get(key);
+        if (timestamp != null) {
+          final alertTime = DateTime.fromMillisecondsSinceEpoch(timestamp);
+          // Only load if not expired (keep recent ones for reference)
+          if (now.difference(alertTime).inDays < 7) {
+            _lastAlertTimes[key.toString()] = alertTime;
+          } else {
+            // Clean up old entries
+            await _alertCooldownBox!.delete(key);
+          }
+        }
+      }
+      
+      print('✅ Loaded ${_lastAlertTimes.length} alert cooldown timestamps from storage');
+    } catch (e) {
+      print('⚠️ Error loading alert cooldowns: $e');
+      // Continue without persisted data
+    }
   }
 
   Future<void> sendTestNotification() async {
@@ -1771,7 +1804,13 @@ class NotificationService {
   }
 
   void _recordAlert(String key) {
-    _lastAlertTimes[key] = DateTime.now();
+    final now = DateTime.now();
+    _lastAlertTimes[key] = now;
+    
+    // Persist to Hive for app restart survival
+    _alertCooldownBox?.put(key, now.millisecondsSinceEpoch).catchError((e) {
+      print('⚠️ Error persisting alert cooldown: $e');
+    });
   }
 
   void _onNotificationTapped(NotificationResponse response) {
