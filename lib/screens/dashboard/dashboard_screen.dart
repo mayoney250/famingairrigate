@@ -263,9 +263,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
             },
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isSmallScreen = constraints.maxWidth < 400;
-                final isLargeScreen = constraints.maxWidth > 800;
-                final double padding = isSmallScreen ? 12.0 : 16.0;
+                final isSmallScreen = constraints.maxWidth < 600;
+                final isLargeScreen = constraints.maxWidth > 900;
+                final double padding = isSmallScreen ? 12.0 : 24.0;
 
                 return SingleChildScrollView(
                   controller: _scrollController,
@@ -311,6 +311,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               data.dailyWater,
               _dashboardView,
               (val) => setState(() => _dashboardView = val ?? 'Both'),
+              isSmallScreen,
             ),
           ),
         ),
@@ -414,6 +415,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         data.dailyWater,
                          _dashboardView,
                         (val) => setState(() => _dashboardView = val ?? 'Both'),
+                        false,
                       ),
                     ),
                   ),
@@ -790,6 +792,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     double dailyWater,
     String selectedView,
     ValueChanged<String?> onViewChanged,
+    bool isSmallScreen,
   ) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final user = authProvider.currentUser;
@@ -873,16 +876,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                context.l10n.userInsightGreeting(name),
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : FamingaBrandColors.textPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+              Expanded(
+                child: Text(
+                  context.l10n.userInsightGreeting(name),
+                  style: TextStyle(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : FamingaBrandColors.textPrimary,
+                    fontSize: isSmallScreen ? 18 : 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
+              const SizedBox(width: 8),
               // View Selection Dropdown
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
