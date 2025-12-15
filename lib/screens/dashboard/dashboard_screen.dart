@@ -170,24 +170,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
       appBar: AppBar(
         backgroundColor: Theme.of(context).colorScheme.background,
         elevation: 0,
-        title: Row(
-          children: [
-            Builder(
-              builder: (context) => Text(
-                'Faminga Irrigation System',
-                style: TextStyle(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? Colors.white
-                      : FamingaBrandColors.textPrimary,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 20,
-                ),
-              ),
+        title: Builder(
+          builder: (context) => Text(
+            'Faminga Irrigation System',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? Colors.white
+                  : FamingaBrandColors.textPrimary,
+              fontWeight: FontWeight.bold,
+              fontSize: 20,
             ),
-            const SizedBox(width: 8),
-            // Removed field dropdown from dashboard per request
-            const SizedBox.shrink(),
-          ],
+          ),
         ),
         actions: [
           _buildCompactLanguageSelector(),
