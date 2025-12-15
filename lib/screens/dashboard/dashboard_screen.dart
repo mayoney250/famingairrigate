@@ -3138,13 +3138,35 @@ class _FieldStatusItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final fieldName = field['name']!;
     
-    bool isHealthy = sensor != null && sensor!.soilMoisture != null;
-    bool hasDrainage = sensor?.soilMoisture != null && sensor!.soilMoisture >= 100;
+    // Build natural language description
+    final moisture = sensor?.soilMoisture?.round() ?? 0;
+    
+    bool isDry = moisture < 40;
+    bool isWet = moisture > 80;
+    bool isHealthy = !isDry && !isWet && sensor != null;
     
     // Status icon and color
-    IconData statusIcon = isHealthy ? Icons.check_circle : Icons.warning_amber_rounded;
-    Color statusColor = isHealthy ? Colors.green : Colors.orange;
-    String statusText = isHealthy ? context.l10n.isHealthy : context.l10n.needsAttention;
+    IconData statusIcon;
+    Color statusColor;
+    String statusText;
+
+    if (sensor == null) {
+      statusIcon = Icons.warning_amber_rounded;
+      statusColor = Colors.orange;
+      statusText = context.l10n.needsAttention;
+    } else if (isWet) {
+      statusIcon = Icons.warning_amber_rounded;
+      statusColor = Colors.red;
+      statusText = context.l10n.needsUrgentAttention; // Waterlogged
+    } else if (isDry) {
+      statusIcon = Icons.water_drop; 
+      statusColor = FamingaBrandColors.primaryOrange;
+      statusText = "Needs Water"; // Custom text since l10n might not have it
+    } else {
+      statusIcon = Icons.check_circle;
+      statusColor = Colors.green;
+      statusText = context.l10n.isHealthy;
+    }
     
     // Build status description
     String description = '';
@@ -3153,13 +3175,11 @@ class _FieldStatusItem extends StatelessWidget {
     if (sensor == null) {
       description = 'Sensor is not responding';
       action = 'Please check the sensor connection';
-    } else if (hasDrainage) {
+    } else if (isWet) {
       description = 'Soil is waterlogged';
       action = 'Stop watering and check drainage';
-      statusIcon = Icons.warning_amber_rounded;
-      statusColor = Colors.red;
-      statusText = context.l10n.needsUrgentAttention;
-    } else {
+    } else if (isDry) {
+      // Logic continues below...
       // Build natural language description
       final moisture = sensor!.soilMoisture?.round() ?? 0;
       final temp = sensor!.temperature?.round() ?? 0;

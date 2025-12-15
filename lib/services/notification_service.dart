@@ -22,6 +22,7 @@ class NotificationService {
   final List<StreamSubscription> _listeners = [];
   final Map<String, DateTime> _lastAlertTimes = {};
   final Map<String, String> _lastIrrigationStatus = {}; // Track last status per cycle
+  final Map<String, String> _lastRecommendationTypes = {}; // Track last recommendation per field
   Timer? _periodicCheckTimer;
   Timer? _weatherCheckTimer;
   StreamSubscription<User?>? _authSubscription;
@@ -297,6 +298,7 @@ class NotificationService {
     }
     _listeners.clear();
     _lastIrrigationStatus.clear(); // Clear status tracking when clearing listeners
+    _lastRecommendationTypes.clear(); // Clear recommendation tracking
     print('✓ Listeners cleared');
   }
 
@@ -407,12 +409,34 @@ class NotificationService {
       }
     }
 
-    // Cooldown check
-    final alertKey = 'ai_${fieldId ?? 'unknown'}_$recommendation';
-    if (!_shouldAlert(alertKey, const Duration(hours: 6))) {
-      print('[AI_RECOMMENDATIONS] Alert cooldown active, skipping notification');
-      return;
+    // Simplified Cooldown check: 6 hours cooldown per field, UNLESS decision changed
+    final alertKey = 'ai_${fieldId ?? 'unknown'}';
+    final lastRecType = _lastRecommendationTypes[fieldId];
+    final currentRecType = recommendation.toLowerCase();
+    
+    bool shouldSend = false;
+    
+    if (lastRecType != currentRecType) {
+       // Decision changed! Alert immediately.
+       print('[AI_RECOMMENDATIONS] 🔄 Decision changed ($lastRecType -> $currentRecType). Alerting immediately.');
+       shouldSend = true;
+       // We DO NOT check cooldown here, urgency overrides it.
+    } else {
+       // Decision is same. Check 6-hour cooldown.
+       if (_shouldAlert(alertKey, const Duration(hours: 6))) {
+          print('[AI_RECOMMENDATIONS] 🕒 Same decision, but cooldown expired. Alerting.');
+          shouldSend = true;
+       } else {
+          print('[AI_RECOMMENDATIONS] ⏭️ Same decision ($currentRecType) & cooldown active. Skipping.');
+          shouldSend = false;
+       }
     }
+    
+    if (!shouldSend) return;
+
+    // Update state
+    _lastRecommendationTypes[fieldId!] = currentRecType; // fieldId checked above to be non-null effectively
+
 
     String title = '';
     String body = '';
