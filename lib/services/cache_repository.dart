@@ -39,10 +39,34 @@ class CacheRepository {
     }
   }
 
+  /// Sanitize data for Hive storage (convert Timestamps to int)
+  dynamic _sanitizeForHive(dynamic data) {
+    if (data == null) return null;
+    
+    // Convert Firestore Timestamp to milliseconds
+    if (data is Timestamp) {
+      return data.millisecondsSinceEpoch;
+    }
+    
+    // Recursively sanitize maps
+    if (data is Map) {
+      return data.map((key, value) => MapEntry(key, _sanitizeForHive(value)));
+    }
+    
+    // Recursively sanitize lists
+    if (data is List) {
+      return data.map((item) => _sanitizeForHive(item)).toList();
+    }
+    
+    // Return primitive types as-is
+    return data;
+  }
+
   /// Generic: cache a JSON-like map under a key (e.g. 'fields_user_{userId}')
   Future<void> cacheJson(String key, Map<String, dynamic> data) async {
     try {
-      await _genericCacheBox?.put(key, data);
+      final sanitized = _sanitizeForHive(data) as Map<String, dynamic>;
+      await _genericCacheBox?.put(key, sanitized);
     } catch (e) {
       dev.log('⚠️ Failed to cache json for $key: $e');
     }
@@ -51,7 +75,8 @@ class CacheRepository {
   /// Generic: cache a list of JSON-like maps under a key
   Future<void> cacheJsonList(String key, List<Map<String, dynamic>> list) async {
     try {
-      await _genericCacheBox?.put(key, list);
+      final sanitized = _sanitizeForHive(list) as List;
+      await _genericCacheBox?.put(key, sanitized);
     } catch (e) {
       dev.log('⚠️ Failed to cache json list for $key: $e');
     }
